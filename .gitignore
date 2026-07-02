@@ -1,0 +1,20 @@
+node_modules/
+tmp/
+dist/
+cache/
+.env
+.env.*
+!.env.example
+data/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+*.log
+
+
+# Local-only generated material
+output/
+.DS_Store
+*.sqlite*
+*.pem
+*.key
