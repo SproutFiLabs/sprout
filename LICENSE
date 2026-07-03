@@ -1,0 +1,21 @@
+Sprout licensing
+================
+
+Unless a file carries a different license notice:
+
+* Sprout application and tooling code is licensed under PolyForm Noncommercial
+  1.0.0. See LICENSES/PolyForm-Noncommercial-1.0.0.md.
+* Original Sprout documentation and artwork are licensed under Creative Commons
+  Attribution-NonCommercial 4.0 International, to the extent copyright applies.
+  See LICENSES/CC-BY-NC-4.0.txt. Attribution: Sprout Contributors.
+
+Required Notice: Copyright 2026 Sprout Contributors
+
+Existing SPDX notices in Solidity files remain authoritative, including MIT.
+Third-party software, fonts, logos and other assets retain their original terms;
+this license does not replace their notices or grant rights Sprout does not own.
+See THIRD_PARTY_NOTICES.md and the notices distributed with those files.
+
+This is source-available software, not an OSI-approved open-source release.
+No trademark rights or endorsement rights are granted in the Sprout name or logo.
+Earlier versions distributed under other licenses retain those licenses.
