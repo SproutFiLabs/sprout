@@ -1,0 +1,17 @@
+{
+  "name": "@sprout/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@sprout/shared": "workspace:*",
+    "hono": "^4.6.14",
+    "viem": "^2.21.40",
+    "zod": "^3.23.8"
+  }
+}
