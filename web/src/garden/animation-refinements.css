@@ -1,0 +1,65 @@
+/* Larger section art lanes keep the supporting botany readable before the hero
+   leaves the viewport. The canvas itself stays bottom anchored to its lane. */
+.garden-view-enter,
+.onboarding-chapter-enter {
+  animation: garden-content-enter 240ms cubic-bezier(.2, .75, .3, 1) both;
+}
+
+@keyframes garden-content-enter {
+  from { opacity: 0; transform: translate3d(0, 7px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .garden-view-enter,
+  .onboarding-chapter-enter { animation: none; }
+}
+
+.garden-bouquet--living.garden-bouquet--scene-invest,
+.garden-bouquet--living.garden-bouquet--scene-chores,
+.garden-bouquet--living.garden-bouquet--scene-graduation {
+  width: min(100%, 620px);
+  height: 270px;
+  bottom: 0;
+}
+
+/* Give the three tall silhouettes a full lane so the hero's overflow clip
+   cannot slice their upper foliage. Keep the copy and art lanes side by side. */
+.garden-hero:has(.garden-bouquet--scene-invest),
+.garden-hero:has(.garden-bouquet--scene-chores),
+.garden-hero:has(.garden-bouquet--scene-graduation) {
+  min-height: 270px;
+}
+
+@media (min-width: 1301px) {
+  .garden-hero:has(.garden-bouquet--scene-invest) .garden-hero-copy,
+  .garden-hero:has(.garden-bouquet--scene-chores) .garden-hero-copy,
+  .garden-hero:has(.garden-bouquet--scene-graduation) .garden-hero-copy {
+    max-width: min(700px, calc(100% - 670px));
+  }
+}
+
+/* At stacked widths the lane follows the headline and its bottom edge meets
+   the first card row without a floating margin. */
+@media (max-width: 1300px) {
+  .garden-bouquet--living.garden-bouquet--scene-invest,
+  .garden-bouquet--living.garden-bouquet--scene-chores,
+  .garden-bouquet--living.garden-bouquet--scene-graduation {
+    position: relative;
+    width: min(100%, 620px);
+    height: 230px;
+    margin: 0 0 0 auto;
+    right: 0;
+    bottom: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .garden-bouquet--living.garden-bouquet--scene-invest,
+  .garden-bouquet--living.garden-bouquet--scene-chores,
+  .garden-bouquet--living.garden-bouquet--scene-graduation {
+    width: 100%;
+    height: 220px;
+    margin: 0;
+  }
+}
