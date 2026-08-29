@@ -1,0 +1,46 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { App } from './App';
+import { Landing } from './Landing';
+import { GiftLanding } from './GiftLanding';
+import { Preview } from './Preview';
+import { TestExperience } from './TestExperience';
+import { KnowledgePage } from './knowledge/KnowledgePages';
+import { AppearancePage } from './AppearancePage';
+import { initializeTheme } from './theme/ThemeSettings';
+import './app.css';
+import './reference/landing.css';
+import './reference/dashboard.css';
+import './reference/premium.css';
+import './garden/garden.css';
+import './typography.css';
+import './test-experience.css';
+import './garden/animation-refinements.css';
+import './resources.css';
+import './knowledge/knowledge.css';
+import './theme/theme.css';
+
+initializeTheme();
+
+function currentPath(): string {
+  return window.location.pathname.replace(/\/+$/, '') || '/';
+}
+
+function Root() {
+  const path = currentPath();
+  if (path === '/' || path === '/index.html') return <Landing />;
+  if (path === '/gift') return <GiftLanding />;
+  if (path === '/dashboard/preview') return <Preview />;
+  if (path === '/docs' || path === '/whitepaper' || path === '/guide') return <KnowledgePage page={path.slice(1) as 'docs' | 'whitepaper' | 'guide'} />;
+  if (path === '/settings') return <AppearancePage />;
+  if (path === '/test') return <TestExperience />;
+  return <App />;
+}
+
+const container = document.getElementById('root');
+if (!container) throw new Error('missing #root');
+createRoot(container).render(
+  <StrictMode>
+    <Root />
+  </StrictMode>,
+);
