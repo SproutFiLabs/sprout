@@ -1,0 +1,612 @@
+/* Appearance tokens are deliberately global so future knowledge/docs pages
+   can opt in with the same html[data-appearance] contract. */
+html[data-appearance="light"] { color-scheme: light; }
+html[data-appearance="dark"] {
+  color-scheme: dark;
+  --background: #10221a;
+  --foreground: #f5efe3;
+  --card: #183025;
+  --card-foreground: #f5efe3;
+  --popover: #1a3428;
+  --popover-foreground: #f5efe3;
+  --primary: #f5efe3;
+  --primary-foreground: #16261d;
+  --secondary: #243c2f;
+  --secondary-foreground: #f5efe3;
+  --muted: #20372b;
+  --muted-foreground: #b5c4b4;
+  --accent: #2d4a39;
+  --accent-foreground: #f5efe3;
+  --border: #355342;
+  --input: #466451;
+  --ring: #aacb8a;
+  --sidebar: #0d1d16;
+  --sidebar-foreground: #f5efe3;
+  --sidebar-border: #284333;
+  --sidebar-accent: #20372a;
+  --sidebar-accent-foreground: #f5efe3;
+  --sidebar-primary: #f5efe3;
+  --sidebar-primary-foreground: #16261d;
+}
+html[data-appearance="dark"] body { background: #10221a; color: #f5efe3; }
+html[data-appearance="dark"] input,
+html[data-appearance="dark"] select,
+html[data-appearance="dark"] textarea { background: #172d23; color: #f5efe3; border-color: #466451; }
+html[data-appearance="dark"] input::placeholder,
+html[data-appearance="dark"] textarea::placeholder { color: #9eaf9e; }
+html[data-appearance="dark"] .page,
+html[data-appearance="dark"] .app-main,
+html[data-appearance="dark"] .garden-root { background: #10221a; color: #f5efe3; }
+html[data-appearance="dark"] .card,
+html[data-appearance="dark"] .panel,
+html[data-appearance="dark"] .modal,
+html[data-appearance="dark"] .sprout-dialog { background: #183025; border-color: #355342; color: #f5efe3; box-shadow: 0 24px 60px #06130c99; }
+html[data-appearance="dark"] .modal-backdrop { background: #07140dcc; }
+html[data-appearance="dark"] .garden {
+  --garden-ink: #f5efe3; --garden-soft: #b5c4b4; --garden-quiet: #91a594; --garden-line: #355342;
+  --garden-surface: #183025; --garden-side: #0d1d16; --garden-green: #a9cf91; --garden-purple: #c7b6ef;
+  background: #10221a; color: #f5efe3;
+}
+html[data-appearance="dark"] .garden-card,
+html[data-appearance="dark"] .garden-empty-hero,
+html[data-appearance="dark"] .garden-empty-feature-card,
+html[data-appearance="dark"] .garden-connect-card { background: #183025; border-color: #355342; }
+html[data-appearance="dark"] .garden-sidebar { background: #0d1d16; }
+html[data-appearance="dark"] .garden-nav-link--active,
+html[data-appearance="dark"] .garden-side-link:hover { background: #20372a; }
+html[data-appearance="dark"] .garden-pill { background: #294536; color: #f5efe3; }
+html[data-appearance="dark"] .garden-pill--dark { background: #f5efe3; color: #16261d; }
+html[data-appearance="dark"] .garden-empty-hero { background: linear-gradient(110deg, #183025 0%, #183025 54%, #203b2d 100%); }
+html[data-appearance="dark"] .garden-empty-feature-card > span { background: #294a35; color: #b9dc9e; }
+html[data-appearance="dark"] .garden-empty-feature-card:nth-child(2) > span { background: #563d2e; color: #ffc09b; }
+html[data-appearance="dark"] .garden-empty-feature-card:nth-child(3) > span { background: #443965; color: #d3c1ff; }
+html[data-appearance="dark"] .garden-chart line { stroke: #466451; }
+html[data-appearance="dark"] .garden-chart .garden-axis-label,
+html[data-appearance="dark"] .garden-chart .garden-tip-date { fill: #b5c4b4; stroke: none; }
+html[data-appearance="dark"] .garden-chart .garden-tip-value { fill: #f5efe3; stroke: none; }
+html[data-appearance="dark"] .garden-chart svg > path[fill="none"] { stroke: #a9cf91; }
+html[data-appearance="dark"] .garden-chart svg > path[fill^="url"] { stroke: none; }
+html[data-appearance="dark"] .garden-card h2,
+html[data-appearance="dark"] .garden-hero h1,
+html[data-appearance="dark"] .garden-gift-title,
+html[data-appearance="dark"] .garden-value,
+html[data-appearance="dark"] .garden-weekly-unit { color: #f5efe3; }
+html[data-appearance="dark"] .garden-period--active { background: #294536; color: #f5efe3; }
+html[data-appearance="dark"] .garden-chart-empty,
+html[data-appearance="dark"] .garden-info-band,
+html[data-appearance="dark"] .garden-review,
+html[data-appearance="dark"] .garden-ladder-step,
+html[data-appearance="dark"] .garden-root .review-card { background: #20372a; color: #f5efe3; }
+html[data-appearance="dark"] .garden-ladder-step > span { background: #294536; color: #f5efe3; }
+html[data-appearance="dark"] .garden-root .modal label,
+html[data-appearance="dark"] .garden-gift-form label { color: #d5dfd2; }
+html[data-appearance="dark"] .garden-gift-form select { background: #172d23; border-color: #466451; color: #f5efe3; }
+html[data-appearance="dark"] .onboarding-backdrop { --garden-ink: #f5efe3; --garden-soft: #b5c4b4; --garden-quiet: #91a594; --garden-line: #355342; --garden-surface: #183025; --garden-serif: Georgia, 'Times New Roman', serif; background: #07140dbd; }
+html[data-appearance="dark"] .onboarding-dialog { background: #183025; border-color: #355342; box-shadow: 0 30px 90px #06130ccc; }
+html[data-appearance="dark"] .onboarding-dialog > .onboarding-close { background: #20372a; border-color: #466451; color: #b5c4b4; }
+html[data-appearance="dark"] .onboarding-quote { color: #d5cdbc; background: #20372a; }
+html[data-appearance="dark"] .onboarding-reason { border-color: #355342; }
+html[data-appearance="dark"] .onboarding-reason > span { background: #294a35; color: #b9dc9e; }
+html[data-appearance="dark"] .onboarding-reason:nth-child(2) > span { background: #563d2e; color: #ffc09b; }
+html[data-appearance="dark"] .onboarding-reason:nth-child(3) > span { background: #443965; color: #d3c1ff; }
+html[data-appearance="dark"] .garden-root .modal-head .btn,
+html[data-appearance="dark"] .garden-root .modal .btn { background: #294536; color: #f5efe3; border-color: #466451; }
+html[data-appearance="dark"] .reference-landing {
+  --paper: #10221a; --ink: #f5efe3; --quiet: #b5c4b4; --surface: #1a3428; --line: #355342;
+  background: #10221a; color: #f5efe3;
+}
+html[data-appearance="dark"] .reference-landing .button-primary,
+html[data-appearance="dark"] .reference-landing .btn--primary { background: #f5efe3; color: #16261d; }
+html[data-appearance="dark"] .reference-landing .button-secondary,
+html[data-appearance="dark"] .reference-landing .btn--secondary { background: #243c2f; color: #f5efe3; }
+html[data-appearance="dark"] .reference-landing .resource-menu,
+html[data-appearance="dark"] .reference-landing .reference-nav-right { background: #183025; border-color: #355342; color: #f5efe3; }
+html[data-appearance="dark"] .reference-landing .reference-demo,
+html[data-appearance="dark"] .reference-landing .reference-create,
+html[data-appearance="dark"] .reference-landing .reference-role,
+html[data-appearance="dark"] .reference-landing .reference-feature-art { background-color: #1a3428; }
+html[data-appearance="dark"] .reference-landing .reference-answer { background: #183025 !important; color: #f5efe3 !important; border-color: #355342 !important; }
+html[data-appearance="dark"] .reference-landing .create-form input,
+html[data-appearance="dark"] .reference-landing .reference-dock form { background: #172d23; border-color: #355342; color: #f5efe3; }
+html[data-appearance="dark"] .reference-landing .garden-pill--dark { background: #f5efe3; color: #16261d; }
+/* A light, low-cost night signal for the living hero. */
+html[data-appearance="dark"] .garden-bouquet--living::before,
+html[data-appearance="dark"] .garden-bouquet--living::after { content: ''; position: absolute; z-index: 4; width: 4px; height: 4px; border-radius: 50%; background: #f6d78c; box-shadow: 38px 22px #f6d78c, 78px 8px #d9eead, 118px 36px #f6d78c, 154px 16px #d9eead; opacity: .8; animation: sprout-firefly 6s ease-in-out infinite; pointer-events: none; }
+html[data-appearance="dark"] .garden-bouquet--living::before { top: 20%; left: 18%; }
+html[data-appearance="dark"] .garden-bouquet--living::after { top: 35%; left: 30%; animation-delay: -3s; }
+@keyframes sprout-firefly { 0%, 100% { opacity: .35; transform: translateY(3px); } 50% { opacity: .95; transform: translateY(-5px); } }
+@media (prefers-reduced-motion: reduce) { html[data-appearance="dark"] .garden-bouquet--living::before, html[data-appearance="dark"] .garden-bouquet--living::after { animation: none; } }
+/* Future knowledge/document routes can opt in without importing dashboard CSS. */
+html[data-appearance="dark"] .knowledge-root,
+html[data-appearance="dark"] .docs-root,
+html[data-appearance="dark"] [data-page="knowledge"] { background: #10221a; color: #f5efe3; }
+html[data-appearance="dark"] .knowledge {
+  --knowledge-bg: #10221a; --knowledge-ink: #f5efe3; --knowledge-muted: #b5c4b4;
+  --knowledge-card: #183025; --knowledge-line: #355342;
+  background: var(--knowledge-bg); color: var(--knowledge-ink);
+}
+html[data-appearance="dark"] .knowledge-topbar { background: #0d1d16; border-color: #355342; }
+html[data-appearance="dark"] .knowledge-code { background: #294536; color: #ffc09b; }
+html[data-appearance="dark"] .knowledge-callout { background: #183025; border-color: #709656; color: #e5eee0; }
+html[data-appearance="dark"] .knowledge-callout--orange { border-color: #e49a67; }
+html[data-appearance="dark"] .knowledge-steps > div { background: #183025; border-color: #355342; }
+html[data-appearance="dark"] .knowledge-hero-links a,
+html[data-appearance="dark"] .knowledge-footer a,
+html[data-appearance="dark"] .knowledge-eyebrow,
+html[data-appearance="dark"] .knowledge-side-kicker { color: #f0a878; }
+html[data-appearance="dark"] .knowledge-print { color: #f5efe3; border-color: #466451; }
+@media print {
+  html[data-appearance="dark"] .knowledge { --knowledge-ink:#000; --knowledge-muted:#444; --knowledge-line:#ccc; background: #fff; color: #000; }
+  html[data-appearance="dark"] .knowledge .knowledge-code,
+  html[data-appearance="dark"] .knowledge .knowledge-callout,
+  html[data-appearance="dark"] .knowledge .knowledge-steps > div { background: #fff; color: #000; border-color: #aaa; }
+}
+html[data-appearance="dark"] .knowledge-root .card,
+html[data-appearance="dark"] .docs-root .card,
+html[data-appearance="dark"] [data-page="knowledge"] .card { background: #183025; border-color: #355342; }
+
+.theme-settings { width: min(680px, 100%); padding: 30px; border: 1px solid var(--border, #e7e8e1); border-radius: 22px; background: var(--card, #fff); color: var(--foreground, #252623); }
+.theme-settings-heading { margin-bottom: 24px; }.theme-settings-eyebrow { display: block; margin-bottom: 8px; color: var(--muted-foreground, #73766e); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }.theme-settings h2 { margin: 0 0 10px; font: 400 32px/1.05 Georgia, 'Times New Roman', serif; letter-spacing: -.8px; }.theme-settings p { margin: 0; color: var(--muted-foreground, #73766e); font-size: 14px; }
+.theme-settings-options { display: grid; gap: 9px; }.theme-option { position: relative; display: flex; flex-direction: row; color: var(--foreground, #252623); font-weight: 400; align-items: center; gap: 12px; min-height: 68px; padding: 12px 14px; border: 1px solid var(--border, #e7e8e1); border-radius: 14px; cursor: pointer; }.theme-option input { position: absolute; opacity: 0; pointer-events: none; }.theme-option--selected { border-color: var(--ring, #64894e); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring, #64894e) 18%, transparent); }.theme-option-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--foreground, #252623); background: var(--secondary, #f3f2ed); }.theme-option-copy { display: grid; gap: 3px; min-width: 0; }.theme-option-copy b { font-size: 14px; }.theme-option-copy small { color: var(--muted-foreground, #73766e); font-size: 12px; }.theme-option-check { display: grid; place-items: center; width: 24px; height: 24px; margin-left: auto; border-radius: 50%; color: transparent; }.theme-option--selected .theme-option-check { color: var(--card, #fff); background: var(--ring, #64894e); }
+.theme-option:focus-within { outline: 2px solid var(--ring, #64894e); outline-offset: 3px; }
+.theme-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 0 11px; border: 1px solid var(--border, #e7e8e1); border-radius: 999px; color: var(--foreground, #252623); background: var(--card, #fff); font: inherit; font-size: 12px; cursor: pointer; }.theme-toggle:hover { background: var(--secondary, #f3f2ed); }.theme-toggle-label { white-space: nowrap; }
+@media (max-width: 560px) { .theme-settings { padding: 22px 18px; border-radius: 18px; }.theme-settings h2 { font-size: 28px; }.theme-option { min-height: 62px; }.theme-option-copy small { font-size: 11px; } .theme-toggle-label { display: none; } .theme-toggle { width: 36px; padding: 0; } }
+
+/* Dark-mode wording and numeric values use one high-contrast ink. Decorative
+   icons and illustration colours remain semantic; their surrounding surfaces
+   are deep enough that labels never become white on white. */
+html[data-appearance="dark"] .garden h1,
+html[data-appearance="dark"] .garden h2,
+html[data-appearance="dark"] .garden h3,
+html[data-appearance="dark"] .garden h4,
+html[data-appearance="dark"] .garden p,
+html[data-appearance="dark"] .garden small,
+html[data-appearance="dark"] .garden b,
+html[data-appearance="dark"] .garden strong,
+html[data-appearance="dark"] .garden td,
+html[data-appearance="dark"] .garden th,
+html[data-appearance="dark"] .garden li,
+html[data-appearance="dark"] .garden label,
+html[data-appearance="dark"] .garden input,
+html[data-appearance="dark"] .garden select,
+html[data-appearance="dark"] .garden textarea,
+html[data-appearance="dark"] .garden .garden-see-all,
+html[data-appearance="dark"] .garden .garden-empty-note,
+html[data-appearance="dark"] .garden .garden-muted,
+html[data-appearance="dark"] .garden .garden-soft { color: #fff; }
+html[data-appearance="dark"] .garden .garden-eyebrow,
+html[data-appearance="dark"] .garden .garden-axis-label,
+html[data-appearance="dark"] .garden .garden-tip-date { color: #fff; fill: #fff; }
+html[data-appearance="dark"] .garden .garden-pill--dark,
+html[data-appearance="dark"] .garden .garden-chip--link { background: #294536; color: #fff; }
+html[data-appearance="dark"] .garden .garden-pill:not(.garden-pill--dark):not(.garden-pill--light),
+html[data-appearance="dark"] .garden .garden-period--active { background: #294536; color: #fff; }
+html[data-appearance="dark"] .garden .garden-chip--active,
+html[data-appearance="dark"] .garden .garden-chip--muted,
+html[data-appearance="dark"] .garden .garden-activity-icon,
+html[data-appearance="dark"] .garden .garden-glyph,
+html[data-appearance="dark"] .garden .garden-mix-icon,
+html[data-appearance="dark"] .garden .garden-chores-symbol { color: #fff; background: #294536; }
+html[data-appearance="dark"] .garden .garden-notice,
+html[data-appearance="dark"] .garden .garden-gift-notice,
+html[data-appearance="dark"] .garden .garden-info-band,
+html[data-appearance="dark"] .garden .garden-plan-note { color: #fff; background: #20372a; border-color: #466451; }
+html[data-appearance="dark"] .garden .garden-warning,
+html[data-appearance="dark"] .garden .garden-gift-warning,
+html[data-appearance="dark"] .garden .txn--failed { color: #fff; background: #59352f; border-color: #a96559; }
+html[data-appearance="dark"] .garden .garden-nav-link svg,
+html[data-appearance="dark"] .garden .garden-side-link svg { color: #d9e8d3; }
+html[data-appearance="dark"] .garden .garden-gift-title,
+html[data-appearance="dark"] .garden .garden-hero h1,
+html[data-appearance="dark"] .garden .garden-value,
+html[data-appearance="dark"] .garden .garden-plan-amount,
+html[data-appearance="dark"] .garden .garden-weekly-unit,
+html[data-appearance="dark"] .garden .garden-tip-value { color: #fff; fill: #fff; }
+html[data-appearance="dark"] .garden .garden-progress { background: #294536; }
+html[data-appearance="dark"] .garden .garden-gift-form select { color: #fff; background: #172d23; }
+html[data-appearance="dark"] .garden .garden-pill--light { color: #f5793b; background: #fff; }
+html[data-appearance="dark"] .onboarding-dialog h2,
+html[data-appearance="dark"] .onboarding-dialog p,
+html[data-appearance="dark"] .onboarding-dialog b,
+html[data-appearance="dark"] .onboarding-dialog button,
+html[data-appearance="dark"] .onboarding-dialog .garden-eyebrow,
+html[data-appearance="dark"] .onboarding-dialog .onboarding-quote,
+html[data-appearance="dark"] .onboarding-dialog .onboarding-reason p { color: #fff; }
+html[data-appearance="dark"] .welcome-sprout h2,
+html[data-appearance="dark"] .welcome-sprout p { color: #fff; }
+
+html[data-appearance="dark"] .reference-landing h1,
+html[data-appearance="dark"] .reference-landing h2,
+html[data-appearance="dark"] .reference-landing h3,
+html[data-appearance="dark"] .reference-landing p,
+html[data-appearance="dark"] .reference-landing small,
+html[data-appearance="dark"] .reference-landing strong,
+html[data-appearance="dark"] .reference-landing label,
+html[data-appearance="dark"] .reference-landing a,
+html[data-appearance="dark"] .reference-landing input,
+html[data-appearance="dark"] .reference-landing button { color: #fff; }
+html[data-appearance="dark"] .reference-landing .quiet,
+html[data-appearance="dark"] .reference-landing .muted,
+html[data-appearance="dark"] .reference-landing .subtle,
+html[data-appearance="dark"] .reference-landing .proof-number > span,
+html[data-appearance="dark"] .reference-landing .reference-feature-accordion [data-slot="accordion-content"] { color: #fff; }
+html[data-appearance="dark"] .reference-landing .btn,
+html[data-appearance="dark"] .reference-landing .button,
+html[data-appearance="dark"] .reference-landing .reference-dock form,
+html[data-appearance="dark"] .reference-landing .create-form input { background: #294536; color: #fff; border-color: #466451; }
+html[data-appearance="dark"] .reference-landing .btn.green,
+html[data-appearance="dark"] .reference-landing .btn.cream { background: #294536; color: #fff; }
+html[data-appearance="dark"] .reference-landing .reference-hero-wave .reference-motion { color: #fff; background: #294536; border-color: #466451; }
+
+html[data-appearance="dark"] .knowledge h1,
+html[data-appearance="dark"] .knowledge h2,
+html[data-appearance="dark"] .knowledge h3,
+html[data-appearance="dark"] .knowledge p,
+html[data-appearance="dark"] .knowledge li,
+html[data-appearance="dark"] .knowledge small,
+html[data-appearance="dark"] .knowledge span,
+html[data-appearance="dark"] .knowledge a,
+html[data-appearance="dark"] .knowledge button,
+html[data-appearance="dark"] .knowledge code { color: #fff; }
+html[data-appearance="dark"] .knowledge .knowledge-eyebrow,
+html[data-appearance="dark"] .knowledge .knowledge-side-kicker { color: #fff; }
+html[data-appearance="dark"] .knowledge .knowledge-code { background: #294536; }
+
+html[data-appearance="dark"] .test-experience,
+html[data-appearance="dark"] .test-experience h1,
+html[data-appearance="dark"] .test-experience p,
+html[data-appearance="dark"] .test-experience label,
+html[data-appearance="dark"] .test-experience input,
+html[data-appearance="dark"] .test-experience button { color: #fff; }
+html[data-appearance="dark"] .test-experience { background: #10221a; }
+html[data-appearance="dark"] .test-setup-card,
+html[data-appearance="dark"] .test-wallet { background: #183025; border-color: #355342; }
+html[data-appearance="dark"] .test-wallet input { background: transparent; }
+html[data-appearance="dark"] .test-primary { background: #294536; border-color: #466451; }
+html[data-appearance="dark"] .theme-settings,
+html[data-appearance="dark"] .theme-settings h2,
+html[data-appearance="dark"] .theme-settings p,
+html[data-appearance="dark"] .theme-option,
+html[data-appearance="dark"] .theme-option b,
+html[data-appearance="dark"] .theme-option small { color: #fff; }
+html[data-appearance="dark"] .theme-settings { background: #183025; border-color: #355342; }
+html[data-appearance="dark"] .theme-option { background: #20372a; border-color: #466451; }
+html[data-appearance="dark"] .theme-option-icon { color: #fff; background: #294536; }
+html[data-appearance="dark"] .theme-toggle { color: #fff; background: #183025; border-color: #466451; }
+
+@media print {
+  html[data-appearance="dark"] body,
+  html[data-appearance="dark"] .garden-root,
+  html[data-appearance="dark"] .garden,
+  html[data-appearance="dark"] .reference-landing,
+  html[data-appearance="dark"] .knowledge-root,
+  html[data-appearance="dark"] .test-experience { background: #fff !important; color: #000 !important; }
+  html[data-appearance="dark"] body * { color: #000 !important; background-image: none !important; box-shadow: none !important; }
+}
+
+html[data-appearance="dark"] .garden-chart svg > g > rect { fill:#243c2f; stroke:#466451; }
+html[data-appearance="dark"] .garden-nav-link svg { color:#b5c4b4; }
+html[data-appearance="dark"] .garden-bouquet--living canvas,
+html[data-appearance="dark"] .landing-living-garden canvas,
+html[data-appearance="dark"] .onboarding-living-art canvas { filter: saturate(.72) brightness(.93) hue-rotate(12deg); }
+@media print { html[data-appearance="dark"] .knowledge-topbar { background:#fff; color:#000; } }
+html[data-appearance="dark"] .onboarding-dialog,
+html[data-appearance="dark"] .test-experience,
+html[data-appearance="dark"] .test-experience-brand { color:#f5efe3; }
+html[data-appearance="dark"] .test-experience { background:#10221a; }
+html[data-appearance="dark"] .test-setup-card,
+html[data-appearance="dark"] .test-experience-badge { background:#183025; border-color:#355342; color:#f5efe3; }
+html[data-appearance="dark"] .test-wallet { background:#20372a; border-color:#355342; }
+html[data-appearance="dark"] .test-setup-card > p,
+html[data-appearance="dark"] .test-setup-card label,
+html[data-appearance="dark"] .test-wallet span,
+html[data-appearance="dark"] .test-link { color:#b5c4b4; }
+html[data-appearance="dark"] .test-primary { background:#f5efe3; color:#16261d; }
+html[data-appearance="dark"] .garden-chip--active { background:#294536; color:#a9cf91; }
+html[data-appearance="dark"] .reference-nav-right { background:transparent; }
+
+/* Final contrast pass: the dashboard and marketing styles predate the theme
+   tokens and contain several direct colour declarations. Keep copy and
+   numeric values white in the dark scheme while leaving illustration paths
+   and chart strokes alone. */
+html[data-appearance="dark"] .garden,
+html[data-appearance="dark"] .garden-root,
+html[data-appearance="dark"] .garden-root .page,
+html[data-appearance="dark"] .garden-root .card,
+html[data-appearance="dark"] .garden-root .modal,
+html[data-appearance="dark"] .garden-root .review-card,
+html[data-appearance="dark"] .garden-root .fine-print,
+html[data-appearance="dark"] .garden-root .muted,
+html[data-appearance="dark"] .garden-root .empty-note,
+html[data-appearance="dark"] .garden-root .garden-muted,
+html[data-appearance="dark"] .garden-root .garden-soft,
+html[data-appearance="dark"] .garden-root .garden-quiet { color: #fff !important; }
+html[data-appearance="dark"] .garden h1,
+html[data-appearance="dark"] .garden h2,
+html[data-appearance="dark"] .garden h3,
+html[data-appearance="dark"] .garden h4,
+html[data-appearance="dark"] .garden p,
+html[data-appearance="dark"] .garden small,
+html[data-appearance="dark"] .garden b,
+html[data-appearance="dark"] .garden strong,
+html[data-appearance="dark"] .garden em,
+html[data-appearance="dark"] .garden li,
+html[data-appearance="dark"] .garden dt,
+html[data-appearance="dark"] .garden dd,
+html[data-appearance="dark"] .garden td,
+html[data-appearance="dark"] .garden th,
+html[data-appearance="dark"] .garden label,
+html[data-appearance="dark"] .garden a,
+html[data-appearance="dark"] .garden button,
+html[data-appearance="dark"] .garden input,
+html[data-appearance="dark"] .garden select,
+html[data-appearance="dark"] .garden textarea,
+html[data-appearance="dark"] .garden .garden-eyebrow,
+html[data-appearance="dark"] .garden .garden-value,
+html[data-appearance="dark"] .garden .garden-change,
+html[data-appearance="dark"] .garden .garden-up,
+html[data-appearance="dark"] .garden .garden-down,
+html[data-appearance="dark"] .garden .garden-plan-amount,
+html[data-appearance="dark"] .garden .garden-plan-cadence,
+html[data-appearance="dark"] .garden .garden-weekly-figure,
+html[data-appearance="dark"] .garden .garden-weekly-unit,
+html[data-appearance="dark"] .garden .garden-see-all,
+html[data-appearance="dark"] .garden .garden-empty-note,
+html[data-appearance="dark"] .garden .garden-nav-link,
+html[data-appearance="dark"] .garden .garden-side-link,
+html[data-appearance="dark"] .garden .garden-child-name,
+html[data-appearance="dark"] .garden .garden-menu-note,
+html[data-appearance="dark"] .garden .garden-menu-action,
+html[data-appearance="dark"] .garden .garden-chip,
+html[data-appearance="dark"] .garden .garden-sample-badge,
+html[data-appearance="dark"] .garden .garden-tip-value,
+html[data-appearance="dark"] .garden .garden-tip-date { color: #fff !important; }
+html[data-appearance="dark"] .garden input::placeholder,
+html[data-appearance="dark"] .garden textarea::placeholder { color: #fff !important; opacity: .82; }
+html[data-appearance="dark"] .garden .garden-chart text,
+html[data-appearance="dark"] .garden .garden-axis-label,
+html[data-appearance="dark"] .garden .garden-tip-date,
+html[data-appearance="dark"] .garden .garden-tip-value { fill: #fff !important; stroke: none !important; }
+html[data-appearance="dark"] .garden .garden-pill,
+html[data-appearance="dark"] .garden .garden-chip,
+html[data-appearance="dark"] .garden .garden-period,
+html[data-appearance="dark"] .garden .garden-btn,
+html[data-appearance="dark"] .garden .btn,
+html[data-appearance="dark"] .garden .button,
+html[data-appearance="dark"] .garden .garden-gift-form select,
+html[data-appearance="dark"] .garden .garden-sample-badge { background: #294536 !important; color: #fff !important; border-color: #466451 !important; }
+html[data-appearance="dark"] .garden .garden-card,
+html[data-appearance="dark"] .garden .garden-empty-hero,
+html[data-appearance="dark"] .garden .garden-empty-feature-card,
+html[data-appearance="dark"] .garden .garden-connect-card,
+html[data-appearance="dark"] .garden .garden-review,
+html[data-appearance="dark"] .garden .garden-info-band,
+html[data-appearance="dark"] .garden .garden-chart-empty,
+html[data-appearance="dark"] .garden .garden-plan-note,
+html[data-appearance="dark"] .garden .garden-notice,
+html[data-appearance="dark"] .garden .garden-gift-notice { background-color: #183025 !important; color: #fff !important; border-color: #466451 !important; }
+html[data-appearance="dark"] .garden .garden-warning,
+html[data-appearance="dark"] .garden .garden-gift-warning,
+html[data-appearance="dark"] .garden .txn--failed { background-color: #59352f !important; color: #fff !important; border-color: #a96559 !important; }
+
+html[data-appearance="dark"] .onboarding-dialog,
+html[data-appearance="dark"] .onboarding-dialog h1,
+html[data-appearance="dark"] .onboarding-dialog h2,
+html[data-appearance="dark"] .onboarding-dialog h3,
+html[data-appearance="dark"] .onboarding-dialog p,
+html[data-appearance="dark"] .onboarding-dialog small,
+html[data-appearance="dark"] .onboarding-dialog b,
+html[data-appearance="dark"] .onboarding-dialog strong,
+html[data-appearance="dark"] .onboarding-dialog label,
+html[data-appearance="dark"] .onboarding-dialog button,
+html[data-appearance="dark"] .onboarding-dialog a,
+html[data-appearance="dark"] .onboarding-dialog .onboarding-eyebrow,
+html[data-appearance="dark"] .onboarding-dialog .onboarding-quote,
+html[data-appearance="dark"] .onboarding-dialog .onboarding-reason p,
+html[data-appearance="dark"] .welcome-sprout,
+html[data-appearance="dark"] .welcome-sprout h1,
+html[data-appearance="dark"] .welcome-sprout h2,
+html[data-appearance="dark"] .welcome-sprout p { color: #fff !important; }
+html[data-appearance="dark"] .onboarding-dialog button,
+html[data-appearance="dark"] .onboarding-dialog .btn,
+html[data-appearance="dark"] .welcome-sprout button { background: #294536 !important; color: #fff !important; border-color: #466451 !important; }
+html[data-appearance="dark"] .onboarding-dialog input,
+html[data-appearance="dark"] .onboarding-dialog textarea,
+html[data-appearance="dark"] .onboarding-dialog select { background: #172d23 !important; color: #fff !important; border-color: #466451 !important; }
+html[data-appearance="dark"] .onboarding-dialog input::placeholder { color: #fff !important; opacity: .82; }
+
+html[data-appearance="dark"] .reference-landing,
+html[data-appearance="dark"] .reference-landing h1,
+html[data-appearance="dark"] .reference-landing h2,
+html[data-appearance="dark"] .reference-landing h3,
+html[data-appearance="dark"] .reference-landing h4,
+html[data-appearance="dark"] .reference-landing p,
+html[data-appearance="dark"] .reference-landing small,
+html[data-appearance="dark"] .reference-landing strong,
+html[data-appearance="dark"] .reference-landing b,
+html[data-appearance="dark"] .reference-landing label,
+html[data-appearance="dark"] .reference-landing a,
+html[data-appearance="dark"] .reference-landing button,
+html[data-appearance="dark"] .reference-landing input,
+html[data-appearance="dark"] .reference-landing textarea,
+html[data-appearance="dark"] .reference-landing select,
+html[data-appearance="dark"] .reference-landing .scene-heading,
+html[data-appearance="dark"] .reference-landing .scene-amount,
+html[data-appearance="dark"] .reference-landing .scene-days,
+html[data-appearance="dark"] .reference-landing .scene-reward,
+html[data-appearance="dark"] .reference-landing .scene-footer,
+html[data-appearance="dark"] .reference-landing .scene-chip,
+html[data-appearance="dark"] .reference-landing .scene-ring-label,
+html[data-appearance="dark"] .reference-landing .reference-feature-tag,
+html[data-appearance="dark"] .reference-landing .proof-number,
+html[data-appearance="dark"] .reference-landing .proof-note,
+html[data-appearance="dark"] .reference-landing .proof-signature,
+html[data-appearance="dark"] .reference-landing .setup-window-label,
+html[data-appearance="dark"] .reference-landing .setup-window-field,
+html[data-appearance="dark"] .reference-landing .setup-window-balance,
+html[data-appearance="dark"] .reference-landing .setup-window-small,
+html[data-appearance="dark"] .reference-landing .principle-copy,
+html[data-appearance="dark"] .reference-landing .principle-author { color: #fff !important; }
+html[data-appearance="dark"] .reference-landing input::placeholder { color: #fff !important; opacity: .82; }
+html[data-appearance="dark"] .reference-landing .btn,
+html[data-appearance="dark"] .reference-landing .button,
+html[data-appearance="dark"] .reference-landing .button-primary,
+html[data-appearance="dark"] .reference-landing .button-secondary,
+html[data-appearance="dark"] .reference-landing .create-form input,
+html[data-appearance="dark"] .reference-landing .reference-dock form,
+html[data-appearance="dark"] .reference-landing .reference-motion { background: #294536 !important; color: #fff !important; border-color: #466451 !important; }
+html[data-appearance="dark"] .reference-landing .reference-demo,
+html[data-appearance="dark"] .reference-landing .reference-create,
+html[data-appearance="dark"] .reference-landing .reference-role,
+html[data-appearance="dark"] .reference-landing .reference-feature-art,
+html[data-appearance="dark"] .reference-landing .reference-answer,
+html[data-appearance="dark"] .reference-landing .accordion-content { background-color: #183025 !important; color: #fff !important; border-color: #466451 !important; }
+
+html[data-appearance="dark"] .knowledge,
+html[data-appearance="dark"] .knowledge h1,
+html[data-appearance="dark"] .knowledge h2,
+html[data-appearance="dark"] .knowledge h3,
+html[data-appearance="dark"] .knowledge h4,
+html[data-appearance="dark"] .knowledge p,
+html[data-appearance="dark"] .knowledge li,
+html[data-appearance="dark"] .knowledge small,
+html[data-appearance="dark"] .knowledge span,
+html[data-appearance="dark"] .knowledge strong,
+html[data-appearance="dark"] .knowledge b,
+html[data-appearance="dark"] .knowledge label,
+html[data-appearance="dark"] .knowledge a,
+html[data-appearance="dark"] .knowledge button,
+html[data-appearance="dark"] .knowledge code,
+html[data-appearance="dark"] .knowledge .knowledge-eyebrow,
+html[data-appearance="dark"] .knowledge .knowledge-side-kicker,
+html[data-appearance="dark"] .knowledge .knowledge-code { color: #fff !important; }
+html[data-appearance="dark"] .knowledge .knowledge-code,
+html[data-appearance="dark"] .knowledge .knowledge-callout,
+html[data-appearance="dark"] .knowledge .knowledge-steps > div,
+html[data-appearance="dark"] .knowledge .card { background: #183025 !important; border-color: #466451 !important; }
+
+html[data-appearance="dark"] .test-experience,
+html[data-appearance="dark"] .test-experience h1,
+html[data-appearance="dark"] .test-experience h2,
+html[data-appearance="dark"] .test-experience h3,
+html[data-appearance="dark"] .test-experience p,
+html[data-appearance="dark"] .test-experience small,
+html[data-appearance="dark"] .test-experience b,
+html[data-appearance="dark"] .test-experience strong,
+html[data-appearance="dark"] .test-experience span,
+html[data-appearance="dark"] .test-experience label,
+html[data-appearance="dark"] .test-experience a,
+html[data-appearance="dark"] .test-experience button,
+html[data-appearance="dark"] .test-experience input { color: #fff !important; }
+html[data-appearance="dark"] .test-experience input::placeholder { color: #fff !important; opacity: .82; }
+html[data-appearance="dark"] .test-experience .test-setup-card,
+html[data-appearance="dark"] .test-experience .test-wallet,
+html[data-appearance="dark"] .test-experience .test-experience-badge,
+html[data-appearance="dark"] .test-experience .test-primary { background: #294536 !important; border-color: #466451 !important; }
+
+html[data-appearance="dark"] .theme-settings,
+html[data-appearance="dark"] .theme-settings h1,
+html[data-appearance="dark"] .theme-settings h2,
+html[data-appearance="dark"] .theme-settings h3,
+html[data-appearance="dark"] .theme-settings p,
+html[data-appearance="dark"] .theme-settings small,
+html[data-appearance="dark"] .theme-settings b,
+html[data-appearance="dark"] .theme-settings strong,
+html[data-appearance="dark"] .theme-settings label,
+html[data-appearance="dark"] .theme-settings button,
+html[data-appearance="dark"] .theme-settings .theme-option,
+html[data-appearance="dark"] .theme-settings .theme-option-copy,
+html[data-appearance="dark"] .theme-settings .theme-option-copy b,
+html[data-appearance="dark"] .theme-settings .theme-option-copy small,
+html[data-appearance="dark"] .theme-settings .theme-toggle,
+html[data-appearance="dark"] .appearance-eyebrow,
+html[data-appearance="dark"] .appearance-intro { color: #fff !important; }
+html[data-appearance="dark"] .theme-settings .theme-option,
+html[data-appearance="dark"] .theme-settings .theme-option-icon,
+html[data-appearance="dark"] .theme-settings .theme-toggle { background: #294536 !important; border-color: #466451 !important; }
+
+/* Keep print output legible and unchanged by the dark-screen contrast pass. */
+@media print {
+  html[data-appearance="dark"] body,
+  html[data-appearance="dark"] body * { color: #000 !important; background: #fff !important; background-image: none !important; box-shadow: none !important; }
+  html[data-appearance="dark"] input::placeholder { color: #000 !important; }
+}
+
+/* Computed-colour cleanup for the remaining view-specific elements. This is
+   screen-only so the print contract can keep a black ink on white paper. */
+@media screen {
+  html[data-appearance="dark"] .garden .garden-chore-amount,
+  html[data-appearance="dark"] .garden .garden-ladder-step > span,
+  html[data-appearance="dark"] .garden .garden-how > summary,
+  html[data-appearance="dark"] .garden .garden-how > p,
+  html[data-appearance="dark"] .garden .garden-how,
+  html[data-appearance="dark"] .garden .garden-menu-note,
+  html[data-appearance="dark"] .garden .garden-menu-action { color: #fff !important; }
+  html[data-appearance="dark"] .garden .garden-menu,
+  html[data-appearance="dark"] .garden .garden-how,
+  html[data-appearance="dark"] .garden .garden-ladder-step,
+  html[data-appearance="dark"] .garden .garden-gift-hero { background: #183025 !important; border-color: #466451 !important; }
+  html[data-appearance="dark"] .garden .garden-menu-action,
+  html[data-appearance="dark"] .garden .garden-ladder-step > span { background: #294536 !important; }
+  html[data-appearance="dark"] .garden-root .modal .step-dots span,
+  html[data-appearance="dark"] .garden-root .modal button,
+  html[data-appearance="dark"] .garden-root .modal .btn,
+  html[data-appearance="dark"] .garden-root .modal .garden-pill--dark,
+  html[data-appearance="dark"] .garden-root .modal .garden-pill--dark * { color: #fff !important; }
+  html[data-appearance="dark"] .garden-root .modal button,
+  html[data-appearance="dark"] .garden-root .modal .btn,
+  html[data-appearance="dark"] .garden-root .modal .garden-pill--dark { background: #294536 !important; border-color: #466451 !important; }
+  html[data-appearance="dark"] .knowledge .knowledge-callout,
+  html[data-appearance="dark"] .knowledge .knowledge-callout * { color: #fff !important; }
+  html[data-appearance="dark"] .knowledge .knowledge-callout { background: #183025 !important; border-color: #466451 !important; }
+
+  html[data-appearance="dark"] .reference-landing .scene-shell,
+  html[data-appearance="dark"] .reference-landing .scene-chip,
+  html[data-appearance="dark"] .reference-landing .scene-callout,
+  html[data-appearance="dark"] .reference-landing .setup-window,
+  html[data-appearance="dark"] .reference-landing .setup-window-content,
+  html[data-appearance="dark"] .reference-landing .setup-float { background: #183025 !important; border-color: #466451 !important; }
+  html[data-appearance="dark"] .reference-landing .scene-chip a,
+  html[data-appearance="dark"] .reference-landing .scene-callout,
+  html[data-appearance="dark"] .reference-landing .reference-setup-step > span { background: #294536 !important; color: #fff !important; }
+  html[data-appearance="dark"] .reference-landing .scene-shell,
+  html[data-appearance="dark"] .reference-landing .scene-shell *,
+  html[data-appearance="dark"] .reference-landing .scene-chip,
+  html[data-appearance="dark"] .reference-landing .scene-chip *,
+  html[data-appearance="dark"] .reference-landing .scene-callout,
+  html[data-appearance="dark"] .reference-landing .setup-window,
+  html[data-appearance="dark"] .reference-landing .setup-window *,
+  html[data-appearance="dark"] .reference-landing .setup-float,
+  html[data-appearance="dark"] .reference-landing .setup-float * { color: #fff !important; }
+  html[data-appearance="dark"] .reference-landing .reference-footer-links span { color: #fff !important; }
+  html[data-appearance="dark"] .reference-landing .scene-chip svg,
+  html[data-appearance="dark"] .reference-landing .scene-shell svg,
+  html[data-appearance="dark"] .reference-landing .setup-window svg { color: inherit; }
+
+  html[data-appearance="dark"] .appearance-page,
+  html[data-appearance="dark"] .appearance-page h1,
+  html[data-appearance="dark"] .appearance-page h2,
+  html[data-appearance="dark"] .appearance-page h3,
+  html[data-appearance="dark"] .appearance-page p,
+  html[data-appearance="dark"] .appearance-page span,
+  html[data-appearance="dark"] .appearance-page a,
+  html[data-appearance="dark"] .appearance-page button,
+  html[data-appearance="dark"] .appearance-page label { color: #fff !important; }
+  html[data-appearance="dark"] .appearance-page { background: #10221a !important; }
+  html[data-appearance="dark"] .appearance-page .theme-settings { background: #183025 !important; border-color: #466451 !important; }
+}
+
+/* The earlier dark rules intentionally use high specificity for app surfaces;
+   match that specificity here so forced-colour print output stays black. */
+@media print {
+  html[data-appearance="dark"] body .garden-root.garden-root *,
+  html[data-appearance="dark"] body .reference-landing.reference-landing *,
+  html[data-appearance="dark"] body .knowledge.knowledge *,
+  html[data-appearance="dark"] body .test-experience.test-experience *,
+  html[data-appearance="dark"] body .theme-settings.theme-settings *,
+  html[data-appearance="dark"] body .appearance-page.appearance-page * { color: #000 !important; background: #fff !important; background-image: none !important; box-shadow: none !important; }
+}
+@media screen {
+  html[data-appearance="dark"] .theme-option:not(.theme-option--selected) .theme-option-check { visibility: hidden; }
+  html[data-appearance="dark"] .garden-period--active { box-shadow: inset 0 0 0 1px #fff; font-weight: 600; }
+}

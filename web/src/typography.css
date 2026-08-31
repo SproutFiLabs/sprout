@@ -1,0 +1,100 @@
+/* Self-hosted Satoshi from Fontshare. Georgia remains the display/value serif. */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/satoshi/Satoshi-Variable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+}
+
+:root {
+  --font-sans: 'Satoshi', Arial, Helvetica, sans-serif;
+  --garden-sans: 'Satoshi', Arial, Helvetica, sans-serif;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-sans);
+}
+
+/* Landing, gift flow, dashboard, and transaction surfaces share one quiet
+   sans voice. Existing serif selectors remain the intentional display layer. */
+.reference-landing,
+.reference-landing button,
+.reference-landing input,
+.reference-landing select,
+.reference-landing textarea,
+.garden-root,
+.garden-root button,
+.garden-root input,
+.garden-root select,
+.garden-root textarea,
+.garden-root .modal,
+.garden-root .modal * {
+  font-family: var(--font-sans);
+}
+
+.garden {
+  font-family: var(--garden-sans);
+}
+
+.reference-landing h1,
+.reference-landing h2,
+.reference-landing h3,
+.reference-landing .serif-copy,
+.reference-landing .scene-message,
+.garden h1,
+.garden h2,
+.garden h3,
+.garden h4,
+.garden-value,
+.garden-weekly-figure,
+.garden-weekly-unit,
+.garden-stats b,
+.garden-root .modal-head h2,
+.garden-root .sprout-dialog [data-slot='dialog-title'] {
+  font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
+}
+
+/* The wordmark stays uppercase in the existing markup, with Satoshi carrying
+   the stronger weight and compact tracking. */
+.reference-landing .brand,
+.reference-landing .brand > span:last-child,
+.garden-brand,
+.garden-brand > span:last-child {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+}
+
+.reference-nav-right,
+.reference-mobile-toggle,
+.resource-menu,
+.garden-nav,
+.garden-nav-link,
+.garden-menu,
+.garden-menu-note,
+.garden-menu-row,
+.garden-menu-action,
+.garden-drawer-close,
+.btn,
+.button,
+.garden-pill,
+.garden-chart,
+.garden-chart text,
+.garden-axis-label,
+.garden-tip-value,
+.garden-tip-date,
+.chart-label,
+.chart-legend,
+label,
+legend {
+  font-family: var(--font-sans);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
