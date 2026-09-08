@@ -1,0 +1,13 @@
+{
+  "name": "@sprout/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@sprout/shared": "workspace:*",
+    "viem": "^2.21.40"
+  }
+}
