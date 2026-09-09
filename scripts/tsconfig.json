@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [
+      "bun"
+    ]
+  },
+  "include": [
+    "gen-abis.ts",
+    "lib.ts",
+    "deploy-local.ts",
+    "e2e-smoke.ts",
+    "../server/src/**/*.ts"
+  ]
+}
