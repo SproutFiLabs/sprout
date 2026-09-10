@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+command -v python3 >/dev/null 2>&1 || { echo "Identity guard: python3 is required; push blocked." >&2; exit 1; }
+HOOK_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec python3 "$HOOK_DIR/identity_guard.py" push
