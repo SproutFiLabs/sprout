@@ -1,0 +1,31 @@
+{
+  "name": "sprout",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "web",
+    "scripts"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p shared/tsconfig.json --noEmit && tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit && tsc -p scripts/tsconfig.json --noEmit",
+    "test:server": "bun --cwd server test",
+    "test:web": "bun --cwd web test",
+    "test:contracts": "forge test --root contracts",
+    "gen:abis": "bun run scripts/gen-abis.ts",
+    "build:contracts": "forge build --root contracts",
+    "build:web": "bun run --cwd web build",
+    "build": "bash scripts/build.sh",
+    "smoke": "bun run scripts/e2e-smoke.ts",
+    "dev:local": "bash scripts/dev-local.sh"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.13",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "playwright": "1.63.0",
+    "typescript": "^5.6.3",
+    "@napi-rs/canvas": "1.0.9"
+  }
+}
