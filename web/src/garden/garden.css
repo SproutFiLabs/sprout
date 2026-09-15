@@ -8,7 +8,7 @@
 .garden {
   --garden-ink: #1d1d1b;
   --garden-soft: #5f5c54;
-  --garden-quiet: #8a857a;
+  --garden-quiet: #6c685f;
   --garden-line: #ece7dc;
   --garden-surface: #fffdfa;
   --garden-side: #faf8f2;
@@ -360,7 +360,7 @@
   border: 0;
   white-space: nowrap;
 }
-.garden-chip--active { background: #e5f1de; color: var(--garden-green); }
+.garden-chip--active { background: #e5f1de; color: #3e7839; } /* scoped: --garden-green is 4.43:1 on this chip, just under AA */
 .garden-chip--muted { background: #f6e6df; color: #a9502a; }
 .garden-chip--link { background: var(--garden-ink); color: #fff; cursor: pointer; }
 .garden-weekly-foot { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-top: 10px; }
@@ -889,7 +889,7 @@
 
 /* ---------------------------------------------------------- onboarding */
 .onboarding-backdrop,
-.welcome-sprout-backdrop { --garden-ink: #1d1d1b; --garden-soft: #5f5c54; --garden-quiet: #8a857a; --garden-line: #ece7dc; --garden-surface: #fffdfa; --garden-serif: Georgia, 'Times New Roman', serif; position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 24px; background: rgba(35, 29, 19, .48); }
+.welcome-sprout-backdrop { --garden-ink: #1d1d1b; --garden-soft: #5f5c54; --garden-quiet: #6c685f; --garden-line: #ece7dc; --garden-surface: #fffdfa; --garden-serif: Georgia, 'Times New Roman', serif; position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 24px; background: rgba(35, 29, 19, .48); }
 .onboarding-dialog { position: relative; width: min(900px, 100%); min-height: 540px; overflow: hidden; border: 1px solid #eadfcd; border-radius: 30px; background: #fffdfa; box-shadow: 0 30px 90px rgba(37, 30, 18, .25); }
 .onboarding-content { position: relative; z-index: 2; width: min(550px, 100%); padding: 62px 60px 42px; }
 .onboarding-dialog h2 { font-family: var(--garden-serif); font-weight: 400; font-size: 52px; line-height: 1; letter-spacing: -2px; margin: 0 0 20px; }

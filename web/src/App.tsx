@@ -1239,15 +1239,41 @@ function Modal({
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
-  // Focus the first control exactly once, when the dialog mounts.
+  // Focus the first control exactly once, when the dialog mounts, and hand focus
+  // back to whatever opened the dialog when it closes.
   useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const first = ref.current?.querySelector<HTMLElement>('input, select, textarea, button');
     first?.focus();
+    return () => opener?.focus();
   }, []);
-  // Escape always invokes the latest close handler and never moves focus.
+  // Escape always invokes the latest close handler and never moves focus. Tab
+  // cycles inside the dialog: `aria-modal` promises the rest of the page is
+  // inert, so focus must not walk out into the dashboard behind it.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current();
+      if (event.key === 'Escape') {
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !ref.current) return;
+      const nodes = [...ref.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )].filter((node) => !node.hasAttribute('disabled') && node.offsetParent !== null);
+      if (!nodes.length) return;
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      const active = document.activeElement;
+      if (!ref.current.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
