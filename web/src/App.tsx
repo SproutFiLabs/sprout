@@ -32,6 +32,7 @@ import { GrowthRing } from './components/GrowthRing';
 import { DemoBanner } from './components/DemoBanner';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
+import { BetaNotice, RiskLine } from './components/BetaNotice';
 import { GiftPage } from './GiftPage';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
 import {
@@ -868,6 +869,7 @@ export function App() {
 
   return (
     <main className="garden-root">
+      <BetaNotice />
       <DashboardShell {...shell} />
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}
@@ -875,6 +877,7 @@ export function App() {
 
       {showPlant ? (
         <Modal title="Plant a sprout" onClose={() => setShowPlant(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+          <RiskLine action="Planting a sprout" />
           <div className="step-dots" aria-label={`Step ${plantStep} of 3`}>
             {[1, 2, 3].map((i) => (
               <span key={i} className={i <= plantStep ? 'filled' : ''} aria-hidden="true" />
@@ -952,6 +955,7 @@ export function App() {
 
       {showFund && selected ? (
         <Modal title="Fund sprout" onClose={() => setShowFund(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+          <RiskLine action="Adding funds" />
           <label>
             Asset
             <select data-testid="fund-token" value={fundForm.token} onChange={(e) => setFundForm({ ...fundForm, token: e.target.value })}>

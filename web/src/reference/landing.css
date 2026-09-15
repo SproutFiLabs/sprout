@@ -184,3 +184,12 @@
     animation-range: cover 20% cover 80%;
   }
 }
+
+/* The footer already carries soft product caveats; the beta/real-money risk is
+   a harder statement and should not read as more of the same prose. */
+.reference-footer-risk {
+  margin-top: 14px; padding: 12px 14px;
+  border: 1px solid #d9c9a4; border-left-width: 3px; border-radius: 10px;
+  background: #fbf6ec; color: #4a3f28;
+}
+.reference-footer-risk strong { color: #2f2716; }

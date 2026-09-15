@@ -1064,3 +1064,47 @@
 /* Reserve the full three-link footer below the decorative sidebar branch. */
 .garden-branch { bottom: 180px; }
 @media (max-height: 940px) { .garden-branch { display: none; } }
+
+/* Beta risk disclosure. Amber rather than red: this is a standing condition of
+   the product, not an error that just happened. */
+.beta-notice {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin: 0 0 18px; padding: 14px 16px;
+  border: 1px solid #e0b978; border-radius: 14px;
+  background: #fdf5e6; color: #4a3a1c;
+  font-size: 13px; line-height: 1.5;
+}
+.beta-notice-icon { display: grid; place-items: center; flex-shrink: 0; color: #a9741a; margin-top: 1px; }
+.beta-notice-body { flex: 1; min-width: 0; }
+.beta-notice-body b { color: #3a2d13; }
+.beta-notice-more {
+  display: block; margin-top: 6px; padding: 0;
+  background: none; border: 0; cursor: pointer;
+  font: inherit; color: #8a5d10; text-decoration: underline;
+}
+.beta-notice-list { margin: 10px 0 0; padding-left: 18px; }
+.beta-notice-list li { margin-bottom: 4px; }
+.beta-notice-close {
+  flex-shrink: 0; background: none; border: 0; cursor: pointer;
+  color: #8a6a2e; padding: 2px; border-radius: 6px; line-height: 0;
+}
+.beta-notice-close:hover { background: #00000010; }
+
+.risk-line {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin: 14px 0 0; padding: 10px 12px;
+  border: 1px solid #e0b978; border-radius: 11px;
+  background: #fdf5e6; color: #4a3a1c;
+  font-size: 12px; line-height: 1.45;
+}
+.risk-line svg { flex-shrink: 0; margin-top: 2px; color: #a9741a; }
+
+html[data-appearance="dark"] .beta-notice,
+html[data-appearance="dark"] .risk-line {
+  background: #2e2513; border-color: #6b5220; color: #f0e2c4;
+}
+html[data-appearance="dark"] .beta-notice-body b { color: #fff6e4; }
+html[data-appearance="dark"] .beta-notice-more { color: #e8c27a; }
+html[data-appearance="dark"] .beta-notice-icon,
+html[data-appearance="dark"] .risk-line svg { color: #e8b75c; }
+html[data-appearance="dark"] .beta-notice-close { color: #d8bd88; }
