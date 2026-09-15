@@ -2,7 +2,7 @@
 @media(min-width:1700px){.reference-hero h1{font-size:72px}.reference-hero{max-height:none}.botanical-ribbon{height:340px}.reference-feature{gap:48px}.reference-demo{height:640px}.reference-feature h2{max-width:620px}}
 @media(max-width:1100px){.reference-feature{gap:28px}.reference-feature h2{font-size:34px;margin-bottom:48px}.reference-feature-accordion [data-slot=accordion-trigger]{font-size:13px;padding:21px 0}.reference-feature-accordion [data-slot=accordion-content]{font-size:13px}.scene{max-width:80%;width:300px}.reference-capabilities{font-size:16px;gap:18px}.reference-proof{gap:25px}.proof-number{align-items:flex-start;flex-direction:column;gap:10px}.reference-setup-grid{grid-template-columns:30% 1fr;gap:28px}.setup-window{grid-template-columns:90px 1fr}.setup-window-content{padding:35px 20px}.setup-float{width:235px}.reference-create{padding:48px 25px}.reference-create h2{font-size:34px}.family-orbs{height:160px}.family-orb{width:120px;height:120px}.family-orb.center{width:150px;height:150px}.create-form{flex-direction:column;align-items:center}.create-form input{width:100%;max-width:300px}.reference-role{padding:24px}.reference-role h3{font-size:26px}.reference-footer{gap:55px}.reference-feature-art{border-radius:26px}.reference-dock{width:535px}}
 @media(max-width:767px){.reference-landing{padding-bottom:85px}.reference-landing .wrap{padding-inline:16px}.reference-nav{height:72px}.reference-landing .brand{font-size:23px}.reference-landing .brand-mark{width:28px;height:28px}.reference-mobile-toggle{display:grid;place-items:center;width:42px;height:42px}.reference-mobile-toggle svg{width:18px}.reference-nav-right{display:none;position:absolute;top:68px;right:16px;left:16px;background:#fff;border:1px solid #e5e8df;border-radius:18px;z-index:60;padding:18px;box-shadow:0 8px 20px #2526230a;align-items:stretch;gap:18px}.reference-nav-right.mobile-open{display:flex;flex-direction:column}.reference-resources{margin:0}.reference-resources>button{display:none}.resource-menu{display:block!important;position:static;box-shadow:none;border:0;width:100%;padding:0}.resource-menu a{padding:10px 0}.reference-nav-right>.nav-signin{padding:0}.reference-nav-right>.btn{align-self:flex-start}.reference-hero{height:calc(100svh - 72px);min-height:690px;max-height:920px;grid-template-rows:minmax(350px,1.2fr) minmax(180px,.8fr) 90px}.reference-hero-copy{padding:0 16px}.reference-hero h1{font-size:44px;line-height:1;letter-spacing:-1.7px;max-width:350px;margin-bottom:26px}.reference-hero-copy>p{font-size:16px;line-height:24px;max-width:280px;margin:0 auto 25px}.reference-actions{gap:12px}.reference-hero-wave{overflow:visible}.botanical-ribbon{width:240%;left:-50%;height:240px}.botanical-ribbon video{object-position:center bottom}.reference-motion{right:15px;bottom:-1px;width:26px;height:26px}.reference-capabilities{height:90px;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-inline:22px!important;gap:38px;font-size:17px;mask-image:linear-gradient(90deg,transparent,black 6%,black 94%,transparent)}.reference-capabilities::-webkit-scrollbar{display:none}.reference-capabilities svg{width:21px;height:21px}.reference-proof{grid-template-columns:1fr 1fr;gap:30px 20px;padding-block:38px}.proof-number{flex-direction:row;align-items:center;gap:12px}.proof-number>strong{font-size:35px}.proof-number>span{font-size:11px;max-width:95px}.proof-note{grid-column:1/3}.proof-note>p{font-size:13px}.proof-signature{font-size:11px}.proof-signature small{font-size:11px}.reference-demo{height:470px;border-radius:22px;padding-bottom:44px}.demo-emblem{top:66px;width:170px;height:170px;left:calc(50% - 85px);box-shadow:0 0 0 20px #cde1b140,0 0 0 45px #cde1b121}.demo-emblem img{width:83px;height:83px;border-radius:21px}.demo-satellite{width:25px;height:25px;left:9%;top:55px}.demo-satellite.two{width:40px;height:40px;right:6%;top:162px}.demo-satellite.three{width:30px;height:30px;left:8%;top:265px}.reference-demo h2{font-size:32px;margin-bottom:12px}.reference-demo p{font-size:12px;margin-bottom:20px}.reference-demo-copy>span{font-size:12px;margin-bottom:13px}.reference-features{padding-top:64px}.reference-section-intro{margin-bottom:45px}.reference-section-intro h2{font-size:34px;line-height:1.04;letter-spacing:-1.2px;max-width:350px;margin-bottom:23px}.reference-section-intro p{font-size:14px;line-height:20px}.reference-feature{grid-template-columns:1fr;gap:28px;margin-bottom:60px}.reference-feature.reversed .reference-feature-copy,.reference-feature.reversed .reference-feature-art{order:initial}.reference-feature-tag{font-size:12px;padding:10px 15px;margin-bottom:18px}.reference-feature h2{font-size:32px;line-height:1.04;letter-spacing:-1px;margin-bottom:36px}.reference-feature-accordion [data-slot=accordion-trigger]{font-size:13px;padding:19px 0}.reference-feature-accordion [data-slot=accordion-content]{font-size:13px;line-height:20px;padding-bottom:20px;max-width:315px}.reference-feature-art{border-radius:24px;aspect-ratio:1;min-height:335px}.scene{width:285px;max-width:80%}.scene-shell{padding:19px;border-radius:15px}.scene-heading{font-size:11px;margin-bottom:15px}.scene-amount{font-size:32px}.scene-shell p{font-size:11px;margin:12px 0}.scene-days{margin:20px 0 17px}.scene-callout{font-size:11px;padding:10px 15px}.scene-ring{width:145px;height:145px}.scene-ring img{width:53px;height:53px}.reference-setup{padding-block:52px 65px}.reference-setup>h2{font-size:34px;line-height:1.05;margin-bottom:36px}.reference-setup-grid{grid-template-columns:1fr;gap:35px}.reference-setup-step{margin-bottom:19px;padding-bottom:20px}.reference-setup-step>span{font-size:34px;margin-bottom:12px}.reference-setup-step p{font-size:13px;line-height:20px}.setup-start{padding-top:15px}.setup-start small{font-size:12px}.reference-setup-art{height:400px;min-height:400px;padding:34px 22px 0;border-radius:24px}.setup-window{grid-template-columns:68px 1fr;border-radius:16px 16px 0 0;min-height:390px}.setup-window-side{padding:20px 9px;gap:21px;font-size:8px}.setup-window-side span{gap:5px}.setup-window-side svg{width:9px}.setup-window-content{padding:30px 15px}.setup-window-content>h3{font-size:15px;margin-bottom:25px}.setup-window-field{padding:12px;font-size:10px}.setup-window-balance{font-size:31px}.setup-window-label{font-size:9px}.setup-window-small{font-size:9px}.setup-float{width:190px;padding:20px;bottom:22px;right:10px;border-radius:17px}.setup-float h3{font-size:22px;margin:12px 0}.setup-float>span{font-size:8px}.setup-float p{font-size:11px}.reference-family{padding-top:50px}.reference-family-grid{grid-template-columns:1fr;gap:12px}.reference-family .reference-section-intro{margin-bottom:30px}.reference-create{padding:40px 22px;min-height:510px;border-radius:24px}.reference-create h2{font-size:32px;letter-spacing:-1px}.reference-create>p{font-size:13px}.family-orbs{margin:30px 0;height:145px}.family-orb{width:100px;height:100px}.family-orb.center{width:140px;height:140px}.family-orb>svg{width:26px;height:26px}.family-orb img{width:50px;height:50px}.reference-create>small{font-size:11px}.create-form{gap:12px;margin-top:22px}.reference-role-list{gap:12px}.reference-role{min-height:155px;padding:24px;border-radius:24px;gap:34px}.reference-role h3{font-size:27px}.reference-role p{font-size:13px}.reference-principles{padding-block:75px 45px}.reference-principles>h2{font-size:18px;margin-bottom:25px}.principle-copy{font-size:30px;line-height:1.1;letter-spacing:-1px;min-height:230px;margin-bottom:25px}.principle-author{gap:10px;font-size:12px}.principle-author small{font-size:10px}.principle-author img{width:36px;height:36px}.principle-controls{gap:8px}.principle-controls button{width:34px;height:34px}.principle-controls svg{width:18px}.reference-faq{padding-block:48px 40px}.reference-faq>h2{font-size:18px;margin-bottom:24px}.reference-faq [data-slot=accordion-trigger]{font-size:23px;line-height:1.16;letter-spacing:-.6px;padding-block:12px;align-items:flex-start;gap:14px}.faq-plus{width:32px;height:32px}.reference-faq [data-slot=accordion-content]{font-size:13px;line-height:21px;padding:8px 40px 20px 0}.reference-closing{height:375px}.reference-closing h2{font-size:27px;line-height:1.1;max-width:280px;margin:0 auto 20px}.closing-leaf{width:230px;height:110px;left:-50px;top:26px;opacity:.4}.closing-leaf.right{right:-55px;bottom:38px}.reference-footer{grid-template-columns:1fr;gap:25px;padding-block:15px 15px}.reference-footer-copy p{font-size:11px;line-height:15px}.reference-footer-links{justify-content:flex-start;gap:80px}.reference-footer-links>div{font-size:12px;gap:20px}.reference-dock{bottom:12px;max-width:calc(100% - 20px)}.reference-dock>.btn{display:none}.reference-dock input{font-size:13px}.reference-dock form{height:46px}}
-@media(prefers-reduced-motion:reduce){.reference-landing *{animation:none!important;transition:none!important}.feature-progress{display:none}}
+@media(prefers-reduced-motion:reduce){.reference-landing *,.reference-landing *::before,.reference-landing *::after{animation:none!important;transition:none!important}.feature-progress{display:none}}
 
 .reference-feature-accordion [data-slot=accordion-trigger]{font-family:Arial,Helvetica,sans-serif;letter-spacing:0}
 
@@ -121,5 +121,66 @@
        of scroll between poses and reads as static. Trimming the ends roughly
        halves that so the poses actually turn over as you scroll. */
     animation-range: cover 25% cover 75%;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Same stop-motion treatment for the three feature panels (orange, lavender,
+   green). The art lives on .reference-feature-art:before, so the animation goes
+   on the pseudo-element. Its resting transform is scale(1.04) - the keyframes
+   have to carry that through, otherwise the first pose snaps the artwork down
+   to 1.0 and the cover background pulls away from the panel edges.
+
+   The timeline is declared on .reference-feature-art itself: overflow:hidden
+   there makes it a scroll container for its children, but not for itself, so it
+   still measures against the page. Each of the three panels gets its own
+   timeline, so each animates on its own scroll position.
+--------------------------------------------------------------------------- */
+
+@keyframes sprout-stopmotion-panel {
+  0%    { transform: scale(1.04) translate3d(0, 0, 0)        rotate(0deg);    opacity: .62; }
+  14%   { transform: scale(1.08) translate3d(-14px, -9px, 0) rotate(0.5deg);  opacity: .68; }
+  28%   { transform: scale(1.06) translate3d(9px, -18px, 0)  rotate(-0.6deg); opacity: .58; }
+  42%   { transform: scale(1.11) translate3d(18px, 7px, 0)   rotate(0.8deg);  opacity: .66; }
+  57%   { transform: scale(1.05) translate3d(-8px, 16px, 0)  rotate(-0.4deg); opacity: .6; }
+  71%   { transform: scale(1.09) translate3d(-19px, -6px, 0) rotate(0.7deg);  opacity: .7; }
+  85%   { transform: scale(1.06) translate3d(6px, 12px, 0)   rotate(-0.5deg); opacity: .59; }
+  100%  { transform: scale(1.04) translate3d(0, 0, 0)        rotate(0deg);    opacity: .62; }
+}
+
+.reference-feature-art::before {
+  animation: sprout-stopmotion-panel 11s step-end infinite;
+  will-change: transform, opacity;
+}
+
+/* The green panel sits at a different size and opacity, so it keeps its own
+   lighter wash rather than inheriting the .62 baseline from the keyframes. */
+.reference-feature-art.art-green::before {
+  animation-name: sprout-stopmotion-panel-green;
+  animation-duration: 13s;
+}
+
+@keyframes sprout-stopmotion-panel-green {
+  0%    { transform: scale(1) translate3d(0, 0, 0)         rotate(0deg);    opacity: .37; }
+  14%   { transform: scale(1.05) translate3d(-12px, -8px, 0) rotate(0.5deg);  opacity: .43; }
+  28%   { transform: scale(1.03) translate3d(8px, -16px, 0)  rotate(-0.6deg); opacity: .33; }
+  42%   { transform: scale(1.07) translate3d(16px, 6px, 0)   rotate(0.7deg);  opacity: .41; }
+  57%   { transform: scale(1.02) translate3d(-7px, 14px, 0)  rotate(-0.4deg); opacity: .35; }
+  71%   { transform: scale(1.06) translate3d(-17px, -5px, 0) rotate(0.6deg);  opacity: .45; }
+  85%   { transform: scale(1.03) translate3d(5px, 11px, 0)   rotate(-0.5deg); opacity: .34; }
+  100%  { transform: scale(1) translate3d(0, 0, 0)         rotate(0deg);    opacity: .37; }
+}
+
+@supports (animation-timeline: --x) {
+  .reference-feature-art {
+    view-timeline-name: --sprout-feature-view;
+    view-timeline-axis: block;
+  }
+
+  .reference-feature-art::before {
+    animation-timeline: --sprout-feature-view;
+    animation-duration: auto;
+    animation-iteration-count: 1;
+    animation-range: cover 20% cover 80%;
   }
 }
