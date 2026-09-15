@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="web/public/brand/sprout-logo.png" width="88" alt="SproutFi" />
+</p>
+
+<p align="center">
   <img src="header.png" alt="SproutFi — A little today. A growing tomorrow." width="100%">
 </p>
 
