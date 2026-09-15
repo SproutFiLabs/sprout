@@ -20,3 +20,92 @@
 .landing-living-garden canvas { opacity: 0; }
 .landing-living-garden .garden-bouquet-fallback[hidden] { display: none; }
 .reference-hero-wave > .reference-motion { z-index: 2; }
+
+/* ---------------------------------------------------------------------------
+   Stop-motion life for the demo section's background art.
+
+   The satellites and the botanical wash used smooth ease-in-out drifts, which
+   read as "floating". Stop-motion is the opposite: a few discrete poses with
+   visible holds between them, so steps() does the work rather than the
+   keyframes. Eight steps over a slow cycle is roughly 1fps of apparent
+   movement - enough to feel hand-made, not enough to pull the eye off the copy.
+
+   Where scroll-driven timelines exist the cycle is tied to the section passing
+   through the viewport, so the art only animates while you are actually
+   scrolling past it. Everywhere else it falls back to the time-based cycle.
+   The existing prefers-reduced-motion rule already clears all of this.
+--------------------------------------------------------------------------- */
+
+/* Each keyframe is one drawn pose. step-end holds a pose for its whole segment
+   and then snaps to the next, so the count of keyframes IS the frame count -
+   eight poses that wander and return, rather than a glide. Interpolating
+   between them (any non-step timing) is what makes this read as floating. */
+@keyframes sprout-stopmotion-drift {
+  0%      { transform: translate3d(0, 0, 0)       rotate(0deg)    scale(1); }
+  12.5%   { transform: translate3d(2px, -4px, 0)  rotate(1.2deg)  scale(1.014); }
+  25%     { transform: translate3d(1px, -8px, 0)  rotate(-0.6deg) scale(1.022); }
+  37.5%   { transform: translate3d(-2px, -6px, 0) rotate(0.9deg)  scale(1.01); }
+  50%     { transform: translate3d(-3px, -9px, 0) rotate(-1.1deg) scale(1.024); }
+  62.5%   { transform: translate3d(-1px, -3px, 0) rotate(0.4deg)  scale(1.006); }
+  75%     { transform: translate3d(3px, -7px, 0)  rotate(-0.8deg) scale(1.018); }
+  87.5%   { transform: translate3d(1px, -2px, 0)  rotate(0.6deg)  scale(1.004); }
+  100%    { transform: translate3d(0, 0, 0)       rotate(0deg)    scale(1); }
+}
+
+/* The wash is a full-bleed image at 14% opacity, so it gets fewer, gentler
+   poses - big steps on something that large would read as a jolt. */
+@keyframes sprout-stopmotion-wash {
+  0%    { transform: scale(1.02)  translate3d(0, 0, 0); }
+  20%   { transform: scale(1.028) translate3d(-5px, -4px, 0); }
+  40%   { transform: scale(1.034) translate3d(-8px, -8px, 0); }
+  60%   { transform: scale(1.03)  translate3d(3px, -9px, 0); }
+  80%   { transform: scale(1.024) translate3d(6px, -5px, 0); }
+  100%  { transform: scale(1.02)  translate3d(0, 0, 0); }
+}
+
+.reference-demo .demo-satellite {
+  /* steps() is what makes it read as stop-motion instead of a float. */
+  animation: sprout-stopmotion-drift 6s step-end infinite;
+  will-change: transform;
+}
+
+.reference-demo .demo-satellite.two   { animation-duration: 7.5s; animation-delay: -2.5s; }
+.reference-demo .demo-satellite.three { animation-duration: 5.25s; animation-delay: -4s; }
+
+.reference-demo .demo-botanical {
+  animation: sprout-stopmotion-wash 14s step-end infinite;
+  transform-origin: center 70%;
+  will-change: transform;
+}
+
+.reference-demo .demo-emblem {
+  animation: sprout-stopmotion-drift 9s step-end infinite;
+  animation-delay: -1.5s;
+  will-change: transform;
+}
+
+/* Scroll-linked where supported: the poses advance as the section crosses the
+   viewport, so the movement belongs to the scroll rather than to a timer.
+
+   The timeline has to be NAMED and declared on .reference-demo rather than
+   using view() on the children. .reference-demo sets overflow:hidden, which
+   makes it a scroll container, so a child's view() resolves against that box
+   instead of the page - and since it never scrolls, the animation freezes on a
+   single pose. Declaring it on the section (which does move through the page's
+   scrollport) and referencing it from descendants avoids that. */
+@supports (animation-timeline: --x) {
+  .reference-demo {
+    view-timeline-name: --sprout-demo-view;
+    view-timeline-axis: block;
+  }
+
+  .reference-demo .demo-satellite,
+  .reference-demo .demo-botanical,
+  .reference-demo .demo-emblem {
+    animation-timeline: --sprout-demo-view;
+    animation-delay: 0s;
+    animation-duration: auto;
+    animation-iteration-count: 1;
+    animation-range: cover 0% cover 100%;
+  }
+}

@@ -36,16 +36,27 @@ export const parentAccount = privateKeyToAccount(ANVIL_KEYS[0]);
 export const beneficiaryAccount = privateKeyToAccount(ANVIL_KEYS[1]);
 export const gifterAccount = privateKeyToAccount(ANVIL_KEYS[2]);
 
+/**
+ * A forking Anvil answers the first touch of any mainnet account or storage
+ * slot by fetching it upstream, which can exceed viem's 10s default. Callers
+ * that fork (see mainnet-fork-test) raise this; local Anvil runs keep the
+ * default so a genuinely hung node still fails fast.
+ */
+export function transportFor(rpcUrl: string) {
+  const timeout = Number(process.env.SPROUT_RPC_TIMEOUT_MS ?? '');
+  return Number.isFinite(timeout) && timeout > 0 ? http(rpcUrl, { timeout }) : http(rpcUrl);
+}
+
 export function rpcClients(rpcUrl: string): { publicClient: PublicClient; walletClient: WalletClient } {
   const chain: Chain = { ...anvilChain, rpcUrls: { default: { http: [rpcUrl] } } };
-  const publicClient = createPublicClient({ chain, transport: http(rpcUrl) });
-  const walletClient = createWalletClient({ account: deployerAccount, chain, transport: http(rpcUrl) });
+  const publicClient = createPublicClient({ chain, transport: transportFor(rpcUrl) });
+  const walletClient = createWalletClient({ account: deployerAccount, chain, transport: transportFor(rpcUrl) });
   return { publicClient, walletClient };
 }
 
 export function accountClient(rpcUrl: string, account: PrivateKeyAccount): WalletClient {
   const chain: Chain = { ...anvilChain, rpcUrls: { default: { http: [rpcUrl] } } };
-  return createWalletClient({ account, chain, transport: http(rpcUrl) });
+  return createWalletClient({ account, chain, transport: transportFor(rpcUrl) });
 }
 
 export interface Artifact {
