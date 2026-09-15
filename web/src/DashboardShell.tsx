@@ -319,8 +319,8 @@ function GardenChart({
 
 export function DashboardShell(props: DashboardShellProps) {
   const {
-    health, chain, wallet, localWallet, localRole, localAccount, toolsMessage, fundTool, advanceSeconds,
-    onFundTool, onAdvanceSeconds, onConnectLocal, onLocalRole, onLocalAccount, sprouts, selectedId,
+    health, chain, wallet, connecting, localWallet, localRole, localAccount, toolsMessage, fundTool, advanceSeconds,
+    onFundTool, onAdvanceSeconds, onConnect, onConnectLocal, onLocalRole, onLocalAccount, sprouts, selectedId,
     onSelect, getNickname, selected, automation, milestones, jobs, gifts, holdings, growth, events, beneficiaryState,
     isParent, isBeneficiary, isGraduated, graduationProgress, balanceChange, chainReady, loading, txn, view, setView,
     drawerOpen, setDrawerOpen, onOpenPlant, onOpenFund, onOpenSchedule, onOpenGift, onOpenAllocation, onOpenWithdraw,
@@ -330,6 +330,10 @@ export function DashboardShell(props: DashboardShellProps) {
   } = props;
 
   const isSample = mode === 'sample';
+  // Disconnected live mode still renders the real dashboard shell: the garden
+  // layout and navigation are identical to a connected session, and only the
+  // first-run panel swaps its call to action from planting to connecting.
+  const needsWallet = !isSample && !wallet;
   const chartNow = nowMs ?? Date.now();
   const [period, setPeriod] = useState('3M');
   const [toggledChores, setToggledChores] = useState<Record<string, boolean>>({});
@@ -503,7 +507,6 @@ export function DashboardShell(props: DashboardShellProps) {
             <div className="garden-menu">
               <div className="garden-menu-row"><span>Network</span><b>{chain?.name ?? 'Not configured'}</b></div>
               {chain && !chain.configured ? <div className="garden-menu-row"><span>Status</span><b>Unconfigured</b></div> : null}
-              <a className="garden-menu-action" href="/dashboard/preview" data-testid="wallet-sample-link">View sample dashboard</a>
             </div>
           </details>
         )}
@@ -1001,12 +1004,34 @@ export function DashboardShell(props: DashboardShellProps) {
               <div className="garden-empty-hero">
                 <div className="garden-empty-copy">
                   <span className="garden-eyebrow">A fresh little beginning</span>
-                  <h1>Plant their first sprout.</h1>
-                  <p>A place for weekly investing, earned rewards and gifts from their people. Start with a name, then grow it together.</p>
+                  <h1>{needsWallet ? 'Connect to open their garden.' : 'Plant their first sprout.'}</h1>
+                  <p>{needsWallet
+                    ? 'Connect a wallet to see your sprouts, or plant the first one. Balances and permissions live on-chain; private names stay on this device.'
+                    : 'A place for weekly investing, earned rewards and gifts from their people. Start with a name, then grow it together.'}</p>
                   <div className="garden-empty-actions">
-                    {chainReady ? <button className="garden-pill garden-pill--dark" data-testid="empty-plant-open" onClick={onOpenPlant}>Plant a sprout <Plus size={15} /></button> : null}
+                    {needsWallet ? (
+                      <button className="garden-pill garden-pill--dark" data-testid="connect-injected" onClick={onConnect} disabled={connecting || !chain}>
+                        {connecting ? 'Connecting…' : 'Connect wallet'}
+                      </button>
+                    ) : chainReady ? <button className="garden-pill garden-pill--dark" data-testid="empty-plant-open" onClick={onOpenPlant}>Plant a sprout <Plus size={15} /></button> : null}
                     {onOpenOnboarding ? <button className="garden-pill" data-testid="empty-onboarding-open" onClick={onOpenOnboarding}>See how it works</button> : null}
                   </div>
+                  {needsWallet && localWallet?.enabled ? (
+                    <div className="garden-local-entry" data-testid="local-entry">
+                      <p className="garden-empty-note">Local demo mode signs with unlocked public Anvil accounts through a loopback-only proxy. No private keys reach the browser.</p>
+                      <label>Role
+                        <select data-testid="local-role" value={localRole} onChange={(e) => onLocalRole(e.target.value as 'parent')}>
+                          <option value="parent">Parent</option><option value="beneficiary">Beneficiary</option><option value="gifter">Gifter</option>
+                        </select>
+                      </label>
+                      <label>Account
+                        <select data-testid="local-account" value={localAccount} onChange={(e) => { onLocalAccount(e.target.value); }}>
+                          {localWallet.accounts.map((a) => <option key={a.address} value={a.address}>{a.label} · {short(a.address)}</option>)}
+                        </select>
+                      </label>
+                      <button className="garden-pill garden-pill--dark" data-testid="use-local-wallet" onClick={() => onConnectLocal(localAccount)}>Use local demo wallet</button>
+                    </div>
+                  ) : null}
                 </div>
                 <BloomGarden theme={view} compact />
               </div>
@@ -1023,76 +1048,12 @@ export function DashboardShell(props: DashboardShellProps) {
             <div className="garden-view-enter" key={`content-${view}-${selectedId ?? 'none'}`}>
               {view === 'overview' ? overview : detail}
             </div>
-            {!anyModalOpen && <TxnStatusLine txn={txn} explorerUrl={chain?.explorerUrl} />}
           </>
         )}
-      </section>
-    </div>
-  );
-}
-
-export interface GardenConnectProps {
-  health: Health | null;
-  chain: ChainPublic | null;
-  connecting: boolean;
-  localWallet: LocalWalletInfo | null;
-  localRole: 'parent' | 'beneficiary' | 'gifter';
-  localAccount: string;
-  onConnect: () => void;
-  onConnectLocal: (account: string) => void;
-  onLocalRole: (role: 'parent' | 'beneficiary' | 'gifter') => void;
-  onLocalAccount: (account: string) => void;
-  txn: TxnState | null;
-  onOpenHelp?: () => void;
-  onOpenOnboarding?: () => void;
-}
-
-export function GardenConnect(props: GardenConnectProps) {
-  const { health, chain, connecting, localWallet, localRole, localAccount, onConnect, onConnectLocal, onLocalRole, onLocalAccount, txn, onOpenHelp, onOpenOnboarding } = props;
-  return (
-    <div className="garden garden--connect">
-      <aside className="garden-sidebar">
-        <a className="garden-brand" href="/"><span className="garden-brand-mark"><img src="/brand/sprout-logo.png" alt="" /></span><span>SPROUT</span></a>
-        <img className="garden-branch" src="/art/dashboard/sidebar-branch.png" alt="" aria-hidden />
-        <div className="garden-side-foot">
-          {health?.localDemo ? <span className="garden-side-link garden-side-link--static">Local demo</span> : null}
-          <a className="garden-side-link" href="/dashboard/preview">Sample preview</a>
-          <button className="garden-side-link" onClick={onOpenHelp}>Help</button>
-        </div>
-      </aside>
-      <section className="garden-main">
-        <div className="garden-connect">
-          <div className="garden-connect-art">
-            <BloomGarden />
-          </div>
-          <div className="garden-connect-card">
-            <span className="garden-eyebrow">Family stock-token savings</span>
-            <h1>A little today.<br />A growing tomorrow.</h1>
-            <p>Plant a sprout for a child, fund it, schedule an investment, share a gift link, and let it graduate to them at a fixed date. Balances and permissions live on-chain; private names stay on this device.</p>
-            <button className="garden-pill garden-pill--dark" data-testid="connect-injected" onClick={onConnect} disabled={connecting || !chain}>
-              {connecting ? 'Connecting…' : 'Connect wallet'}
-            </button>
-            {localWallet?.enabled ? (
-              <div className="garden-local-entry" data-testid="local-entry">
-                <p className="garden-empty-note">Local demo mode signs with unlocked public Anvil accounts through a loopback-only proxy. No private keys reach the browser.</p>
-                <label>Role
-                  <select data-testid="local-role" value={localRole} onChange={(e) => onLocalRole(e.target.value as 'parent')}>
-                    <option value="parent">Parent</option><option value="beneficiary">Beneficiary</option><option value="gifter">Gifter</option>
-                  </select>
-                </label>
-                <label>Account
-                  <select data-testid="local-account" value={localAccount} onChange={(e) => { onLocalAccount(e.target.value); }}>
-                    {localWallet.accounts.map((a) => <option key={a.address} value={a.address}>{a.label} · {short(a.address)}</option>)}
-                  </select>
-                </label>
-                <button className="garden-pill garden-pill--dark" data-testid="use-local-wallet" onClick={() => onConnectLocal(localAccount)}>Use local demo wallet</button>
-              </div>
-            ) : null}
-            <a className="garden-connect-preview" href="/dashboard/preview">Just looking? Open the sample dashboard →</a>
-            {onOpenOnboarding ? <button className="garden-connect-tour" data-testid="onboarding-open" onClick={onOpenOnboarding}><SproutIcon size={16} />See how SPROUT works</button> : null}
-            <TxnStatusLine txn={txn} explorerUrl={chain?.explorerUrl} />
-          </div>
-        </div>
+        {/* Content-level status covers both branches, so a failed connect or a
+            write with no sprout selected is never silent. Suppressed while a
+            modal is open because the dialog renders its own status line. */}
+        {!anyModalOpen && <TxnStatusLine txn={txn} explorerUrl={chain?.explorerUrl} />}
       </section>
     </div>
   );

@@ -33,7 +33,7 @@ import { DemoBanner } from './components/DemoBanner';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { GiftPage } from './GiftPage';
-import { DashboardShell, GardenConnect, type DashboardShellProps } from './DashboardShell';
+import { DashboardShell, type DashboardShellProps } from './DashboardShell';
 import {
   ArrowRight, ArrowUpRight, Bell, Check, CheckCheck, ChevronRight, GraduationCap, LayoutGrid, Leaf,
   Pause, Play, Plus, Repeat2, Settings2, ShieldCheck, Sprout as SproutIcon, Wallet,
@@ -870,25 +870,7 @@ export function App() {
 
   return (
     <main className="garden-root">
-      {!wallet ? (
-        <GardenConnect
-          health={health}
-          chain={chain}
-          connecting={connecting}
-          localWallet={localWallet}
-          localRole={localRole}
-          localAccount={localAccount}
-          onConnect={() => void connect()}
-          onConnectLocal={(account) => void connectLocal(account)}
-          onLocalRole={(role) => void switchLocalRole(role)}
-          onLocalAccount={setLocalAccount}
-          txn={txn}
-          onOpenHelp={() => setShowHelp(true)}
-          onOpenOnboarding={() => setOnboardingOpen(true)}
-        />
-      ) : (
-        <DashboardShell {...shell} />
-      )}
+      <DashboardShell {...shell} />
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}
       <WelcomeSprout open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
@@ -1200,11 +1182,6 @@ export function App() {
             This is your live family workspace. Balances, roles and graduation live on-chain; nicknames and chore titles
             stay on this device.
           </p>
-          <div className="review-card">
-            <b>See the approved design</b>
-            <p>Open the sample dashboard to view the full garden layout without connecting a wallet.</p>
-            <a className="btn" href="/dashboard/preview" data-testid="help-sample-link">Open sample dashboard</a>
-          </div>
           <div className="review-card">
             <b>Updates</b>
             <p>Push/email notification delivery is not implemented. The activity list shows the real indexed on-chain events.</p>
