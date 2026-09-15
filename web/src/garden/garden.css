@@ -1108,3 +1108,29 @@ html[data-appearance="dark"] .beta-notice-more { color: #e8c27a; }
 html[data-appearance="dark"] .beta-notice-icon,
 html[data-appearance="dark"] .risk-line svg { color: #e8b75c; }
 html[data-appearance="dark"] .beta-notice-close { color: #d8bd88; }
+
+/* An unfunded vault. The point is to answer "where is my money" before the
+   question is asked, so this reads as a next step rather than as an error. */
+.garden-fund-prompt {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+  margin: 10px 0 18px; padding: 12px 14px;
+  border: 1px dashed var(--garden-line, #ece7dc); border-radius: 13px;
+  background: var(--garden-surface, #fffdfa);
+  font-size: 13px; line-height: 1.45; color: var(--garden-soft, #5f5c54);
+}
+.garden-fund-prompt > span { flex: 1; min-width: 220px; }
+
+.garden-empty-vault { padding: 6px 0 2px; }
+.garden-empty-vault-lead {
+  margin: 0 0 6px; font-size: 15px;
+  color: var(--garden-ink, #1d1d1b); font-family: var(--garden-serif, Georgia, serif);
+}
+.garden-empty-vault .garden-pill { margin-top: 12px; }
+
+.welcome-sprout-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; }
+.welcome-sprout-later {
+  background: none; border: 0; cursor: pointer;
+  font: inherit; font-size: 14px; color: rgba(255,255,255,.85); text-decoration: underline;
+  padding: 6px 2px;
+}
+.welcome-sprout-later:hover { color: #fff; }

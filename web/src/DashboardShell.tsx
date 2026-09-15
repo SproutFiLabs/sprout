@@ -410,6 +410,15 @@ export function DashboardShell(props: DashboardShellProps) {
     return <span className="garden-muted">Not enough verified history to show a change.</span>;
   };
 
+  /**
+   * The vault holds nothing at all. Distinct from "we could not load it": the
+   * chain answered, and the answer is zero. Without this the page renders a
+   * blank chart over four zero rows, which reads as a failure rather than as
+   * an account nobody has put money into yet.
+   */
+  const vaultIsEmpty: boolean =
+    !isSample && !!holdings?.available && holdings.holdings.every((h) => h.rawBalance === '0');
+
   /** Settlement sitting in the vault when nothing has been invested yet. */
   const fundedNotInvested: string | null = (() => {
     if (isSample || !holdings?.available) return null;
@@ -419,7 +428,20 @@ export function DashboardShell(props: DashboardShellProps) {
     return fmtTokenAmount(cash.rawBalance, cash.address);
   })();
 
-  const holdingsRows: ReactNode = !holdings?.available ? (
+  const holdingsRows: ReactNode = vaultIsEmpty ? (
+    <div className="garden-empty-vault" data-testid="empty-vault-holdings">
+      <p className="garden-empty-vault-lead">Nothing in this sprout yet.</p>
+      <p className="garden-empty-note">
+        Planting created the vault; it does not move any money. Add funds to start, and holdings
+        will appear here once there is something to hold.
+      </p>
+      {canParentAct ? (
+        <button className="garden-pill garden-pill--dark" data-testid="empty-vault-fund" onClick={onOpenFund} disabled={!chainReady}>
+          Add funds <ArrowUpRight size={15} />
+        </button>
+      ) : null}
+    </div>
+  ) : !holdings?.available ? (
     <p className="garden-empty-note">{holdings?.reason ?? 'Could not load holdings just now. Your balance is safe on-chain — this is a display problem, not a missing balance. Try again in a moment.'}</p>
   ) : (
     <table className="garden-table">
@@ -555,12 +577,25 @@ export function DashboardShell(props: DashboardShellProps) {
         </div>
       </div>
       <div className="garden-value" data-testid="portfolio-value">{samplePortfolioValue}</div>
-      <div className="garden-change">{changeText()}</div>
+      {vaultIsEmpty ? (
+        <div className="garden-fund-prompt" data-testid="empty-vault-prompt">
+          <span>This sprout has no money in it yet. Planting created the vault — adding funds is a separate step.</span>
+          {canParentAct ? (
+            <button className="garden-pill garden-pill--dark" data-testid="prompt-fund" onClick={onOpenFund} disabled={!chainReady}>
+              Add the first funds <ArrowUpRight size={15} />
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <div className="garden-change">{changeText()}</div>
+      )}
       {growth?.available ? (
         <GardenChart snapshots={growth.snapshots} period={period} feedDecimals={growth.snapshots[0]?.feedDecimals ?? 8} nowMs={chartNow} />
       ) : (
         <div className="garden-chart-empty">
-          {isSample ? 'No sample history.' : fundedNotInvested
+          {isSample ? 'No sample history.' : vaultIsEmpty
+            ? 'Nothing in this sprout yet — add funds and a value line starts from your first deposit.'
+            : fundedNotInvested
             /* A funded vault with no snapshots yet used to render as a blank
                chart under a blank change figure, which reads as "the money is
                gone" rather than "nothing has been invested yet". Say where it

@@ -873,7 +873,7 @@ export function App() {
       <DashboardShell {...shell} />
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}
-      <WelcomeSprout open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
+      <WelcomeSprout open={welcomeOpen} onClose={() => setWelcomeOpen(false)} onFund={() => { setFundForm({ token: settlementToken ?? '', amount: '100' }); setShowFund(true); }} />
 
       {showPlant ? (
         <Modal title="Plant a sprout" onClose={() => setShowPlant(false)} txn={txn} explorerUrl={chain?.explorerUrl}>

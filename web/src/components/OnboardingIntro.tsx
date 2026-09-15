@@ -88,7 +88,7 @@ export function OnboardingIntro({ open, connected, canConnect, onClose, onConnec
   );
 }
 
-export function WelcomeSprout({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function WelcomeSprout({ open, onClose, onFund }: { open: boolean; onClose: () => void; onFund?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [fading, setFading] = useState(false);
   useDialogFocus(open, onClose, ref);
@@ -106,7 +106,7 @@ export function WelcomeSprout({ open, onClose }: { open: boolean; onClose: () =>
     <div className={'welcome-sprout-backdrop' + (fading ? ' is-fading' : '')} data-testid="welcome-sprout">
       <div className="welcome-sprout" ref={ref} role="dialog" aria-modal="true" aria-labelledby="welcome-title">
         <OnboardingGarden />
-        <div className="welcome-sprout-copy"><span className="garden-eyebrow">The first little beginning</span><h2 id="welcome-title">Welcome.</h2><p>Their sprout is ready to grow.</p><button type="button" data-testid="welcome-continue" className="garden-pill garden-pill--light" onClick={dismiss}>Continue <ArrowRight size={15} /></button></div>
+        <div className="welcome-sprout-copy"><span className="garden-eyebrow">The first little beginning</span><h2 id="welcome-title">Welcome.</h2><p>Their sprout is ready to grow. It has no money in it yet — adding the first funds is the next step.</p><div className="welcome-sprout-actions">{onFund ? <button type="button" data-testid="welcome-fund" className="garden-pill garden-pill--light" onClick={() => { onFund(); dismiss(); }}>Add the first funds <ArrowRight size={15} /></button> : null}<button type="button" data-testid="welcome-continue" className="welcome-sprout-later" onClick={dismiss}>I{'\u2019'}ll do this later</button></div></div>
       </div>
     </div>
   );
