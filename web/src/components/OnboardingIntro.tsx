@@ -92,17 +92,21 @@ export function WelcomeSprout({ open, onClose }: { open: boolean; onClose: () =>
   const ref = useRef<HTMLDivElement>(null);
   const [fading, setFading] = useState(false);
   useDialogFocus(open, onClose, ref);
-  useEffect(() => {
-    if (!open) { setFading(false); return; }
-    const timer = window.setTimeout(() => setFading(true), 1200);
-    return () => window.clearTimeout(timer);
-  }, [open]);
+  useEffect(() => { if (!open) setFading(false); }, [open]);
+  // The fade is an exit, not a timer: it runs when Continue is pressed and the
+  // overlay unmounts once it has played. Reduced motion skips straight to the
+  // close, and the stylesheet already suppresses the fade animation there.
+  const dismiss = (): void => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { onClose(); return; }
+    setFading(true);
+    window.setTimeout(onClose, 300);
+  };
   if (!open) return null;
   return (
     <div className={'welcome-sprout-backdrop' + (fading ? ' is-fading' : '')} data-testid="welcome-sprout">
       <div className="welcome-sprout" ref={ref} role="dialog" aria-modal="true" aria-labelledby="welcome-title">
         <OnboardingGarden />
-        <div className="welcome-sprout-copy"><span className="garden-eyebrow">The first little beginning</span><h2 id="welcome-title">Welcome.</h2><p>Their sprout is ready to grow.</p><button type="button" data-testid="welcome-continue" className="garden-pill garden-pill--light" onClick={onClose}>Continue <ArrowRight size={15} /></button></div>
+        <div className="welcome-sprout-copy"><span className="garden-eyebrow">The first little beginning</span><h2 id="welcome-title">Welcome.</h2><p>Their sprout is ready to grow.</p><button type="button" data-testid="welcome-continue" className="garden-pill garden-pill--light" onClick={dismiss}>Continue <ArrowRight size={15} /></button></div>
       </div>
     </div>
   );

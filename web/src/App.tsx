@@ -192,12 +192,10 @@ export function App() {
     }
   }, [pendingNew, wallet]);
 
-  useEffect(() => {
-    if (!welcomeOpen) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const timer = window.setTimeout(() => setWelcomeOpen(false), reduced ? 220 : 1500);
-    return () => window.clearTimeout(timer);
-  }, [welcomeOpen]);
+  // The welcome moment is dismissed by its own Continue button. It used to also
+  // self-close after 1.5s, which landed on top of the overlay's own 1.2s fade:
+  // the screen was readable for about a second and the button was mostly
+  // decorative.
 
   const decimalsFor = useCallback(
     (asset: string): number => {
