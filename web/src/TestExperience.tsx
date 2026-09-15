@@ -18,11 +18,8 @@ export function TestExperience() {
   const [name, setName] = useState('Emma');
   const [draftName, setDraftName] = useState('Emma');
 
-  useEffect(() => {
-    if (!welcomeOpen) return;
-    const timer = window.setTimeout(() => setWelcomeOpen(false), 1500);
-    return () => window.clearTimeout(timer);
-  }, [welcomeOpen]);
+  // Same as the live flow: the welcome moment waits for its Continue button
+  // rather than self-closing, so this walkthrough matches what users see.
 
   const startSetup = () => {
     setIntroOpen(false);

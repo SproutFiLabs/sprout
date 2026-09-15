@@ -410,8 +410,17 @@ export function DashboardShell(props: DashboardShellProps) {
     return <span className="garden-muted">Not enough verified history to show a change.</span>;
   };
 
+  /** Settlement sitting in the vault when nothing has been invested yet. */
+  const fundedNotInvested: string | null = (() => {
+    if (isSample || !holdings?.available) return null;
+    const cash = holdings.holdings.find((h) => h.kind === 'settlement');
+    const stock = holdings.holdings.some((h) => h.kind === 'stock' && h.rawBalance !== '0');
+    if (!cash || cash.rawBalance === '0' || stock) return null;
+    return fmtTokenAmount(cash.rawBalance, cash.address);
+  })();
+
   const holdingsRows: ReactNode = !holdings?.available ? (
-    <p className="garden-empty-note">{holdings?.reason ?? 'Holdings unavailable — no live valuation feed. No values are guessed.'}</p>
+    <p className="garden-empty-note">{holdings?.reason ?? 'Could not load holdings just now. Your balance is safe on-chain — this is a display problem, not a missing balance. Try again in a moment.'}</p>
   ) : (
     <table className="garden-table">
       <thead>
@@ -551,7 +560,13 @@ export function DashboardShell(props: DashboardShellProps) {
         <GardenChart snapshots={growth.snapshots} period={period} feedDecimals={growth.snapshots[0]?.feedDecimals ?? 8} nowMs={chartNow} />
       ) : (
         <div className="garden-chart-empty">
-          {isSample ? 'No sample history.' : 'No verified valuation snapshots yet. Live returns are only shown when a real feed provides them.'}
+          {isSample ? 'No sample history.' : fundedNotInvested
+            /* A funded vault with no snapshots yet used to render as a blank
+               chart under a blank change figure, which reads as "the money is
+               gone" rather than "nothing has been invested yet". Say where it
+               actually is. */
+            ? `Funded and waiting. ${fundedNotInvested} is in the vault, ready for the first investment — a return line appears once one has run.`
+            : 'No verified valuation snapshots yet. Live returns are only shown when a real feed provides them.'}
         </div>
       )}
     </div>
@@ -656,7 +671,7 @@ export function DashboardShell(props: DashboardShellProps) {
         <button className="garden-see-all" onClick={onOpenNotifications}>See all</button>
       </div>
       {activityRows.length === 0 ? (
-        <p className="garden-empty-note">No indexed activity yet. Fund or plant to see real events here.</p>
+        <p className="garden-empty-note">No activity indexed yet. On-chain history is still being read in — a sprout you just created can take a while to appear here. Nothing is lost; this list trails the chain.</p>
       ) : (
         activityRows.map((a, i) => (
           <div className="garden-activity-row" key={`${a.title}-${i}`}>
