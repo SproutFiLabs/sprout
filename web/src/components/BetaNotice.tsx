@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 /**
  * Risk disclosure for a beta product that moves real money.
@@ -14,8 +14,6 @@ import { AlertTriangle, X } from 'lucide-react';
  * should be written or reviewed by a lawyer.
  */
 
-const DISMISSED_KEY = 'sprout-beta-notice-dismissed';
-
 export const BETA_POINTS: string[] = [
   'The contracts have not been audited.',
   'Transactions settle on Robinhood Chain mainnet with real funds and cannot be reversed.',
@@ -26,31 +24,14 @@ export const BETA_POINTS: string[] = [
   'Nothing here is financial advice.',
 ];
 
-/** The full-width banner that sits above the dashboard. */
-export function BetaNotice(): JSX.Element | null {
-  const [dismissed, setDismissed] = useState(true);
+/**
+ * The full-width banner that sits above the dashboard. It cannot be dismissed:
+ * "automatic investing is switched off" is the kind of thing someone closes on
+ * day one and has forgotten by week three, and being wrong about it costs real
+ * money. Only the detail list collapses.
+ */
+export function BetaNotice(): JSX.Element {
   const [open, setOpen] = useState(false);
-
-  // Read the flag after mount so the server-rendered markup and the first
-  // client paint agree, then show the banner only if it has not been dismissed.
-  useEffect(() => {
-    try {
-      setDismissed(window.localStorage.getItem(DISMISSED_KEY) === '1');
-    } catch {
-      setDismissed(false);
-    }
-  }, []);
-
-  if (dismissed) return null;
-
-  const dismiss = (): void => {
-    try {
-      window.localStorage.setItem(DISMISSED_KEY, '1');
-    } catch {
-      /* private mode - the banner simply returns next visit */
-    }
-    setDismissed(true);
-  };
 
   return (
     <div className="beta-notice" role="region" aria-label="Beta risk notice">
@@ -70,9 +51,6 @@ export function BetaNotice(): JSX.Element | null {
           </ul>
         ) : null}
       </div>
-      <button type="button" className="beta-notice-close" onClick={dismiss} aria-label="Dismiss beta notice">
-        <X size={16} />
-      </button>
     </div>
   );
 }
