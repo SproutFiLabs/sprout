@@ -14,7 +14,8 @@ function readPreference(): Appearance {
   if (typeof window === 'undefined') return 'system';
   try {
     const value = window.localStorage.getItem(STORAGE_KEY);
-    return value === 'light' || value === 'dark' || value === 'system' ? value : 'system';
+    // Light is the brand default; System stays available as an explicit choice.
+    return value === 'light' || value === 'dark' || value === 'system' ? value : 'light';
   } catch {
     return 'system';
   }
