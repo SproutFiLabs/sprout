@@ -96,8 +96,13 @@ export function createChainContext(config: ServerConfig): ChainContext {
   // rank:false keeps the declared order, so the endpoint chosen for its
   // capabilities stays primary instead of being reordered by latency.
   const endpoints = [chain.rpcUrl, ...(chain.rpcFallbackUrls ?? [])].filter(Boolean) as string[];
+  // retryCount 0 inside a fallback list: retrying a rate-limited endpoint two
+  // more times before moving on multiplies the wait by every endpoint, and the
+  // holdings read makes ~9 chain calls. Failing over immediately is the whole
+  // point of having a list. A single endpoint still retries, since there is
+  // nowhere else to go.
   const transport = endpoints.length > 1
-    ? fallback(endpoints.map((url) => http(url, { retryCount: 2 })), { rank: false })
+    ? fallback(endpoints.map((url) => http(url, { retryCount: 0, timeout: 8_000 })), { rank: false })
     : http(chain.rpcUrl, { retryCount: 2 });
   const publicClient = createPublicClient({ chain: viemChain, transport, cacheTime: 0 });
 
