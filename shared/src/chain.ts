@@ -36,6 +36,8 @@ export interface ChainConfig {
   chainId: number;
   name: string;
   rpcUrl?: string;
+  /** Extra endpoints tried, in order, when the primary one fails. */
+  rpcFallbackUrls?: string[];
   explorerUrl?: string;
   isLocal: boolean;
   localDemo: boolean;
@@ -80,6 +82,15 @@ export function loadChainConfig(env: EnvLike): ChainConfig {
   const known = KNOWN_CHAINS[chainId];
   const isLocal = chainId === ANVIL_CHAIN_ID;
   const rpcUrl = env.SPROUT_RPC_URL;
+  // Comma-separated. Providers differ in what they are good at: the public node
+  // serves wide eth_getLogs ranges but prunes state, while Alchemy's free tier
+  // keeps archive state but caps eth_getLogs at ten blocks. Listing more than
+  // one means a rate limit or an unsupported request on the first endpoint does
+  // not take the whole service down with it.
+  const rpcFallbackUrls = (env.SPROUT_RPC_FALLBACK_URLS ?? '')
+    .split(',')
+    .map((url) => url.trim())
+    .filter(Boolean);
   const factory = env.SPROUT_FACTORY_ADDRESS;
   const settlementToken = env.SPROUT_SETTLEMENT_TOKEN;
   const venue = env.SPROUT_VENUE_ADDRESS;
@@ -98,6 +109,7 @@ export function loadChainConfig(env: EnvLike): ChainConfig {
     chainId,
     name: known?.name ?? `Unknown chain ${chainId}`,
     rpcUrl,
+    rpcFallbackUrls,
     explorerUrl: known?.explorerUrl,
     isLocal,
     localDemo: env.SPROUT_LOCAL_DEMO === '1',

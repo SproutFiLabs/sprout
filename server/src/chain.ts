@@ -1,5 +1,6 @@
 import {
   createPublicClient,
+  fallback,
   createWalletClient,
   decodeEventLog,
   erc20Abi,
@@ -91,7 +92,14 @@ export function createChainContext(config: ServerConfig): ChainContext {
   }
 
   const viemChain = toViemChain(chain.chainId, chain.name, chain.rpcUrl);
-  const publicClient = createPublicClient({ chain: viemChain, transport: http(chain.rpcUrl), cacheTime: 0 });
+  // Try the primary endpoint first and fall through to any configured backups.
+  // rank:false keeps the declared order, so the endpoint chosen for its
+  // capabilities stays primary instead of being reordered by latency.
+  const endpoints = [chain.rpcUrl, ...(chain.rpcFallbackUrls ?? [])].filter(Boolean) as string[];
+  const transport = endpoints.length > 1
+    ? fallback(endpoints.map((url) => http(url, { retryCount: 2 })), { rank: false })
+    : http(chain.rpcUrl, { retryCount: 2 });
+  const publicClient = createPublicClient({ chain: viemChain, transport, cacheTime: 0 });
 
   let walletClient: WalletClient | null = null;
   let walletAddress: Address | null = null;
