@@ -127,6 +127,16 @@ export interface Growth {
     source: string;
     note?: string | null;
   }>;
+  /**
+   * Net money put in over time (deposits and gifts, less claims and
+   * withdrawals) as a cumulative step series: block time in unix seconds, and
+   * 8-decimal USD. Optional because older servers do not send it.
+   */
+  contributions?: Array<{ at: number; netUsd: string }>;
+  /** Lifetime money in, out and net, 8-decimal USD; null when unknown. */
+  totals?: { inUsd: string; outUsd: string; netUsd: string } | null;
+  /** Set when some of the money in or out could not be valued or read. */
+  note?: string;
 }
 
 export interface BeneficiaryState {

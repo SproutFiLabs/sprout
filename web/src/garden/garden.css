@@ -321,6 +321,22 @@
 .garden-portfolio { display: flex; flex-direction: column; }
 .garden-chart { flex: 1 1 auto; min-height: 170px; margin-top: 8px; }
 .garden-chart svg { display: block; width: 100%; height: 100%; }
+/* What you put in vs. what it's worth: the summary under the value, the chart
+   legend, and the quieter dashed "put in" step line. */
+.garden-put-in { color: var(--garden-ink); column-gap: 10px; row-gap: 2px; }
+.garden-put-in-figures { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+.garden-put-in-sep { color: var(--garden-quiet); }
+.garden-down { color: #a3392b; }
+.garden-chart-legend { display: flex; justify-content: flex-end; gap: 14px; margin-top: 6px; font-size: 12px; line-height: 1.2; color: var(--garden-soft); }
+.garden-chart-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.garden-legend-swatch { display: inline-block; width: 18px; height: 0; }
+.garden-legend-swatch--worth { border-top: 2.5px solid #5b9455; }
+.garden-legend-swatch--put-in { border-top: 2px dashed #8a8475; }
+.garden-chart-legend + .garden-chart { margin-top: 0; }
+.garden-chart-put-in path { stroke: #8a8475; stroke-width: 1.6; stroke-dasharray: 5 4; stroke-linejoin: round; }
+html[data-appearance="dark"] .garden-chart-put-in path,
+html[data-appearance="dark"] .garden-legend-swatch--put-in { stroke: #dccfb4; border-top-color: #dccfb4; }
+html[data-appearance="dark"] .garden-legend-swatch--worth { border-top-color: #a9cf91; }
 .garden-axis-label { font-size: 12px; fill: var(--garden-quiet); font-family: Arial, Helvetica, sans-serif; }
 .garden-tip-value { font-size: 13px; fill: #171715; font-family: Arial, Helvetica, sans-serif; }
 .garden-tip-date { fill: var(--garden-quiet); font-family: Arial, Helvetica, sans-serif; }

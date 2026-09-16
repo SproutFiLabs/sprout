@@ -16,6 +16,7 @@ import { TxnStatusLine, type TxnState } from './components/TxnStatus';
 import { getMilestoneTitle } from './localStore';
 import { formatRunDateTime } from './dates';
 import { cadenceLabel, choreRewardText, holdingSharesText } from './garden/format';
+import { growthSummary, putInSteps } from './garden/growthSummary';
 import { ThemeToggle } from './theme/ThemeSettings';
 import { ResourcesMenu } from './components/ResourcesMenu';
 import { BloomGarden } from './garden/BloomGarden';
@@ -190,11 +191,14 @@ function AssetGlyph({ symbol }: { symbol: string }) {
 
 function GardenChart({
   snapshots,
+  contributions,
   period,
   feedDecimals,
   nowMs,
 }: {
   snapshots: Growth['snapshots'];
+  /** Net money put in over time; the chart draws it as a quieter step line when present. */
+  contributions?: Growth['contributions'];
   period: string;
   feedDecimals: number;
   nowMs: number;
@@ -231,11 +235,23 @@ function GardenChart({
   }
   const values = windowed.map((s) => Number(s.valueUsd) / 10 ** s.feedDecimals);
   const times = windowed.map((s) => s.takenAt * 1000);
-  const rawMin = Math.min(...values);
-  const rawMax = Math.max(...values);
+  // "Put in" is drawn over the same span as the recorded values: the amount
+  // already in carries in from the left, and steps after the last recorded
+  // value wait for the next one (the summary above already counts them).
+  const putIn = contributions && contributions.length > 0
+    ? putInSteps(contributions, windowed[0]!.takenAt, windowed[windowed.length - 1]!.takenAt)
+    : [];
+  const putInValues = putIn.map((p) => p.v);
+  const rawMin = Math.min(...values, ...putInValues);
+  const rawMax = Math.max(...values, ...putInValues);
   const step = 500;
-  const min = Math.floor(rawMin / step) * step - step;
-  const max = (Math.ceil(rawMax / step) * step + step) || min + step * 2;
+  // Padding below the lowest point never invents a negative axis.
+  const floored = Math.floor(rawMin / step) * step - step;
+  const min = rawMin >= 0 ? Math.max(0, floored) : floored;
+  // The four ticks land on round amounts only when the span is whole multiples
+  // of three steps, so round the top up to the next one.
+  const top = Math.ceil(rawMax / step) * step + step;
+  const max = min + Math.max(1, Math.ceil((top - min) / (3 * step))) * 3 * step;
   const span = max - min || 1;
   const tMin = Math.min(...times);
   const tSpan = Math.max(...times) - tMin || 1;
@@ -258,6 +274,9 @@ function GardenChart({
     .map((s, i) => `${i === 0 ? 'M' : 'L'} ${xFor(times[i]!).toFixed(1)} ${yFor(values[i]!).toFixed(1)}`)
     .join(' ');
   const area = `${line} L ${xFor(times[times.length - 1]!).toFixed(1)} ${(padT + plotH).toFixed(1)} L ${xFor(times[0]!).toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
+  const putInLine = putIn
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${xFor(p.t * 1000).toFixed(1)} ${yFor(p.v).toFixed(1)}`)
+    .join(' ');
 
   const yTicks = Array.from({ length: 4 }, (_, i) => min + (span * i) / 3);
   const xTickCount = compact ? 4 : 6;
@@ -270,9 +289,14 @@ function GardenChart({
   const tipY = Math.max(padT, lastY - 58);
   const plotBottom = padT + plotH;
 
-  return (
+  const hasPutIn = putIn.length > 0;
+  const chartLabel = hasPutIn
+    ? 'Recorded portfolio value and the money put in, plotted at real timestamps'
+    : 'Recorded portfolio value plotted at real timestamps';
+
+  const chart = (
     <div className="garden-chart" ref={ref}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ height: H }} role="img" aria-label="Recorded portfolio value plotted at real timestamps" preserveAspectRatio="xMidYMid meet">
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ height: H }} role="img" aria-label={chartLabel} preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="garden-area" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#4f8b4a" stopOpacity="0.22" />
@@ -288,7 +312,12 @@ function GardenChart({
           </g>
         ))}
         <path d={area} fill="url(#garden-area)" />
-        <path d={line} fill="none" stroke="#5b9455" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
+        {hasPutIn ? (
+          <g className="garden-chart-put-in">
+            <path d={putInLine} fill="none" data-testid="chart-put-in" />
+          </g>
+        ) : null}
+        <path d={line} fill="none" stroke="#5b9455" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" data-testid="chart-worth" />
         {xTicks.map((t, i) => (
           <text
             key={t}
@@ -315,6 +344,19 @@ function GardenChart({
         </g>
       </svg>
     </div>
+  );
+  // The legend sits outside the measured box so the plot keeps its full
+  // height, and in a fixed slot so the chart is not remounted when it appears.
+  return (
+    <>
+      {hasPutIn ? (
+        <div className="garden-chart-legend" data-testid="chart-legend">
+          <span><i className="garden-legend-swatch garden-legend-swatch--worth" aria-hidden />Worth</span>
+          <span><i className="garden-legend-swatch garden-legend-swatch--put-in" aria-hidden />Put in</span>
+        </div>
+      ) : null}
+      {chart}
+    </>
   );
 }
 
@@ -410,6 +452,45 @@ export function DashboardShell(props: DashboardShellProps) {
     if (balanceChange) return <>{balanceChange.delta}{balanceChange.pct === null ? '' : ` (${balanceChange.pct.toFixed(2)}%)`} <span className="garden-muted">balance change incl. deposits/withdrawals</span></>;
     return <span className="garden-muted">Not enough verified history to show a change.</span>;
   };
+
+  /**
+   * What was put in beside what it is worth. Growth is the value shown above
+   * minus the net money put in, so deposits never count as growth. When the
+   * server sends these totals they replace the first-to-last balance change,
+   * which mixed deposits into the same figure.
+   */
+  const putInFigures = growth?.totals && holdings?.available && holdings.totalValueUsd !== null
+    ? growthSummary({
+        totals: growth.totals,
+        worthUsd: holdings.totalValueUsd,
+        worthDecimals: holdings.feedDecimals,
+        incomplete: Boolean(growth.note),
+      })
+    : null;
+  const putInSummary: ReactNode = putInFigures ? (
+    <div className="garden-change garden-put-in" data-testid="growth-summary">
+      <span className="garden-put-in-figures">
+        <span>Put in <b data-testid="growth-put-in">{putInFigures.putIn}</b></span>
+        {putInFigures.growth ? (
+          <>
+            <span className="garden-put-in-sep" aria-hidden>·</span>
+            <span
+              className={putInFigures.tone === 'up' ? 'garden-up' : putInFigures.tone === 'down' ? 'garden-down' : undefined}
+              data-testid="growth-amount"
+            >
+              Growth {putInFigures.growth}{putInFigures.percent ? ` (${putInFigures.percent})` : ''}
+            </span>
+          </>
+        ) : null}
+      </span>
+      <span
+        className="garden-muted"
+        title="Growth is today's value minus the money put in (deposits and gifts, less claims and withdrawals). It moves with the market and can go down."
+      >
+        {growth?.note ?? 'Growth is market moves only, not a promise.'}
+      </span>
+    </div>
+  ) : null;
 
   /**
    * The vault holds nothing at all. Distinct from "we could not load it": the
@@ -595,10 +676,10 @@ export function DashboardShell(props: DashboardShellProps) {
           ) : null}
         </div>
       ) : (
-        <div className="garden-change">{changeText()}</div>
+        putInSummary ?? <div className="garden-change">{changeText()}</div>
       )}
       {growth?.available ? (
-        <GardenChart snapshots={growth.snapshots} period={period} feedDecimals={growth.snapshots[0]?.feedDecimals ?? 8} nowMs={chartNow} />
+        <GardenChart snapshots={growth.snapshots} contributions={growth.contributions} period={period} feedDecimals={growth.snapshots[0]?.feedDecimals ?? 8} nowMs={chartNow} />
       ) : (
         <div className="garden-chart-empty">
           {isSample ? 'No sample history.' : vaultIsEmpty

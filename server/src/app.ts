@@ -18,6 +18,7 @@ import {
   isGraduated,
   verifySproutCreated,
 } from './chain';
+import { contributionHistory, type ContributionHistory } from './contributions';
 import { AuthError, authenticate, issueNonce } from './auth';
 import { reconcile, snapshotAll } from './indexer';
 import { automationCapability, runDueJobs } from './jobs';
@@ -533,14 +534,28 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
 
   // ---- growth / jobs / events --------------------------------------------
 
-  app.get('/api/sprouts/:id/growth', (c) => {
+  app.get('/api/sprouts/:id/growth', async (c) => {
     const sprout = getSprout(deps.db, c.req.param('id'));
     if (!sprout) throw new HttpError(404, 'sprout not found');
     const snapshots = listSnapshots(deps.db, sprout.id);
-    if (snapshots.length === 0) {
-      return c.json({ available: false, reason: 'no verified growth history for this sprout yet', snapshots: [] });
+    // What was put in, beside what it is worth (see contributionHistory). A
+    // failed block-time read only drops this part; the recorded values are
+    // still served unchanged.
+    let history: ContributionHistory;
+    try {
+      history = await contributionHistory(deps.chain, {
+        events: listChainEvents(deps.db, sprout.id),
+        snapshots,
+        settlementToken: sprout.settlementToken,
+      });
+    } catch (error) {
+      logger.warn('contribution history unavailable', error instanceof Error ? error.message : error);
+      history = { contributions: [], totals: null, note: 'What was put in cannot be shown right now. Try again shortly.' };
     }
-    return c.json({ available: true, snapshots });
+    if (snapshots.length === 0) {
+      return c.json({ available: false, reason: 'no verified growth history for this sprout yet', snapshots: [], ...history });
+    }
+    return c.json({ available: true, snapshots, ...history });
   });
 
   app.get('/api/sprouts/:id/holdings', async (c) => {

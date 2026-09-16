@@ -21,6 +21,34 @@ export const SAMPLE_FIRST = 2140.37;
 export const SAMPLE_LAST = 2480.65;
 export const SAMPLE_CHANGE = 340.28;
 
+/**
+ * Sample money put in: a first deposit on the day the sprout was planted, $25
+ * every week after it, and two family gifts (the ones in the activity list).
+ * It ends below SAMPLE_LAST, so the preview shows some growth.
+ */
+export const SAMPLE_FIRST_DEPOSIT = 1900;
+export const SAMPLE_WEEKLY = 25;
+export const SAMPLE_GIFTS: ReadonlyArray<readonly [at: number, dollars: number]> = [
+  [Date.UTC(2024, 6, 1, 18) / 1000, 50], // Happy Birthday, Jul 1
+  [Date.UTC(2024, 6, 12, 16) / 1000, 100], // Grandma Sue, Jul 12
+];
+
+function buildContributions(): Pick<Growth, 'contributions' | 'totals'> {
+  const week = 7 * 86400;
+  const planted = Date.UTC(2024, 3, 1, 15) / 1000; // Mon Apr 1 2024
+  const moves: Array<readonly [number, number]> = [[planted, SAMPLE_FIRST_DEPOSIT], ...SAMPLE_GIFTS];
+  // Weekly on Mondays through Jul 8; the Jul 15 run is still ahead of SAMPLE_NOW.
+  for (let n = 1; n <= 14; n += 1) moves.push([planted + n * week, SAMPLE_WEEKLY]);
+  moves.sort((a, b) => a[0] - b[0]);
+  let cents = 0;
+  const contributions = moves.map(([at, dollars]) => {
+    cents += Math.round(dollars * 100);
+    return { at, netUsd: String(cents * 1e6) };
+  });
+  const net = String(cents * 1e6);
+  return { contributions, totals: { inUsd: net, outUsd: '0', netUsd: net } };
+}
+
 export function buildGrowth(): Growth {
   const start = Date.UTC(2024, 4, 1) / 1000; // May 1 2024
   const days = 75; // May 1 -> Jul 15
@@ -39,7 +67,7 @@ export function buildGrowth(): Growth {
       source: 'sample',
     });
   }
-  return { available: true, snapshots };
+  return { available: true, snapshots, ...buildContributions() };
 }
 
 export const HOLDINGS: Holdings = {
