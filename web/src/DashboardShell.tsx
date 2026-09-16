@@ -11,6 +11,7 @@ import type {
   Holdings, Job, LocalWalletInfo, Milestone, Sprout,
 } from './api';
 import type { WalletState } from './wallet';
+import { PublicCa } from './components/PublicCa';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
 import { getMilestoneTitle } from './localStore';
 import { formatRunDateTime } from './dates';
@@ -521,6 +522,7 @@ export function DashboardShell(props: DashboardShellProps) {
         </div>
       </div>
       <div className="garden-toprow-right">
+        {isSample ? null : <PublicCa variant="dashboard" />}
         <ThemeToggle />
         {isSample ? (
           <details className="garden-sample" data-testid="sample-menu">

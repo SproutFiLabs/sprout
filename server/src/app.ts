@@ -171,6 +171,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     // may carry provider API keys. Only an explicitly public wallet RPC is exposed.
     const { rpcUrl: _rpcUrl, rpcFallbackUrls: _rpcFallbackUrls, ...publicChain } = chain;
     return c.json({
+      // A token contract address for visitors to copy; null hides it.
+      publicCa: deps.chain.config.publicCa ?? null,
       chain: {
         ...publicChain,
         walletRpcUrl: deps.chain.config.publicWalletRpcUrl,

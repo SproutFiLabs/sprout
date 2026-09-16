@@ -27,6 +27,8 @@ export interface ServerConfig {
   publicWalletRpcUrl?: string;
   /** Decimals of the settlement token, if known without a chain read. */
   settlementDecimals?: number;
+  /** A token contract address visitors can copy from the site; hidden when unset. */
+  publicCa?: string;
   /** Keeper gas policy. All of maxFeePerGas, gasLimitCap and dailyFeeBudget are
    *  required before automation may send a transaction. */
   keeperMaxFeePerGasWei?: bigint;
@@ -66,6 +68,9 @@ function isPrivateKey(value: string | undefined): value is `0x${string}` {
   return typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value);
 }
 
+/** An EVM address (0x + 40 hex) or a base58 token address (Solana style). */
+export const PUBLIC_CA_PATTERN = /^(0x[0-9a-fA-F]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})$/;
+
 export function loadServerConfig(env: EnvLike = process.env): ServerConfig {
   const chain = loadChainConfig(env);
   assertRuntimeChainGuard(chain, env);
@@ -95,6 +100,13 @@ export function loadServerConfig(env: EnvLike = process.env): ServerConfig {
     throw new Error('SPROUT_MAX_LOG_RANGE must be an integer between 1 and 100000');
   }
 
+  // Something that isn't address-shaped fails the deploy, so the live site
+  // keeps running the previous version instead of showing it.
+  const publicCa = env.SPROUT_PUBLIC_CA?.trim() || undefined;
+  if (publicCa && !PUBLIC_CA_PATTERN.test(publicCa)) {
+    throw new Error('SPROUT_PUBLIC_CA must be a 0x contract address or a base58 token address');
+  }
+
   // An empty value (as in .env.example) means the default, not zero.
   const snapshotIntervalSeconds = Number(env.SPROUT_SNAPSHOT_INTERVAL_SECONDS?.trim() || DEFAULT_SNAPSHOT_INTERVAL_SECONDS);
   if (!Number.isInteger(snapshotIntervalSeconds) || snapshotIntervalSeconds < 0 || snapshotIntervalSeconds > 86_400) {
@@ -120,6 +132,7 @@ export function loadServerConfig(env: EnvLike = process.env): ServerConfig {
     snapshotIntervalSeconds,
     publicWalletRpcUrl: env.SPROUT_PUBLIC_WALLET_RPC_URL,
     settlementDecimals: env.SPROUT_SETTLEMENT_DECIMALS ? Number(env.SPROUT_SETTLEMENT_DECIMALS) : undefined,
+    publicCa,
     keeperMaxFeePerGasWei: parseWei(env.SPROUT_KEEPER_MAX_FEE_PER_GAS_WEI),
     keeperMaxPriorityFeePerGasWei: parseWei(env.SPROUT_KEEPER_MAX_PRIORITY_FEE_PER_GAS_WEI),
     keeperGasLimitCap: parseWei(env.SPROUT_KEEPER_GAS_LIMIT_CAP),

@@ -1,0 +1,93 @@
+/* Token contract address with a copy button (components/PublicCa.tsx). The
+   landing variant takes the landing page's tokens, the dashboard variant the
+   garden's, so both follow light and dark mode with their surroundings. */
+.public-ca {
+  --ca-ink: #252623;
+  --ca-ground: #fff;
+  --ca-line: #e7e8e1;
+  --ca-quiet: #73766e;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0 14px 0 5px;
+  border: 1px solid var(--ca-line);
+  border-radius: 999px;
+  background: var(--ca-ground);
+  color: var(--ca-ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.public-ca:hover { filter: brightness(0.97); }
+.public-ca:focus-visible { outline: 2px solid #27854e; outline-offset: 3px; }
+.public-ca-label {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--ca-ink);
+  color: var(--ca-ground);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.public-ca-full,
+.public-ca-short {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.public-ca-short { display: none; }
+.public-ca-action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ca-quiet);
+  font-size: 12px;
+}
+
+/* The hero rows have fixed heights, so the address hangs just under the
+   buttons, over the empty top of the garden art, instead of making the hero
+   copy taller (which clipped the headline on laptop-height screens). */
+.reference-hero-copy:has(> .public-ca) { position: relative; }
+.public-ca--landing {
+  --ca-ink: var(--ink, #252623);
+  --ca-ground: var(--surface, #f3f2ed);
+  --ca-line: var(--line, #eceee7);
+  --ca-quiet: var(--quiet, #73766e);
+  position: absolute;
+  top: calc(100% + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  height: 36px;
+}
+.public-ca--landing:hover { filter: none; background: var(--paper, #fff); }
+
+.public-ca--dashboard {
+  --ca-ink: var(--garden-ink, #1d1d1b);
+  --ca-ground: var(--garden-surface, #fffdfa);
+  --ca-line: var(--garden-line, #ece7dc);
+  --ca-quiet: var(--garden-soft, #5f5c54);
+  height: 50px;
+  padding-left: 8px;
+}
+.public-ca--dashboard .public-ca-full { display: none; }
+.public-ca--dashboard .public-ca-short { display: inline; }
+
+@media (max-width: 640px) {
+  .public-ca--landing .public-ca-full { display: none; }
+  .public-ca--landing .public-ca-short { display: inline; }
+}
+/* On a phone the address gets its own line under the theme and wallet
+   buttons instead of being squeezed between them. */
+@media (max-width: 560px) {
+  .garden-toprow-right:has(> .public-ca) { flex-wrap: wrap; }
+  .public-ca--dashboard { order: 1; flex: 1 0 100%; height: 44px; padding-right: 16px; }
+  .public-ca--dashboard .public-ca-action { margin-left: auto; }
+}
