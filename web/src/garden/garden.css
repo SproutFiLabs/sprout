@@ -175,7 +175,9 @@
 .garden-child-chevron { color: var(--garden-quiet); }
 .garden-child--add { padding: 0 18px; background: transparent; border-style: dashed; color: var(--garden-soft); }
 
-.garden-toprow-right { display: flex; align-items: center; position: relative; }
+.garden-toprow-right { display: flex; align-items: center; gap: 12px; position: relative; }
+/* Match the wallet pill's height so the pair reads as one aligned group. */
+.garden-toprow-right .theme-toggle { height: 50px; min-height: 50px; padding: 0 16px; }
 .garden-sample,
 .garden-wallet { position: relative; }
 .garden-sample > summary,
@@ -830,6 +832,7 @@
   .garden-toprow-right { width: 100%; }
   .garden-sample-badge,
   .garden-wallet-summary { height: 44px; }
+  .garden-toprow-right .theme-toggle { width: 44px; height: 44px; min-height: 44px; padding: 0; }
   .garden-hero h1 { font-size: 34px; }
   .garden-value { font-size: 40px; }
   .garden-weekly-figure { font-size: 34px; }
