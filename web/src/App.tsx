@@ -210,7 +210,7 @@ export function App() {
   const symbolFor = useCallback(
     (asset: string): string => {
       if (!chain) return short(asset);
-      if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return 'Settlement';
+      if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementSymbol ?? 'Settlement';
       return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.symbol ?? short(asset);
     },
     [chain],
@@ -959,7 +959,7 @@ export function App() {
           <label>
             Asset
             <select data-testid="fund-token" value={fundForm.token} onChange={(e) => setFundForm({ ...fundForm, token: e.target.value })}>
-              {settlementToken ? <option value={settlementToken}>Settlement</option> : null}
+              {settlementToken ? <option value={settlementToken}>{chain?.contracts.settlementSymbol ? `${chain.contracts.settlementSymbol} (settlement)` : 'Settlement'}</option> : null}
               {stockTokens.map((t) => (
                 <option key={t.address} value={t.address}>
                   {t.symbol}
@@ -1039,7 +1039,7 @@ export function App() {
           <label>
             Asset
             <select data-testid="milestone-token" value={milestoneForm.token} onChange={(e) => setMilestoneForm({ ...milestoneForm, token: e.target.value })}>
-              {settlementToken ? <option value={settlementToken}>Settlement</option> : null}
+              {settlementToken ? <option value={settlementToken}>{chain?.contracts.settlementSymbol ? `${chain.contracts.settlementSymbol} (settlement)` : 'Settlement'}</option> : null}
               {stockTokens.map((t) => (
                 <option key={t.address} value={t.address}>
                   {t.symbol}

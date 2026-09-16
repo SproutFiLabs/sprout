@@ -22,6 +22,8 @@ export interface ChainPublic {
   contracts: {
     factory?: Address;
     settlementToken?: Address;
+    /** Ticker for the settlement token, e.g. USDG; absent on chains that do not set one. */
+    settlementSymbol?: string;
     venue?: Address;
     settlementDecimals: number;
     stockTokens: StockTokenPublic[];

@@ -28,6 +28,12 @@ export interface StockTokenConfig {
 export interface ContractAddresses {
   factory?: Address;
   settlementToken?: Address;
+  /**
+   * Ticker for the settlement token, e.g. USDG. Without it the UI can only say
+   * "Settlement", which reads as jargon next to AAPL and NVDA and leaves people
+   * unsure what they are actually depositing.
+   */
+  settlementSymbol?: string;
   venue?: Address;
   stockTokens: StockTokenConfig[];
 }
@@ -93,6 +99,7 @@ export function loadChainConfig(env: EnvLike): ChainConfig {
     .filter(Boolean);
   const factory = env.SPROUT_FACTORY_ADDRESS;
   const settlementToken = env.SPROUT_SETTLEMENT_TOKEN;
+  const settlementSymbol = env.SPROUT_SETTLEMENT_SYMBOL?.trim() || undefined;
   const venue = env.SPROUT_VENUE_ADDRESS;
   const stockTokens = parseStockTokens(env.SPROUT_STOCK_TOKENS);
 
@@ -116,6 +123,7 @@ export function loadChainConfig(env: EnvLike): ChainConfig {
     contracts: {
       factory: isAddress(factory) ? factory : undefined,
       settlementToken: isAddress(settlementToken) ? settlementToken : undefined,
+      settlementSymbol,
       venue: isAddress(venue) ? venue : undefined,
       stockTokens,
     },

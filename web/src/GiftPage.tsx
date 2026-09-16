@@ -46,7 +46,7 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
     return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.decimals ?? 18;
   };
   const labelFor = (asset: string): string => {
-    if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return 'Settlement';
+    if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementSymbol ?? 'Settlement';
     return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.symbol ?? short(asset);
   };
 
