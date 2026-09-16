@@ -4,6 +4,7 @@ import { betaPoints } from '../src/components/BetaNotice';
 describe('risk list automation line', () => {
   test('says automatic investing is off only when the server says so', () => {
     expect(betaPoints(false).some((p) => p.includes('switched off'))).toBe(true);
+    expect(betaPoints(false).some((p) => p.includes('Invest now'))).toBe(true);
     expect(betaPoints(true).some((p) => p.includes('switched off'))).toBe(false);
     expect(betaPoints(true).some((p) => p.includes('run automatically'))).toBe(true);
   });

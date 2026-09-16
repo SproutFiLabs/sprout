@@ -27,7 +27,7 @@ export const BETA_POINTS: string[] = [
 export function betaPoints(automationEnabled: boolean | null): string[] {
   const automation =
     automationEnabled === false
-      ? ['Automatic weekly investing is switched off, so nothing invests on its own.']
+      ? ['Automatic weekly investing is switched off, so nothing invests on its own. Invest now buys from your wallet.']
       : automationEnabled === true
         ? ['Weekly plans run automatically from a service wallet; a run can be delayed or skipped when prices are stale.']
         : [];

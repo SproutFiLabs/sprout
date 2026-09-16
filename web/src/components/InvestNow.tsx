@@ -49,11 +49,13 @@ export interface InvestNowFormProps {
   /** Settlement currently in the vault (base units), used for the default amount. */
   settlementBalance: string | null;
   runTxn: (label: string, fn: () => Promise<string | void>) => Promise<void>;
+  /** From /api/health; decides what "keep as a weekly plan" means. */
+  automationEnabled: boolean | null;
   onDone: () => Promise<void>;
   onClose: () => void;
 }
 
-export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn, onDone, onClose }: InvestNowFormProps) {
+export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn, automationEnabled, onDone, onClose }: InvestNowFormProps) {
   const decimals = chain.contracts.settlementDecimals;
   const ticker = chain.contracts.settlementSymbol ?? 'settlement';
   const [amount, setAmount] = useState(() => {
@@ -240,7 +242,11 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
           ? `${signatures === 1 ? 'One wallet confirmation' : `${signatures} wallet confirmations`}. `
           : ''}
         Prices come from the market feed; the purchase is refused if the pool pays much less than that price.
-        {!plan && keepPlan ? ' Automatic weekly buying is switched off for now, so you can run each week’s purchase from here.' : ''}
+        {!plan && keepPlan
+          ? automationEnabled
+            ? ' After this, the plan buys automatically each week.'
+            : ' Automatic weekly buying is switched off for now, so you can run each week’s purchase from here.'
+          : ''}
       </p>
 
       {step ? (
