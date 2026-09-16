@@ -8,10 +8,14 @@ import type { SproutDb } from './db';
 import type { ChainContext } from './chain';
 import {
   ChainConfigError,
+  READ_TTL,
+  cachedHoldings,
+  chainCache,
   decodeReceiptLogs,
   getBeneficiaryState,
   getSettlementDecimals,
-  readHoldings,
+  invalidateChainReads,
+  isGraduated,
   verifySproutCreated,
 } from './chain';
 import { AuthError, authenticate, issueNonce } from './auth';
@@ -204,18 +208,13 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       ? listSproutsByParent(deps.db, getAddress(parsed.data))
       : listSproutsByBeneficiary(deps.db, getAddress(parsed.data));
 
-    const chainReady = deps.chain.config.chain.configured && deps.chain.publicClient;
+    const nowMs = deps.now ? deps.now() : Date.now();
     const sprouts = await Promise.all(
-      records.map(async (s) => {
-        let graduated: boolean | null = null;
-        if (chainReady) {
-          graduated = (await deps.chain.publicClient!
-            .readContract({ address: s.id as Address, abi: sproutVaultAbi, functionName: 'graduated' })
-            .catch(() => null)) as boolean | null;
-        }
-        if (graduated === null) graduated = (deps.now ? deps.now() : Date.now()) / 1000 >= s.graduationTimestamp;
-        return { ...s, graduated, role: parent ? 'parent' : 'beneficiary' };
-      }),
+      records.map(async (s) => ({
+        ...s,
+        graduated: await isGraduated(deps.chain, s.graduationTimestamp, nowMs),
+        role: parent ? 'parent' : 'beneficiary',
+      })),
     );
     return c.json({ sprouts });
   });
@@ -223,13 +222,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   app.get('/api/sprouts/:id', async (c) => {
     const sprout = getSprout(deps.db, c.req.param('id'));
     if (!sprout) throw new HttpError(404, 'sprout not found');
-    let graduated: boolean | null = null;
-    if (deps.chain.config.chain.configured && deps.chain.publicClient) {
-      graduated = (await deps.chain.publicClient
-        .readContract({ address: sprout.id as Address, abi: sproutVaultAbi, functionName: 'graduated' })
-        .catch(() => null)) as boolean | null;
-    }
-    if (graduated === null) graduated = (deps.now ? deps.now() : Date.now()) / 1000 >= sprout.graduationTimestamp;
+    const graduated = await isGraduated(deps.chain, sprout.graduationTimestamp, deps.now ? deps.now() : Date.now());
     return c.json({
       sprout: { ...sprout, graduated },
       automation: automationCapability(deps.chain),
@@ -519,7 +512,11 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   app.get('/api/sprouts/:id/holdings', async (c) => {
     const sprout = getSprout(deps.db, c.req.param('id'));
     if (!sprout) throw new HttpError(404, 'sprout not found');
-    const holdings = await readHoldings(deps.chain, sprout.id as Address);
+    // `after` is the block the caller's own transaction confirmed in; anything
+    // cached from before it is re-read (see cachedHoldings).
+    const afterRaw = c.req.query('after');
+    const afterBlock = afterRaw && /^\d{1,12}$/.test(afterRaw) ? Number(afterRaw) : undefined;
+    const holdings = await cachedHoldings(deps.chain, sprout.id as Address, { afterBlock });
     return c.json(holdings);
   });
 
@@ -536,6 +533,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   app.post('/api/index/reconcile', async (c) => {
     requireAdmin(c, deps);
     const result = await serialize(async () => {
+      // An operator asking for a reconcile wants current state, not cached reads.
+      invalidateChainReads(deps.chain);
       const r = await reconcile(deps.chain, deps.db, {});
       const snapshots = await snapshotAll(deps.chain, deps.db);
       return { result: r, snapshots };
@@ -564,7 +563,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     let rpcReachable = false;
     if (deps.chain.publicClient) {
       try {
-        const actual = await deps.chain.publicClient.getChainId();
+        const client = deps.chain.publicClient;
+        const actual = await chainCache(deps.chain).get('chainId', READ_TTL.chainId, () => client.getChainId());
         rpcReachable = true;
         checks.actualChainId = actual;
         chainIdMatch = actual === deps.chain.config.chain.chainId;
@@ -598,7 +598,11 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       } catch {
         throw new LocalWalletError('invalid JSON-RPC body');
       }
-      return c.json(await handleLocalRpc(deps.chain, deps.db, account, payload as never));
+      const response = await handleLocalRpc(deps.chain, deps.db, account, payload as never);
+      // The local wallet sends its transactions through this proxy, and Anvil
+      // mines them immediately, so a relayed send makes cached balances stale.
+      if ((payload as { method?: string } | null)?.method === 'eth_sendTransaction') invalidateChainReads(deps.chain);
+      return c.json(response);
     });
 
     app.post('/api/local/fund', async (c) => {
@@ -609,13 +613,17 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       );
       // State-changing tool operations share the maintenance mutex so they cannot
       // race the keeper on nonce/gas.
-      return c.json(await serialize(() => fundLocalAccount(deps.chain, deps.db, body)));
+      const result = await serialize(() => fundLocalAccount(deps.chain, deps.db, body));
+      invalidateChainReads(deps.chain);
+      return c.json(result);
     });
 
     app.post('/api/local/advance-time', async (c) => {
       assertLoopbackRequest(c.req.header('origin'), c.req.header('host'));
       const body = await readJson(c, z.object({ seconds: z.number().int().positive() }));
-      return c.json(await serialize(() => advanceLocalTime(deps.chain, deps.db, body.seconds)));
+      const result = await serialize(() => advanceLocalTime(deps.chain, deps.db, body.seconds));
+      invalidateChainReads(deps.chain);
+      return c.json(result);
     });
   }
 

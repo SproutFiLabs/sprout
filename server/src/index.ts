@@ -1,8 +1,8 @@
-import { loadServerConfig, type ServerConfig } from './config';
+import { DEFAULT_SNAPSHOT_INTERVAL_SECONDS, loadServerConfig, type ServerConfig } from './config';
 import { openDb, type SproutDb } from './db';
 import { createChainContext, verifyRpcChain, type ChainContext } from './chain';
 import { createApp } from './app';
-import { reconcile, snapshotAll } from './indexer';
+import { listAllVaults, reconcile, snapshotAll } from './indexer';
 import { runDueJobs } from './jobs';
 import { purgeExpiredNonces } from './repo';
 import { createMutex } from './lock';
@@ -30,6 +30,9 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
     webDistPath: config.webDistPath,
   });
 
+  const snapshotIntervalMs = (config.snapshotIntervalSeconds ?? DEFAULT_SNAPSHOT_INTERVAL_SECONDS) * 1000;
+  let lastFullSnapshotAt = 0;
+
   const runMaintenance = async (): Promise<void> => {
     await serialize(async () => {
       purgeExpiredNonces(db, Date.now());
@@ -40,14 +43,26 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
         console.warn('rpc chain verification failed', error instanceof Error ? error.message : error);
         return;
       }
+      let touched: string[] = [];
       try {
         const result = await reconcile(chain, db, {});
+        touched = result.vaultsTouched;
         if (result.eventsNew > 0) console.info('indexed events', result);
       } catch (error) {
         console.warn('reconcile failed', error instanceof Error ? error.message : error);
       }
       try {
-        await snapshotAll(chain, db);
+        // Every sprout on the slow cadence; sprouts that just changed right away,
+        // so a new deposit shows up in the chart without waiting.
+        const now = Date.now();
+        if (now - lastFullSnapshotAt >= snapshotIntervalMs) {
+          await snapshotAll(chain, db);
+          lastFullSnapshotAt = now;
+        } else if (touched.length > 0) {
+          // Keep the stored spelling of each vault id for the snapshot rows.
+          const ids = listAllVaults(db, chain.config.chain.chainId).filter((id) => touched.includes(id.toLowerCase()));
+          await snapshotAll(chain, db, ids);
+        }
       } catch (error) {
         console.warn('snapshot failed', error instanceof Error ? error.message : error);
       }

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { Address, PublicClient, WalletClient } from 'viem';
 import { mockErc20Abi, mockSwapRouterAbi } from '@sprout/shared';
 import { ROOT, anvilChain, deploy, deployerAccount, parentAccount, gifterAccount } from './lib';
+import { installMulticall3, LOCAL_MULTICALL_ENV } from './lib/multicall3';
 
 /** A fresh id for a new deployment. Anvil redeploys reuse deterministic
  *  addresses, so each deployment gets its own DB to avoid stale cursors/vaults. */
@@ -49,6 +50,8 @@ export async function deployLocal(
   rpcUrl: string,
 ): Promise<LocalDeployment> {
   const now = Math.floor(Date.now() / 1000);
+  // Production reads batch through Multicall3; give the local node one too.
+  await installMulticall3(publicClient);
   const settlement = await deploy(publicClient, walletClient, 'MockERC20.sol', 'MockERC20', ['USD', 'USD', 6]);
   const stockA = await deploy(publicClient, walletClient, 'MockERC20.sol', 'MockERC20', ['Stock A', 'AAA', 18]);
   const stockB = await deploy(publicClient, walletClient, 'MockERC20.sol', 'MockERC20', ['Stock B', 'BBB', 18]);
@@ -117,6 +120,7 @@ if (import.meta.main) {
     `SPROUT_VENUE_ADDRESS=${deployment.venue}`,
     `SPROUT_STOCK_TOKENS=AAA:${deployment.stockA}:18:1000000000000000000:${deployment.feedA}:86400,BBB:${deployment.stockB}:18:1000000000000000000:${deployment.feedB}:86400`,
     'SPROUT_SETTLEMENT_DECIMALS=6',
+    `SPROUT_MULTICALL3_ADDRESS=${LOCAL_MULTICALL_ENV.SPROUT_MULTICALL3_ADDRESS}`,
     'SPROUT_LOCAL_DEMO=1',
     'SPROUT_USE_LOCAL_KEYS=1',
     'SPROUT_KEEPER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',

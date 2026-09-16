@@ -17,6 +17,12 @@ export interface ServerConfig {
   startBlock: number;
   /** Max block span per getLogs request (bounded, resumable). */
   maxLogRange: number;
+  /**
+   * Seconds between growth snapshots of every sprout. Vaults with new events
+   * are snapshotted on the next maintenance pass regardless. Optional so
+   * hand-built test configs keep working; defaults to 300.
+   */
+  snapshotIntervalSeconds?: number;
   /** RPC URL that is safe to hand to a browser wallet, if explicitly public. */
   publicWalletRpcUrl?: string;
   /** Decimals of the settlement token, if known without a chain read. */
@@ -28,6 +34,13 @@ export interface ServerConfig {
   keeperGasLimitCap?: bigint;
   keeperDailyFeeBudgetWei?: bigint;
 }
+
+/**
+ * A full snapshot pass reads every sprout. Every thirty seconds (the old
+ * cadence) that was the service's largest RPC cost, for chart points nobody
+ * needs at that resolution.
+ */
+export const DEFAULT_SNAPSHOT_INTERVAL_SECONDS = 300;
 
 export interface KeeperBudgetConfig {
   maxFeePerGasWei: bigint;
@@ -82,6 +95,11 @@ export function loadServerConfig(env: EnvLike = process.env): ServerConfig {
     throw new Error('SPROUT_MAX_LOG_RANGE must be an integer between 1 and 100000');
   }
 
+  const snapshotIntervalSeconds = Number(env.SPROUT_SNAPSHOT_INTERVAL_SECONDS ?? DEFAULT_SNAPSHOT_INTERVAL_SECONDS);
+  if (!Number.isInteger(snapshotIntervalSeconds) || snapshotIntervalSeconds < 0 || snapshotIntervalSeconds > 86_400) {
+    throw new Error('SPROUT_SNAPSHOT_INTERVAL_SECONDS must be an integer between 0 and 86400');
+  }
+
   return {
     chain,
     dbPath,
@@ -98,6 +116,7 @@ export function loadServerConfig(env: EnvLike = process.env): ServerConfig {
     webDistPath: env.SPROUT_WEB_DIST ?? join(process.cwd(), 'web', 'dist'),
     startBlock,
     maxLogRange,
+    snapshotIntervalSeconds,
     publicWalletRpcUrl: env.SPROUT_PUBLIC_WALLET_RPC_URL,
     settlementDecimals: env.SPROUT_SETTLEMENT_DECIMALS ? Number(env.SPROUT_SETTLEMENT_DECIMALS) : undefined,
     keeperMaxFeePerGasWei: parseWei(env.SPROUT_KEEPER_MAX_FEE_PER_GAS_WEI),

@@ -23,6 +23,7 @@ import {
   contractWriter,
   ensureChain,
   injectedProvider,
+  latestConfirmedBlock,
   waitForSuccess,
   type WalletState,
 } from './wallet';
@@ -239,7 +240,12 @@ export function App() {
     async (id: string) => {
       setLoading(true);
       try {
-        const [sproutDto, hold, grow, evts] = await Promise.all([api.sprout(id), api.holdings(id), api.growth(id), api.events(id).catch(() => ({ events: [] }))]);
+        const [sproutDto, hold, grow, evts] = await Promise.all([
+          api.sprout(id),
+          api.holdings(id, latestConfirmedBlock()),
+          api.growth(id),
+          api.events(id).catch(() => ({ events: [] })),
+        ]);
         setDetail({
           sprout: sproutDto.sprout,
           automation: sproutDto.automation,

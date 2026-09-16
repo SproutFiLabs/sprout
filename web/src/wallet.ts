@@ -191,8 +191,22 @@ export async function sign(message: string, wallet: WalletState): Promise<Hex> {
   return wallet.walletClient.signMessage({ account: wallet.address, message });
 }
 
-/** Wait for a receipt and reject reverted transactions. */
-export async function waitForSuccess(publicClient: PublicClient, hash: Hex): Promise<void> {
+let lastConfirmedBlock = 0;
+
+/**
+ * The newest block any transaction from this page confirmed in. Holdings
+ * requests pass it along so the server does not answer from a cache that
+ * predates the user's own deposit.
+ */
+export function latestConfirmedBlock(): number {
+  return lastConfirmedBlock;
+}
+
+/** Wait for a receipt and reject reverted transactions. Resolves to the block number. */
+export async function waitForSuccess(publicClient: PublicClient, hash: Hex): Promise<number> {
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status !== 'success') throw new Error(`Transaction reverted: ${hash}`);
+  const block = Number(receipt.blockNumber);
+  if (block > lastConfirmedBlock) lastConfirmedBlock = block;
+  return block;
 }

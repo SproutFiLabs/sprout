@@ -213,7 +213,8 @@ export const api = {
         totals: Record<string, string>;
       }>;
     }>(`/api/sprouts/${id}`),
-  holdings: (id: string) => getJson<Holdings>(`/api/sprouts/${id}/holdings`),
+  holdings: (id: string, afterBlock = 0) =>
+    getJson<Holdings>(`/api/sprouts/${id}/holdings${afterBlock > 0 ? `?after=${afterBlock}` : ''}`),
   growth: (id: string) => getJson<Growth>(`/api/sprouts/${id}/growth`),
   events: (id: string) => getJson<{ events: ChainEvent[] }>(`/api/sprouts/${id}/events`),
   beneficiaryState: (id: string) => getJson<BeneficiaryState>(`/api/sprouts/${id}/beneficiary`),

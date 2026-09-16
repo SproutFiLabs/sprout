@@ -20,6 +20,7 @@ import {
   waitForRpc,
 } from './lib';
 import { deployLocal } from './deploy-local';
+import { LOCAL_MULTICALL_ENV } from './lib/multicall3';
 
 // Isolated from any running preview (RPC 18545) so the gate never touches it.
 const RPC_PORT = 28546;
@@ -54,6 +55,7 @@ async function main(): Promise<void> {
 
     const config = loadServerConfig({
       SPROUT_CHAIN_ID: '31337',
+      ...LOCAL_MULTICALL_ENV,
       SPROUT_RPC_URL: rpcUrl,
       SPROUT_FACTORY_ADDRESS: deployment.factory,
       SPROUT_SETTLEMENT_TOKEN: deployment.settlement,

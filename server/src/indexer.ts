@@ -1,8 +1,8 @@
 import { decodeEventLog, type Address, type Hex } from 'viem';
 import { sproutFactoryAbi, sproutVaultAbi } from '@sprout/shared';
 import type { SproutDb } from './db';
-import type { ChainContext } from './chain';
-import { getVaultState, readHoldings } from './chain';
+import type { ChainClock, ChainContext } from './chain';
+import { chainCache, getVaultState, invalidateChainReads, primeHoldings, readHoldings } from './chain';
 import { keeperBudget } from './config';
 import {
   getCursor,
@@ -36,6 +36,8 @@ export interface ReconcileResult {
   sproutsIndexed: number;
   eventsSeen: number;
   eventsNew: number;
+  /** Vaults that emitted at least one newly indexed event in this pass. */
+  vaultsTouched: string[];
 }
 
 export interface ReconcileOptions {
@@ -76,11 +78,15 @@ export async function reconcile(
   }
   const cursor = getCursor(db, chainId);
   const latest = Number(await ctx.publicClient.getBlockNumber());
+  // A newer head than the shared clock means the clock (graduation, feed
+  // staleness) is behind; drop it rather than wait out its TTL.
+  const clock = chainCache(ctx).peek<ChainClock>('block');
+  if (clock && clock.number < latest) invalidateChainReads(ctx, 'block');
   // Never scan from genesis by default: honor a configured deployment start block.
   const fromBlock = options.fromBlock !== undefined ? Number(options.fromBlock) : Math.max(cursor + 1, startBlock);
   const toBlock = options.toBlock !== undefined ? Math.min(Number(options.toBlock), latest) : latest;
 
-  const result: ReconcileResult = { fromBlock, toBlock, sproutsIndexed: 0, eventsSeen: 0, eventsNew: 0 };
+  const result: ReconcileResult = { fromBlock, toBlock, sproutsIndexed: 0, eventsSeen: 0, eventsNew: 0, vaultsTouched: [] };
   if (fromBlock > toBlock) return result;
 
   // Bounded, resumable chunks: each chunk commits its cursor, so a rate-limit or
@@ -93,7 +99,16 @@ export async function reconcile(
   }
 
   await resyncJobs(ctx, db);
+  if (result.vaultsTouched.length > 0) {
+    // New vault events mean new balances: drop what request handlers cached.
+    for (const vault of result.vaultsTouched) invalidateChainReads(ctx, `holdings:${vault.toLowerCase()}`);
+  }
   return result;
+}
+
+function markTouched(result: ReconcileResult, vault: string): void {
+  const id = vault.toLowerCase();
+  if (!result.vaultsTouched.includes(id)) result.vaultsTouched.push(id);
 }
 
 async function processRange(
@@ -148,6 +163,7 @@ async function processRange(
         })
       ) {
         result.eventsNew += 1;
+        markTouched(result, args.vault);
       }
       result.eventsSeen += 1;
     }
@@ -200,7 +216,10 @@ async function processRange(
         }
         return inserted;
       });
-      if (commit()) result.eventsNew += 1;
+      if (commit()) {
+        result.eventsNew += 1;
+        markTouched(result, log.address);
+      }
     }
   }
 }
@@ -309,14 +328,23 @@ function attributeGiftPayment(db: SproutDb, e: EventContext): void {
 export async function resyncJobs(ctx: ChainContext, db: SproutDb): Promise<void> {
   if (!ctx.publicClient) return;
   const automationEnabled = Boolean(ctx.walletClient) && Boolean(keeperBudget(ctx.config));
+  const client = ctx.publicClient;
   const jobs = listResyncableJobs(db);
-  for (const job of jobs) {
-    try {
-      const schedule = (await ctx.publicClient.readContract({
+  // Issued together so a Multicall3-enabled client folds them into one request.
+  const schedules = await Promise.all(
+    jobs.map((job) =>
+      (client.readContract({
         address: job.vaultId as Address,
         abi: sproutVaultAbi,
         functionName: 'schedule',
-      })) as readonly [boolean, bigint, bigint, bigint, bigint];
+      }) as Promise<readonly [boolean, bigint, bigint, bigint, bigint]>).catch(() => null),
+    ),
+  );
+  for (const [i, job] of jobs.entries()) {
+    try {
+      const schedule = schedules[i];
+      // leave the job untouched on transient read failure
+      if (!schedule) continue;
       if (!schedule[0]) {
         setJobStatus(db, job.id, 'cancelled');
         continue;
@@ -335,15 +363,29 @@ export function listAllVaults(db: SproutDb, chainId: number): string[] {
   return rows.map((r) => r.id);
 }
 
-/** Compute and persist a holdings growth snapshot for every known sprout. */
-export async function snapshotAll(ctx: ChainContext, db: SproutDb): Promise<number> {
+/** How many vaults are read concurrently (and batched together) per snapshot step. */
+const SNAPSHOT_CONCURRENCY = 20;
+
+/**
+ * Compute and persist a holdings growth snapshot for every known sprout, or
+ * only for `vaults` when given. Each fresh read also refreshes the cache that
+ * the holdings endpoint serves from.
+ */
+export async function snapshotAll(ctx: ChainContext, db: SproutDb, vaults?: string[]): Promise<number> {
   if (!ctx.publicClient) return 0;
   const chainId = ctx.config.chain.chainId;
-  const rows = db.prepare('SELECT id FROM sprouts WHERE chain_id = ?').all(chainId) as Array<{ id: string }>;
+  const ids = vaults ?? listAllVaults(db, chainId);
   let count = 0;
-  for (const { id } of rows) {
-    try {
-      const holdings = await readHoldings(ctx, id as Address);
+  for (let i = 0; i < ids.length; i += SNAPSHOT_CONCURRENCY) {
+    const batch = ids.slice(i, i + SNAPSHOT_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map((id) => readHoldings(ctx, id as Address).catch(() => null)),
+    );
+    for (const [j, holdings] of results.entries()) {
+      const id = batch[j]!;
+      // unavailable history is better than a fabricated point
+      if (!holdings) continue;
+      primeHoldings(ctx, id, holdings);
       // Never persist a "complete" snapshot when a nonzero holding lacks a price.
       if (!holdings.available || holdings.totalValueUsd === null) continue;
       insertSnapshot(db, {
@@ -358,8 +400,6 @@ export async function snapshotAll(ctx: ChainContext, db: SproutDb): Promise<numb
         note: holdings.settlementAssumption,
       });
       count += 1;
-    } catch {
-      // unavailable history is better than a fabricated point
     }
   }
   return count;

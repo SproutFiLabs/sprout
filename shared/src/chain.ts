@@ -4,14 +4,24 @@ export const ROBINHOOD_CHAIN_ID = 4663;
 export const ROBINHOOD_TESTNET_CHAIN_ID = 46630;
 export const ANVIL_CHAIN_ID = 31337;
 
+/** Multicall3's address is the same on every chain it has been deployed to. */
+export const CANONICAL_MULTICALL3: Address = '0xcA11bde05977b3631167028862bE2a173976CA11';
+
 export interface ChainDefinition {
   chainId: number;
   name: string;
   explorerUrl?: string;
+  /** Set only where the contract has been confirmed deployed on-chain. */
+  multicall3?: Address;
 }
 
 export const KNOWN_CHAINS: Record<number, ChainDefinition> = {
-  [ROBINHOOD_CHAIN_ID]: { chainId: ROBINHOOD_CHAIN_ID, name: 'Robinhood Chain', explorerUrl: 'https://robinhoodchain.blockscout.com' },
+  [ROBINHOOD_CHAIN_ID]: {
+    chainId: ROBINHOOD_CHAIN_ID,
+    name: 'Robinhood Chain',
+    explorerUrl: 'https://robinhoodchain.blockscout.com',
+    multicall3: CANONICAL_MULTICALL3,
+  },
   [ROBINHOOD_TESTNET_CHAIN_ID]: { chainId: ROBINHOOD_TESTNET_CHAIN_ID, name: 'Robinhood Chain Testnet' },
   [ANVIL_CHAIN_ID]: { chainId: ANVIL_CHAIN_ID, name: 'Local Anvil' },
 };
@@ -45,6 +55,11 @@ export interface ChainConfig {
   /** Extra endpoints tried, in order, when the primary one fails. */
   rpcFallbackUrls?: string[];
   explorerUrl?: string;
+  /**
+   * Multicall3 lets the server fold a page's worth of contract reads into one
+   * RPC request. Undefined where it is not deployed (a plain Anvil node).
+   */
+  multicall3?: Address;
   isLocal: boolean;
   localDemo: boolean;
   contracts: ContractAddresses;
@@ -102,6 +117,11 @@ export function loadChainConfig(env: EnvLike): ChainConfig {
   const settlementSymbol = env.SPROUT_SETTLEMENT_SYMBOL?.trim() || undefined;
   const venue = env.SPROUT_VENUE_ADDRESS;
   const stockTokens = parseStockTokens(env.SPROUT_STOCK_TOKENS);
+  // SPROUT_MULTICALL3_ADDRESS overrides the known deployment; "off" disables
+  // batching entirely, e.g. to rule it out while debugging an RPC provider.
+  const multicallEnv = env.SPROUT_MULTICALL3_ADDRESS?.trim();
+  const multicall3 =
+    multicallEnv === 'off' ? undefined : isAddress(multicallEnv) ? multicallEnv : known?.multicall3;
 
   const missing: string[] = [];
   if (!rpcUrl) missing.push('SPROUT_RPC_URL');
@@ -118,6 +138,7 @@ export function loadChainConfig(env: EnvLike): ChainConfig {
     rpcUrl,
     rpcFallbackUrls,
     explorerUrl: known?.explorerUrl,
+    multicall3,
     isLocal,
     localDemo: env.SPROUT_LOCAL_DEMO === '1',
     contracts: {

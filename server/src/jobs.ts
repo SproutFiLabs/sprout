@@ -2,7 +2,7 @@ import { encodeFunctionData, type Address, type Hex } from 'viem';
 import { sproutVaultAbi, sproutVenueAbi } from '@sprout/shared';
 import type { SproutDb } from './db';
 import type { ChainContext } from './chain';
-import { ChainConfigError } from './chain';
+import { ChainConfigError, invalidateChainReads } from './chain';
 import { keeperBudget, type KeeperBudgetConfig } from './config';
 import { dueJobs, recordJobRun, setJobStatus, getJob, type JobRecord } from './repo';
 import {
@@ -159,6 +159,7 @@ async function runJob(
     );
 
     if (result.outcome === 'executed') {
+      invalidateChainReads(ctx, `holdings:${job.vaultId.toLowerCase()}`);
       const after = (await ctx.publicClient!.readContract({
         address: job.vaultId as Address,
         abi: sproutVaultAbi,
