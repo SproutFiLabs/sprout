@@ -245,6 +245,108 @@ export function listGiftPayments(db: SproutDb, giftId: string): GiftPaymentRecor
   });
 }
 
+// ---- gift campaigns and notes ---------------------------------------------
+
+export interface GiftCampaignRecord {
+  giftId: string;
+  title: string;
+  goalCents: number;
+  endsAt: number;
+  createdAt: number;
+}
+
+export function insertGiftCampaign(db: SproutDb, c: Omit<GiftCampaignRecord, 'createdAt'>): void {
+  db.prepare('INSERT INTO gift_campaigns (gift_id, title, goal_cents, ends_at, created_at) VALUES (?, ?, ?, ?, ?)').run(
+    c.giftId,
+    c.title,
+    c.goalCents,
+    c.endsAt,
+    now(),
+  );
+}
+
+export function getGiftCampaign(db: SproutDb, giftId: string): GiftCampaignRecord | null {
+  const r = db.prepare('SELECT * FROM gift_campaigns WHERE lower(gift_id) = lower(?)').get(giftId) as Record<string, unknown> | null;
+  if (!r) return null;
+  return {
+    giftId: r.gift_id as string,
+    title: r.title as string,
+    goalCents: r.goal_cents as number,
+    endsAt: r.ends_at as number,
+    createdAt: r.created_at as number,
+  };
+}
+
+export interface GiftNoteRecord {
+  chainId: number;
+  txHash: string;
+  logIndex: number;
+  giftId: string;
+  gifter: string;
+  name: string | null;
+  note: string | null;
+  hidden: boolean;
+  token: string | null;
+  amount: string | null;
+  blockNumber: number | null;
+  createdAt: number;
+}
+
+/** Store or replace a gifter's name and note for one of their verified gifts. Hidden stays hidden. */
+export function upsertGiftNote(
+  db: SproutDb,
+  n: { chainId: number; txHash: string; logIndex: number; giftId: string; gifter: string; name: string | null; note: string | null },
+): void {
+  db.prepare(
+    `INSERT INTO gift_notes (chain_id, tx_hash, log_index, gift_id, gifter, name, note, hidden, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
+     ON CONFLICT(chain_id, tx_hash, log_index) DO UPDATE SET name = excluded.name, note = excluded.note`,
+  ).run(n.chainId, n.txHash.toLowerCase(), n.logIndex, n.giftId, n.gifter, n.name, n.note, now());
+}
+
+/** Notes for a gift link, newest first, with the gift they came with. */
+export function listGiftNotes(db: SproutDb, giftId: string, opts: { includeHidden?: boolean } = {}): GiftNoteRecord[] {
+  return db
+    .prepare(
+      `SELECT n.*, p.token AS p_token, p.amount AS p_amount, p.block_number AS p_block
+         FROM gift_notes n
+         LEFT JOIN gift_payments p
+           ON p.chain_id = n.chain_id AND lower(p.tx_hash) = n.tx_hash AND p.log_index = n.log_index
+        WHERE lower(n.gift_id) = lower(?) ${opts.includeHidden ? '' : 'AND n.hidden = 0'}
+        ORDER BY n.created_at DESC, n.log_index DESC`,
+    )
+    .all(giftId)
+    .map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        chainId: r.chain_id as number,
+        txHash: r.tx_hash as string,
+        logIndex: r.log_index as number,
+        giftId: r.gift_id as string,
+        gifter: r.gifter as string,
+        name: (r.name as string | null) ?? null,
+        note: (r.note as string | null) ?? null,
+        hidden: (r.hidden as number) === 1,
+        token: (r.p_token as string | null) ?? null,
+        amount: (r.p_amount as string | null) ?? null,
+        blockNumber: (r.p_block as number | null) ?? null,
+        createdAt: r.created_at as number,
+      };
+    });
+}
+
+export function countHiddenGiftNotes(db: SproutDb, giftId: string): number {
+  const r = db.prepare('SELECT COUNT(*) AS n FROM gift_notes WHERE lower(gift_id) = lower(?) AND hidden = 1').get(giftId) as { n: number } | null;
+  return r?.n ?? 0;
+}
+
+export function setGiftNoteHidden(db: SproutDb, key: { giftId: string; txHash: string; logIndex: number }, hidden: boolean): boolean {
+  const info = db
+    .prepare('UPDATE gift_notes SET hidden = ? WHERE lower(gift_id) = lower(?) AND tx_hash = ? AND log_index = ?')
+    .run(hidden ? 1 : 0, key.giftId, key.txHash.toLowerCase(), key.logIndex);
+  return info.changes > 0;
+}
+
 // ---- milestones -----------------------------------------------------------
 
 export function upsertMilestone(

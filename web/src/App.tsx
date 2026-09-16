@@ -7,6 +7,7 @@ import {
   type BeneficiaryState,
   type ChainPublic,
   type GiftSummary,
+  type GiftNote,
   type Growth,
   type Health,
   type AutomationCapability,
@@ -36,6 +37,7 @@ import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
 import { GiftPage } from './GiftPage';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
+import { TITLE_MAX, endOfDayUtc, textProblem } from './components/Campaign';
 import {
   ArrowRight, ArrowUpRight, Bell, Check, CheckCheck, ChevronRight, GraduationCap, LayoutGrid, Leaf,
   Pause, Play, Plus, Repeat2, Settings2, ShieldCheck, Sprout as SproutIcon, Wallet,
@@ -138,7 +140,8 @@ export function App() {
   });
   const [fundForm, setFundForm] = useState({ token: '', amount: '10' });
   const [scheduleForm, setScheduleForm] = useState({ amount: '25', periodDays: '7' });
-  const [giftForm, setGiftForm] = useState({ label: 'Birthday gift' });
+  const [giftForm, setGiftForm] = useState(GIFT_FORM_DEFAULTS);
+  const [allGiftNotes, setAllGiftNotes] = useState<Record<string, GiftNote[]>>({});
   const [milestoneForm, setMilestoneForm] = useState({ token: '', amount: '10', unlock: '', title: '' });
   const [allocationForm, setAllocationForm] = useState({ percents: {} as Record<string, string> });
   const [payGiftForm, setPayGiftForm] = useState({ token: '', amount: '25' });
@@ -610,24 +613,62 @@ export function App() {
 
   const submitGift = async () => {
     if (!wallet || !selected || !settlementToken) return;
-    await withTxn('Create gift link', async () => {
+    await withTxn(giftForm.campaign ? 'Start campaign' : 'Create gift link', async () => {
       const accepted = [settlementToken, ...stockTokens.map((t) => t.address)];
-      const { gift } = await api.createGift(wallet, selected.id, giftForm.label, accepted);
+      let campaign: { title: string; goalDollars: number; endsAt: number } | undefined;
+      if (giftForm.campaign) {
+        const title = giftForm.title.trim();
+        const goalDollars = Number(giftForm.goal);
+        const endsAt = endOfDayUtc(giftForm.ends);
+        const problem = !title ? 'Give the campaign a title.' : textProblem(title, TITLE_MAX, 'The title');
+        if (problem) throw new Error(problem);
+        if (!Number.isInteger(goalDollars) || goalDollars < 1 || goalDollars > 100_000) throw new Error('Set a goal between $1 and $100,000 in whole dollars.');
+        if (!endsAt || endsAt * 1000 <= Date.now()) throw new Error('Pick an end date in the future.');
+        campaign = { title, goalDollars, endsAt };
+      }
+      const { gift } = await api.createGift(wallet, selected.id, campaign?.title ?? giftForm.label, accepted, campaign);
       setDetail((prev) =>
         prev
           ? {
               ...prev,
               gifts: [
                 ...prev.gifts,
-                { id: gift.id, vaultId: gift.vaultId, label: gift.label, status: 'open', acceptedAssets: gift.acceptedAssets, paymentCount: 0, totals: {} },
+                {
+                  id: gift.id,
+                  vaultId: gift.vaultId,
+                  label: gift.label,
+                  status: 'open',
+                  acceptedAssets: gift.acceptedAssets,
+                  paymentCount: 0,
+                  totals: {},
+                  campaign: gift.campaign ?? null,
+                  notes: [],
+                  hiddenNotes: 0,
+                },
               ],
             }
           : prev,
       );
       setShowGift(false);
+      setGiftForm(GIFT_FORM_DEFAULTS);
       return;
     });
   };
+
+  const showAllGiftNotes = (g: GiftSummary) =>
+    void withTxn('Load gift notes', async () => {
+      if (!wallet) return;
+      const { notes } = await api.giftNotes(wallet, g.id);
+      setAllGiftNotes((prev) => ({ ...prev, [g.id]: notes }));
+    });
+
+  const toggleGiftNote = (g: GiftSummary, note: GiftNote) =>
+    void withTxn(note.hidden ? 'Show gift note' : 'Hide gift note', async () => {
+      if (!wallet || !selected) return;
+      const { notes } = await api.setGiftNoteHidden(wallet, g.id, note, !note.hidden);
+      setAllGiftNotes((prev) => ({ ...prev, [g.id]: notes }));
+      await loadDetail(selected.id);
+    });
 
   const submitPayGift = async () => {
     if (!wallet || !showPayGift || !selected) return;
@@ -864,6 +905,21 @@ export function App() {
     onOpenNotifications: () => setShowNotifications(true),
     onOpenOnboarding: () => setOnboardingOpen(true),
     onOpenHelp: () => setShowHelp(true),
+    gifting: {
+      onOpenCampaign: () => {
+        const name = selected ? getNickname(selected.id) : null;
+        setGiftForm({
+          ...GIFT_FORM_DEFAULTS,
+          campaign: true,
+          title: name ? `${name}’s birthday` : '',
+          ends: new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10),
+        });
+        setShowGift(true);
+      },
+      allNotes: allGiftNotes,
+      onShowAllNotes: showAllGiftNotes,
+      onToggleNoteHidden: toggleGiftNote,
+    },
     onOpenAsset: (address) => setAssetDetail(address),
     onRunToolFund: () => void runToolFund(),
     onRunToolAdvance: () => void runToolAdvance(),
@@ -1001,14 +1057,56 @@ export function App() {
       ) : null}
 
       {showGift ? (
-        <Modal title="Create gift link" onClose={() => setShowGift(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
-          <label>
-            Label
-            <input data-testid="gift-label" value={giftForm.label} onChange={(e) => setGiftForm({ label: e.target.value })} />
-          </label>
-          <p className="muted">The link carries only an opaque id and accepted assets, never a child name or spending key.</p>
+        <Modal
+          title={giftForm.campaign ? 'Start a birthday campaign' : 'Create gift link'}
+          onClose={() => {
+            setShowGift(false);
+            setGiftForm(GIFT_FORM_DEFAULTS);
+          }}
+          txn={txn}
+          explorerUrl={chain?.explorerUrl}
+        >
+          {giftForm.campaign ? (
+            <>
+              <label>
+                Title
+                <input
+                  data-testid="campaign-title"
+                  value={giftForm.title}
+                  maxLength={TITLE_MAX}
+                  placeholder="Maya turns 8"
+                  onChange={(e) => setGiftForm({ ...giftForm, title: e.target.value })}
+                />
+              </label>
+              <label>
+                Goal (US dollars)
+                <input
+                  data-testid="campaign-goal"
+                  inputMode="numeric"
+                  value={giftForm.goal}
+                  onChange={(e) => setGiftForm({ ...giftForm, goal: e.target.value.replace(/[^\d]/g, '') })}
+                />
+              </label>
+              <label>
+                Ends on
+                <input data-testid="campaign-ends" type="date" value={giftForm.ends} onChange={(e) => setGiftForm({ ...giftForm, ends: e.target.value })} />
+              </label>
+              <p className="muted">
+                Family open the link, see the goal and how close it is, and can leave a short note with their gift. Gifts
+                still arrive after the end date; the page just stops counting down. The title is shown to anyone with the link.
+              </p>
+            </>
+          ) : (
+            <>
+              <label>
+                Label
+                <input data-testid="gift-label" value={giftForm.label} onChange={(e) => setGiftForm({ ...giftForm, label: e.target.value })} />
+              </label>
+              <p className="muted">The link carries only an opaque id and accepted assets, never a child name or spending key.</p>
+            </>
+          )}
           <button data-testid="gift-submit" className="btn btn--primary" onClick={() => void submitGift()}>
-            Create gift link
+            {giftForm.campaign ? 'Start campaign' : 'Create gift link'}
           </button>
         </Modal>
       ) : null}
@@ -1224,6 +1322,8 @@ export function App() {
     </main>
   );
 }
+
+const GIFT_FORM_DEFAULTS = { label: 'Birthday gift', campaign: false, title: '', goal: '100', ends: '' };
 
 function Modal({
   title,

@@ -92,6 +92,32 @@ export interface GiftSummary {
   status: string;
   paymentCount: number;
   totals: Record<string, string>;
+  /** Present when the link is a birthday campaign. */
+  campaign?: GiftCampaign | null;
+  /** Visible notes, newest first (the dashboard summary carries the latest few). */
+  notes?: GiftNote[];
+  hiddenNotes?: number;
+}
+
+/** Mirrors server/src/campaigns.ts. */
+export interface GiftCampaign {
+  title: string;
+  goalCents: number;
+  endsAt: number;
+  raisedCents: number;
+  otherGifts: Record<string, string>;
+  ended: boolean;
+}
+
+export interface GiftNote {
+  name: string | null;
+  note: string | null;
+  token: string | null;
+  amount: string | null;
+  blockNumber: number | null;
+  txHash: string;
+  logIndex: number;
+  hidden?: boolean;
 }
 
 export interface Holdings {
@@ -241,16 +267,29 @@ export const api = {
   gift: (id: string) => getJson<GiftSummary>(`/api/gifts/${id}`),
   registerSprout: (wallet: WalletState, txHash: string) =>
     signedPostJson<{ sprout: Sprout }>(wallet, '/api/sprouts', 'plant', { txHash }),
-  createGift: (wallet: WalletState, vaultId: string, label: string, acceptedAssets: string[]) =>
-    signedPostJson<{ gift: { id: string; vaultId: Address; label: string | null; acceptedAssets: Address[] } }>(
-      wallet,
-      '/api/gifts',
-      'gift-create',
-      { vaultId, label, acceptedAssets },
-    ),
-  recordGiftPayment: (wallet: WalletState, giftId: string, txHash: string) =>
+  createGift: (
+    wallet: WalletState,
+    vaultId: string,
+    label: string,
+    acceptedAssets: string[],
+    campaign?: { title: string; goalDollars: number; endsAt: number },
+  ) =>
+    signedPostJson<{
+      gift: { id: string; vaultId: Address; label: string | null; acceptedAssets: Address[]; campaign?: GiftCampaign | null };
+    }>(wallet, '/api/gifts', 'gift-create', { vaultId, label, acceptedAssets, ...(campaign ? { campaign } : {}) }),
+  recordGiftPayment: (wallet: WalletState, giftId: string, txHash: string, message?: { name?: string; note?: string }) =>
     signedPostJson<{ accepted: boolean; duplicate: boolean }>(wallet, `/api/gifts/${giftId}/payments`, 'gift-pay', {
       txHash,
+      ...(message?.name ? { name: message.name } : {}),
+      ...(message?.note ? { note: message.note } : {}),
+    }),
+  giftNotes: (wallet: WalletState, giftId: string) =>
+    signedPostJson<{ notes: GiftNote[] }>(wallet, `/api/gifts/${giftId}/notes`, 'gift-notes', {}),
+  setGiftNoteHidden: (wallet: WalletState, giftId: string, note: { txHash: string; logIndex: number }, hidden: boolean) =>
+    signedPostJson<{ notes: GiftNote[] }>(wallet, `/api/gifts/${giftId}/notes/visibility`, 'gift-note-visibility', {
+      txHash: note.txHash,
+      logIndex: note.logIndex,
+      hidden,
     }),
   createMilestone: (wallet: WalletState, vaultId: string, body: { milestoneId: string; txHash: string; descriptionHash?: string }) =>
     signedPostJson<{ milestone: Milestone }>(wallet, `/api/sprouts/${vaultId}/milestones`, 'milestone-create', body),

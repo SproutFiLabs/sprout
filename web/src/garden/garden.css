@@ -619,6 +619,36 @@ html[data-appearance="dark"] .garden-legend-swatch--worth { border-top-color: #a
   overflow: hidden;
 }
 .garden-gift-hero h2 { font-family: var(--garden-serif); font-weight: 400; font-size: 34px; letter-spacing: -0.8px; margin: 0 0 8px; }
+
+/* Birthday campaigns and gift notes. */
+.garden-gift-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.garden-gift-row-title { display: grid; gap: 6px; min-width: 180px; flex: 1 1 220px; }
+.campaign-progress { display: grid; gap: 8px; margin: 6px 0 14px; }
+.campaign-progress--compact { margin: 0; gap: 5px; }
+.campaign-progress-figures { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; }
+.campaign-progress-figures b { font-family: var(--garden-serif, Georgia, serif); font-size: 26px; font-weight: 400; }
+.campaign-progress--compact .campaign-progress-figures b { font-size: 16px; font-family: inherit; font-weight: 600; }
+.campaign-progress-figures span { color: var(--garden-soft, #5f5c54); font-size: 14px; }
+.campaign-progress-figures small { margin-left: auto; color: var(--garden-soft, #5f5c54); font-size: 12.5px; }
+.campaign-progress-bar { height: 10px; border-radius: 999px; background: #ece7dc; overflow: hidden; }
+.campaign-progress--compact .campaign-progress-bar { height: 6px; }
+.campaign-progress--compact .campaign-progress-figures small { margin-left: 0; flex-basis: 100%; order: 3; }
+.campaign-progress-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f5793b, #3f7a3a); transition: width .4s ease; }
+.gift-notes { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
+.gift-note { padding: 12px 14px; border: 1px solid var(--garden-line, #ece7dc); border-radius: 14px; background: var(--garden-surface, #fffdfa); }
+.gift-note--hidden { opacity: .55; border-style: dashed; }
+.gift-note-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 14px; }
+.gift-note-head span { color: var(--garden-soft, #5f5c54); }
+.gift-note p { margin: 6px 0 0; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+.gift-note-toggle { margin-top: 6px; }
+.garden-gift-notes-group { display: grid; gap: 2px; margin-top: 12px; }
+.gift-notes-wall { margin: 18px 0 6px; }
+.gift-notes-wall h2 { margin: 0; font-family: var(--garden-serif, Georgia, serif); font-weight: 400; font-size: 22px; }
+.gift-note-privacy { margin: -2px 0 0; font-size: 12.5px; }
+.garden-gift-form textarea { width: 100%; min-height: 72px; padding: 10px 12px; border: 1px solid var(--garden-line, #ece7dc); border-radius: 12px; font: inherit; resize: vertical; background: #fff; color: inherit; }
+html[data-appearance="dark"] .campaign-progress-bar { background: #2c3b31; }
+html[data-appearance="dark"] .gift-note { background: #16261d; border-color: #34463b; }
+html[data-appearance="dark"] .garden-gift-form textarea { background: #0f1b14; border-color: #466451; color: #f3efe4; }
 .garden-gift-hero p { color: #4f4a56; margin: 0 0 18px; }
 .garden-gift-hero img {
   width: 100%;

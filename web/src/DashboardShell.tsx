@@ -7,7 +7,7 @@ import {
   Repeat2,
 } from 'lucide-react';
 import type {
-  AutomationCapability, BeneficiaryState, ChainEvent, ChainPublic, GiftSummary, Growth, Health,
+  AutomationCapability, BeneficiaryState, ChainEvent, ChainPublic, GiftNote, GiftSummary, Growth, Health,
   Holdings, Job, LocalWalletInfo, Milestone, Sprout,
 } from './api';
 import type { WalletState } from './wallet';
@@ -18,6 +18,7 @@ import { formatRunDateTime } from './dates';
 import { cadenceLabel, choreRewardText, holdingSharesText } from './garden/format';
 import { growthSummary, putInSteps } from './garden/growthSummary';
 import { ThemeToggle } from './theme/ThemeSettings';
+import { CampaignProgress, GiftNotesList, giftAmountLabel } from './components/Campaign';
 import { ResourcesMenu } from './components/ResourcesMenu';
 import { BloomGarden } from './garden/BloomGarden';
 
@@ -108,6 +109,14 @@ export interface DashboardShellProps {
   onRunToolAdvance: () => void;
   onReconcile: () => void;
   onRunJobs: () => void;
+  /** Birthday campaigns and gift notes (live dashboard only). */
+  gifting?: {
+    onOpenCampaign: () => void;
+    /** Every note per gift link, hidden ones included, once the parent has loaded them. */
+    allNotes: Record<string, GiftNote[]>;
+    onShowAllNotes: (g: GiftSummary) => void;
+    onToggleNoteHidden: (g: GiftSummary, note: GiftNote) => void;
+  };
   symbolFor: (asset: string) => string;
   decimalsFor: (asset: string) => number;
   mode?: 'live' | 'sample';
@@ -373,6 +382,7 @@ export function DashboardShell(props: DashboardShellProps) {
   } = props;
 
   const isSample = mode === 'sample';
+  const gifting = isSample ? undefined : props.gifting;
   // Disconnected live mode still renders the real dashboard shell: the garden
   // layout and navigation are identical to a connected session, and only the
   // first-run panel swaps its call to action from planting to connecting.
@@ -1018,7 +1028,16 @@ export function DashboardShell(props: DashboardShellProps) {
               <span className="garden-eyebrow">From their people. For their future.</span>
               <h2>Less plastic. More possibility.</h2>
               <p>One shared savings pot. One simple link. Gifts add funds without granting any control.</p>
-              {canParentAct ? <button className="garden-pill garden-pill--dark" data-testid="gift-open" onClick={onOpenGift} disabled={!chainReady}>Create a gift link</button> : null}
+              {canParentAct ? (
+                <div className="garden-gift-hero-actions">
+                  <button className="garden-pill garden-pill--dark" data-testid="gift-open" onClick={onOpenGift} disabled={!chainReady}>Create a gift link</button>
+                  {gifting ? (
+                    <button className="garden-pill" data-testid="campaign-open" onClick={gifting.onOpenCampaign} disabled={!chainReady}>
+                      Start a birthday campaign
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
             <img src="/art/card-lavender.png" alt="" aria-hidden />
           </div>
@@ -1028,7 +1047,10 @@ export function DashboardShell(props: DashboardShellProps) {
               <ul className="garden-stack">
                 {gifts.map((g) => (
                   <li key={g.id} className="garden-gift-row">
-                    <span>{g.label ?? 'Gift link'}</span>
+                    <span className="garden-gift-row-title">
+                      {g.campaign ? <b>{g.campaign.title}</b> : (g.label ?? 'Gift link')}
+                      {g.campaign ? <CampaignProgress campaign={g.campaign} nowMs={nowMs ?? Date.now()} compact /> : null}
+                    </span>
                     <code data-testid="gift-link">{`${window.location.origin}/gift/${g.id}`}</code>
                     <span className="garden-muted" data-testid="gift-count">{g.paymentCount} gift(s)</span>
                     <button data-testid="gift-pay" className="garden-pill" onClick={() => onOpenGiftPay(g)} disabled={!chainReady}>Pay</button>
@@ -1038,8 +1060,36 @@ export function DashboardShell(props: DashboardShellProps) {
             )}
           </div>
           <div className="garden-card">
-            <h2>Every little gift belongs.</h2>
-            <p className="garden-empty-note">Even a small gift becomes part of their mix. Donor notes are not supported yet.</p>
+            <h2>{gifting ? 'Notes from family' : 'Every little gift belongs.'}</h2>
+            {gifting ? (
+              gifts.some((g) => (g.notes?.length ?? 0) > 0 || (g.hiddenNotes ?? 0) > 0 || gifting.allNotes[g.id]) ? (
+                gifts.map((g) => {
+                  const all = gifting.allNotes[g.id];
+                  const notes = all ?? g.notes ?? [];
+                  const hidden = g.hiddenNotes ?? 0;
+                  if (notes.length === 0 && hidden === 0) return null;
+                  return (
+                    <div className="garden-gift-notes-group" key={g.id} data-testid="gift-notes-group">
+                      <small className="garden-muted">{g.campaign?.title ?? g.label ?? 'Gift link'}</small>
+                      <GiftNotesList
+                        notes={notes}
+                        tokenLabel={(token, amount) => (chain ? giftAmountLabel(token, amount, chain.contracts) : amount)}
+                        onToggleHidden={canParentAct ? (n) => gifting.onToggleNoteHidden(g, n) : undefined}
+                      />
+                      {!all && hidden > 0 && canParentAct ? (
+                        <button className="garden-see-all" data-testid="gift-notes-show-hidden" onClick={() => gifting.onShowAllNotes(g)}>
+                          Show {hidden} hidden {hidden === 1 ? 'note' : 'notes'}
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="garden-empty-note">When family add a gift, they can leave a short note. Notes show up here and on the gift page, and you can hide any of them.</p>
+              )
+            ) : (
+              <p className="garden-empty-note">Even a small gift becomes part of their mix.</p>
+            )}
             <a className="garden-pill" href="/gift">Preview the gift experience <ArrowUpRight size={15} /></a>
           </div>
         </div>

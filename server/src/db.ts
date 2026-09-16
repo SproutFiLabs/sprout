@@ -44,6 +44,30 @@ CREATE TABLE IF NOT EXISTS gift_payments (
   UNIQUE(chain_id, tx_hash, log_index)
 );
 
+-- A gift link can be a time-boxed campaign with a goal ("Maya turns 8").
+CREATE TABLE IF NOT EXISTS gift_campaigns (
+  gift_id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  goal_cents INTEGER NOT NULL,
+  ends_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+-- A gifter's name and note, keyed to their verified on-chain gift.
+CREATE TABLE IF NOT EXISTS gift_notes (
+  chain_id INTEGER NOT NULL,
+  tx_hash TEXT NOT NULL,
+  log_index INTEGER NOT NULL,
+  gift_id TEXT NOT NULL,
+  gifter TEXT NOT NULL,
+  name TEXT,
+  note TEXT,
+  hidden INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (chain_id, tx_hash, log_index)
+);
+CREATE INDEX IF NOT EXISTS idx_gift_notes_gift ON gift_notes(gift_id);
+
 CREATE TABLE IF NOT EXISTS milestones (
   uid TEXT PRIMARY KEY,
   milestone_id TEXT NOT NULL,

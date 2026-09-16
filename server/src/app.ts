@@ -34,12 +34,28 @@ import {
 import { createMutex } from './lock';
 import { DEFAULT_PUBLIC_ORIGIN, giftPreviewHtml } from './sharePreview';
 import {
+  CAMPAIGN_MAX_DAYS,
+  GOAL_MAX_DOLLARS,
+  NAME_MAX,
+  NOTE_MAX,
+  TITLE_MAX,
+  TextRuleError,
+  campaignView,
+  cleanText,
+  noteView,
+  notesView,
+} from './campaigns';
+import {
   activityTotals,
   getGift,
   getJob,
   getMilestone,
   getSprout,
   insertGift,
+  insertGiftCampaign,
+  listGiftNotes,
+  setGiftNoteHidden,
+  upsertGiftNote,
   insertGiftPayment,
   listChainEvents,
   listGiftPayments,
@@ -139,6 +155,28 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   };
   const app = new Hono();
   const serialize = deps.runExclusive ?? createMutex();
+
+  const nowSeconds = () => Math.floor((deps.now ? deps.now() : Date.now()) / 1000);
+  const settlementDecimalsFor = async (): Promise<number> => {
+    if (deps.chain.config.chain.configured && deps.chain.publicClient) return getSettlementDecimals(deps.chain);
+    return deps.chain.config.settlementDecimals ?? 6;
+  };
+  const campaignFor = (giftId: string, settlementDecimals: number) =>
+    campaignView(deps.db, giftId, {
+      settlementToken: deps.chain.config.chain.contracts.settlementToken,
+      settlementDecimals,
+      nowSeconds: nowSeconds(),
+    });
+  const giftCampaign = async (giftId: string) => campaignFor(giftId, await settlementDecimalsFor());
+  /** Text rules (length, no links) surface as a 400 with the rule's own message. */
+  const textRule = <T>(fn: () => T): T => {
+    try {
+      return fn();
+    } catch (error) {
+      if (error instanceof TextRuleError) throw new HttpError(400, error.message);
+      throw error;
+    }
+  };
 
   app.onError((err, c) => {
     if (err instanceof AuthError) return c.json({ error: err.message }, 401);
@@ -261,6 +299,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const sprout = getSprout(deps.db, c.req.param('id'));
     if (!sprout) throw new HttpError(404, 'sprout not found');
     const graduated = await isGraduated(deps.chain, sprout.graduationTimestamp, deps.now ? deps.now() : Date.now());
+    const settlementDecimals = await settlementDecimalsFor();
     return c.json({
       sprout: { ...sprout, graduated },
       automation: automationCapability(deps.chain),
@@ -272,6 +311,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
         for (const p of payments) {
           totals[p.token] = (BigInt(totals[p.token] ?? '0') + BigInt(p.amount)).toString();
         }
+        const { notes, hiddenNotes } = notesView(deps.db, g.id, 5);
         return {
           id: g.id,
           vaultId: g.vaultId,
@@ -280,6 +320,9 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
           acceptedAssets: g.acceptedAssets,
           paymentCount: payments.length,
           totals,
+          campaign: campaignFor(g.id, settlementDecimals),
+          notes,
+          hiddenNotes,
         };
       }),
     });
@@ -454,21 +497,42 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
         vaultId: addressSchema,
         label: z.string().min(1).max(60).optional(),
         acceptedAssets: z.array(addressSchema).min(1).max(5),
+        campaign: z
+          .object({
+            title: z.string(),
+            goalDollars: z.number().int().min(1).max(GOAL_MAX_DOLLARS),
+            endsAt: z.number().int(),
+          })
+          .optional(),
       }),
     );
     assertParent(deps.db, body.vaultId, signer);
+    let campaign: { title: string; goalCents: number; endsAt: number } | null = null;
+    if (body.campaign) {
+      const title = textRule(() => cleanText(body.campaign!.title, TITLE_MAX, 'Campaign title'));
+      if (!title) throw new HttpError(400, 'Campaign title is required');
+      const nowSeconds = Math.floor((deps.now ? deps.now() : Date.now()) / 1000);
+      if (body.campaign.endsAt <= nowSeconds) throw new HttpError(400, 'The campaign must end in the future');
+      if (body.campaign.endsAt > nowSeconds + CAMPAIGN_MAX_DAYS * 86400) {
+        throw new HttpError(400, `A campaign can run for at most ${CAMPAIGN_MAX_DAYS} days`);
+      }
+      campaign = { title, goalCents: body.campaign.goalDollars * 100, endsAt: body.campaign.endsAt };
+    }
     const id = `0x${randomBytes(32).toString('hex')}` as Hex;
-    insertGift(deps.db, {
-      id,
-      vaultId: getAddress(body.vaultId),
-      label: body.label ?? null,
-      acceptedAssets: body.acceptedAssets.map(getAddress),
-      status: 'open',
-    });
-    return c.json({ gift: getGift(deps.db, id) }, 201);
+    deps.db.transaction(() => {
+      insertGift(deps.db, {
+        id,
+        vaultId: getAddress(body.vaultId),
+        label: body.label ?? campaign?.title ?? null,
+        acceptedAssets: body.acceptedAssets.map(getAddress),
+        status: 'open',
+      });
+      if (campaign) insertGiftCampaign(deps.db, { giftId: id, ...campaign });
+    })();
+    return c.json({ gift: { ...getGift(deps.db, id)!, campaign: await giftCampaign(id) } }, 201);
   });
 
-  app.get('/api/gifts/:id', (c) => {
+  app.get('/api/gifts/:id', async (c) => {
     const gift = getGift(deps.db, c.req.param('id'));
     if (!gift) throw new HttpError(404, 'gift not found');
     const payments = listGiftPayments(deps.db, gift.id);
@@ -484,7 +548,30 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       status: gift.status,
       paymentCount: payments.length,
       totals: totalByToken,
+      campaign: await giftCampaign(gift.id),
+      ...notesView(deps.db, gift.id),
     });
+  });
+
+  // The parent's full list of notes for a gift link, hidden ones included.
+  app.post('/api/gifts/:id/notes', async (c) => {
+    const signer = await requireAuth(c, deps, 'gift-notes');
+    const gift = getGift(deps.db, c.req.param('id'));
+    if (!gift) throw new HttpError(404, 'gift not found');
+    assertParent(deps.db, gift.vaultId, signer);
+    return c.json({ notes: listGiftNotes(deps.db, gift.id, { includeHidden: true }).map((n) => noteView(n, true)) });
+  });
+
+  app.post('/api/gifts/:id/notes/visibility', async (c) => {
+    const signer = await requireAuth(c, deps, 'gift-note-visibility');
+    const gift = getGift(deps.db, c.req.param('id'));
+    if (!gift) throw new HttpError(404, 'gift not found');
+    assertParent(deps.db, gift.vaultId, signer);
+    const body = await readJson(c, z.object({ txHash: hashSchema, logIndex: z.number().int().min(0), hidden: z.boolean() }));
+    if (!setGiftNoteHidden(deps.db, { giftId: gift.id, txHash: body.txHash, logIndex: body.logIndex }, body.hidden)) {
+      throw new HttpError(404, 'note not found');
+    }
+    return c.json({ notes: listGiftNotes(deps.db, gift.id, { includeHidden: true }).map((n) => noteView(n, true)) });
   });
 
   app.post('/api/gifts/:id/payments', async (c) => {
@@ -492,7 +579,14 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const gift = getGift(deps.db, c.req.param('id'));
     if (!gift) throw new HttpError(404, 'gift not found');
     requireConfigured(deps);
-    const body = await readJson(c, z.object({ txHash: hashSchema }));
+    const body = await readJson(
+      c,
+      z.object({ txHash: hashSchema, name: z.string().max(200).optional(), note: z.string().max(1000).optional() }),
+    );
+    // Check the note before anything is recorded, so a refused note is reported
+    // as such rather than half-applied.
+    const name = textRule(() => cleanText(body.name, NAME_MAX, 'Name'));
+    const note = textRule(() => cleanText(body.note, NOTE_MAX, 'Note'));
     const events = await decodeReceiptLogs(deps.chain.publicClient!, sproutVaultAbi, [gift.vaultId as Address], body.txHash as Hex);
     const payment = events.find(
       (e) => e.eventName === 'GiftReceived' && String(e.args.giftRef).toLowerCase() === gift.id.toLowerCase(),
@@ -517,6 +611,19 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       amount: String(payment.args.amount),
       blockNumber: Number(payment.blockNumber),
     });
+    // The note belongs to the verified gift whether this call or the indexer
+    // recorded the payment first.
+    if (name || note) {
+      upsertGiftNote(deps.db, {
+        chainId: deps.chain.config.chain.chainId,
+        txHash: body.txHash,
+        logIndex: payment.logIndex,
+        giftId: gift.id,
+        gifter: getAddress(String(payment.args.gifter)),
+        name,
+        note,
+      });
+    }
     return c.json(
       {
         accepted: true,
