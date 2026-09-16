@@ -150,6 +150,15 @@ export interface LocalWalletInfo {
   accounts: Array<{ address: Address; label: string; role: string }>;
 }
 
+export interface PublicStats {
+  sproutsPlanted: number;
+  sproutsFunded: number;
+  giftsSent: number;
+  purchases: number;
+  source: 'chain' | 'index';
+  asOf: number;
+}
+
 async function getJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) {
@@ -193,6 +202,7 @@ async function signedPostJson<T>(wallet: WalletState, url: string, purpose: stri
 
 export const api = {
   health: () => getJson<Health>('/api/health'),
+  stats: () => getJson<PublicStats>('/api/stats'),
   config: () => getJson<{ chain: ChainPublic }>('/api/config'),
   sproutsByParent: (parent: string) => getJson<{ sprouts: Sprout[] }>(`/api/sprouts?parent=${parent}`),
   sproutsByBeneficiary: (beneficiary: string) =>

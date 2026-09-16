@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { Hono, type Context } from 'hono';
 import { getAddress, type Address, type Hex } from 'viem';
 import { z } from 'zod';
-import { addressSchema, hashSchema, sproutVaultAbi } from '@sprout/shared';
+import { addressSchema, hashSchema, sproutFactoryAbi, sproutVaultAbi } from '@sprout/shared';
 import type { SproutDb } from './db';
 import type { ChainContext } from './chain';
 import {
@@ -32,6 +32,7 @@ import {
 } from './localWallet';
 import { createMutex } from './lock';
 import {
+  activityTotals,
   getGift,
   getJob,
   getMilestone,
@@ -188,6 +189,37 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   if (deps.localDemo) {
     app.get('/api/fixtures', (c) => c.json(localFixtures(deps.chain.config.chain.chainId)));
   }
+
+  // Public, aggregate-only numbers for the landing page. The sprout count is
+  // read from the factory, so it includes sprouts this server never indexed.
+  app.get('/api/stats', async (c) => {
+    const chain = deps.chain;
+    const stats = await chainCache(chain).get('stats', READ_TTL.stats, async () => {
+      const totals = activityTotals(deps.db, chain.config.chain.chainId);
+      let planted = totals.sprouts;
+      let source: 'chain' | 'index' = 'index';
+      const factory = chain.config.chain.contracts.factory;
+      if (chain.publicClient && chain.config.chain.configured && factory) {
+        try {
+          planted = Number(
+            await chain.publicClient.readContract({ address: factory, abi: sproutFactoryAbi, functionName: 'totalSprouts' }),
+          );
+          source = 'chain';
+        } catch {
+          // fall back to the indexed count
+        }
+      }
+      return {
+        sproutsPlanted: planted,
+        sproutsFunded: totals.fundedSprouts,
+        giftsSent: totals.gifts,
+        purchases: totals.purchases,
+        source,
+        asOf: Math.floor((deps.now ? deps.now() : Date.now()) / 1000),
+      };
+    });
+    return c.json(stats);
+  });
 
   // ---- auth ---------------------------------------------------------------
 

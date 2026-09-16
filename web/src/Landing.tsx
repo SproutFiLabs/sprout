@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ThemeToggle } from './theme/ThemeSettings';
+import { api } from './api';
 import { BloomGarden } from './garden/BloomGarden';
 import {
   ArrowUp, ArrowRight, ArrowLeft, ChevronDown, Menu, X, Play, Pause, Plus, Repeat2, Gift, Check,
@@ -7,6 +8,37 @@ import {
 } from 'lucide-react';
 
 const DASHBOARD = '/dashboard';
+
+/**
+ * Below this the real count reads as a warning rather than as momentum, so the
+ * proof strip keeps its illustrative figure until there is something to show.
+ */
+const LIVE_COUNT_MINIMUM = 10;
+
+function PlantedCount() {
+  const [planted, setPlanted] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    api
+      .stats()
+      .then((s) => {
+        if (live) setPlanted(s.sproutsPlanted);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  if (planted === null || planted < LIVE_COUNT_MINIMUM) {
+    return <div className="proof-number"><strong>$5</strong><span>A little sample starting point</span></div>;
+  }
+  return (
+    <div className="proof-number" data-testid="live-planted">
+      <strong>{planted.toLocaleString('en-US')}</strong>
+      <span>Sprouts planted on Robinhood Chain</span>
+    </div>
+  );
+}
 
 const features = [
   {
@@ -284,7 +316,7 @@ export function Landing() {
 
       <div className="wrap">
         <section className="reference-proof">
-          <div className="proof-number"><strong>$5</strong><span>A little sample starting point</span></div>
+          <PlantedCount />
           <div className="proof-number"><strong>3</strong><span>Ways to add to their future</span></div>
           <div className="proof-note">
             <p>Weekly contributions, earned allowances and thoughtful gifts. The things your family already does, coming together in one little portfolio.</p>

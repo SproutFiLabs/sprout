@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { issueNonce } from '../src/auth';
-import { insertGift, upsertMilestone, upsertSprout } from '../src/repo';
+import { insertChainEvent, insertGift, upsertMilestone, upsertSprout } from '../src/repo';
 import { loadServerConfig } from '../src/config';
 import { createChainContext } from '../src/chain';
 import {
@@ -187,5 +187,33 @@ describe('growth history honesty', () => {
     const body = (await res.json()) as { available: boolean; reason?: string };
     expect(body.available).toBe(false);
     expect(body.reason).toContain('no verified growth history');
+  });
+});
+
+describe('public stats', () => {
+  test('aggregates indexed activity without exposing any vault', async () => {
+    const db = memoryDb();
+    seedSprout(db);
+    const event = (txHash: string, logIndex: number, eventName: string) =>
+      insertChainEvent(db, {
+        chainId: 31337,
+        txHash,
+        logIndex,
+        blockNumber: 1,
+        address: VAULT,
+        eventName,
+        vaultId: VAULT,
+        payload: {},
+      });
+    event('0x' + '01'.repeat(32), 0, 'Funded');
+    event('0x' + '02'.repeat(32), 0, 'GiftReceived');
+    event('0x' + '03'.repeat(32), 0, 'InvestmentExecuted');
+    event('0x' + '03'.repeat(32), 1, 'InvestmentExecuted'); // same purchase, second asset
+    const app = testApp(db, testimonialChain());
+    const res = await app.request('/api/stats');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body).toMatchObject({ sproutsPlanted: 1, sproutsFunded: 1, giftsSent: 1, purchases: 1, source: 'index' });
+    expect(JSON.stringify(body)).not.toContain(VAULT.slice(2));
   });
 });

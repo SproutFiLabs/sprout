@@ -377,6 +377,30 @@ export function listChainEvents(
     });
 }
 
+/** Indexed activity totals for the public stats endpoint. */
+export function activityTotals(db: SproutDb, chainId: number): {
+  sprouts: number;
+  fundedSprouts: number;
+  gifts: number;
+  purchases: number;
+} {
+  const one = (sql: string, ...args: unknown[]) =>
+    ((db.prepare(sql).get(...(args as never[])) as { n: number } | null)?.n ?? 0);
+  return {
+    sprouts: one('SELECT COUNT(*) AS n FROM sprouts WHERE chain_id = ?', chainId),
+    fundedSprouts: one(
+      "SELECT COUNT(DISTINCT lower(vault_id)) AS n FROM chain_events WHERE chain_id = ? AND event_name IN ('Funded', 'GiftReceived')",
+      chainId,
+    ),
+    gifts: one("SELECT COUNT(*) AS n FROM chain_events WHERE chain_id = ? AND event_name = 'GiftReceived'", chainId),
+    // One purchase buys several assets (one event each); count transactions.
+    purchases: one(
+      "SELECT COUNT(DISTINCT tx_hash) AS n FROM chain_events WHERE chain_id = ? AND event_name = 'InvestmentExecuted'",
+      chainId,
+    ),
+  };
+}
+
 export function getCursor(db: SproutDb, chainId: number): number {
   const row = db.prepare('SELECT last_block FROM indexer_cursor WHERE chain_id = ?').get(chainId) as { last_block: number } | null;
   return row?.last_block ?? 0;

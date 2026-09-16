@@ -81,6 +81,8 @@ export const READ_TTL = {
   block: 2_000,
   /** A vault's full holdings response. Callers can demand newer with `afterBlock`. */
   holdings: 10_000,
+  /** Public landing-page totals. */
+  stats: 60_000,
   /** A price feed round. Shared by every vault holding that token. */
   feedRound: 10_000,
   oraclePaused: 15_000,
