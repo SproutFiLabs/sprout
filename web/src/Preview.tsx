@@ -74,6 +74,7 @@ export function Preview({ displayName = 'Emma', onRestartTour }: { displayName?:
         onOpenPlant={() => live('Planting a sprout')}
         onOpenFund={() => live('Adding money')}
         onOpenSchedule={() => live('Editing the weekly plan')}
+        onOpenInvestNow={() => live('Investing now')}
         onOpenGift={() => live('Creating a gift link')}
         onOpenGiftPay={() => live('Paying a gift')}
         anyModalOpen={notice !== null}

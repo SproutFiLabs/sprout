@@ -3,7 +3,7 @@ import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Address, WalletClient } from 'viem';
 import { erc20Abi } from 'viem';
-import { sproutFactoryAbi, sproutVaultAbi } from '@sprout/shared';
+import { mockPriceFeedAbi, sproutFactoryAbi, sproutVaultAbi } from '@sprout/shared';
 import { createServer } from '../server/src/index';
 import { loadServerConfig } from '../server/src/config';
 import {
@@ -185,6 +185,90 @@ async function main(): Promise<void> {
       args: [vault, deployment.venue],
     })) as bigint;
     check('no residual venue allowance remains', residualAllowance === 0n, residualAllowance);
+
+    // 3b. Parent-run purchase ("Invest now"): preview, schedule, simulate, execute.
+    type InvestQuote = {
+      due: boolean;
+      venue: `0x${string}`;
+      minOuts: string[] | null;
+      blocker: { code: string; message: string } | null;
+      legs: Array<{ amountIn: string; floorOut: string; simulatedOut: string | null; minOut: string | null }>;
+    };
+    const quoteUrl = (amount: bigint, after?: bigint) =>
+      `/api/sprouts/${vault}/invest-quote?amount=${amount}${after ? `&after=${after}` : ''}`;
+    const nowAmount = 20_000_000n;
+    const preview = await getJson<InvestQuote>(base, quoteUrl(nowAmount));
+    check('invest-now preview is unblocked but not yet due', !preview.due && !preview.blocker && !preview.minOuts, preview);
+    const tooMuch = await getJson<InvestQuote>(base, quoteUrl(10n ** 15n));
+    check('invest-now refuses more than the vault can spend', tooMuch.blocker?.code === 'insufficient-funds', tooMuch.blocker);
+
+    const setHash = await send(
+      parentClient,
+      { address: vault, abi: sproutVaultAbi, functionName: 'scheduleInvestment', args: [nowAmount, 604_800n, 0n] },
+      'invest-now schedule',
+    );
+    const setBlock = (await publicClient.getTransactionReceipt({ hash: setHash })).blockNumber;
+    const ready = await getJson<InvestQuote>(base, quoteUrl(nowAmount, setBlock));
+    check('invest-now quote is due with minimums to sign', ready.due && !!ready.minOuts && !ready.blocker, ready);
+    check(
+      'signed minimums sit between the oracle floor and the simulated output',
+      ready.legs.every(
+        (leg) =>
+          leg.amountIn === '0' ||
+          (BigInt(leg.minOut!) >= BigInt(leg.floorOut) && BigInt(leg.minOut!) <= BigInt(leg.simulatedOut!)),
+      ),
+      ready.legs,
+    );
+    const stockBalance = async () =>
+      (await publicClient.readContract({ address: deployment.stockA, abi: erc20Abi, functionName: 'balanceOf', args: [vault] })) as bigint;
+    const stockBefore = await stockBalance();
+    const execHash = await send(
+      parentClient,
+      { address: vault, abi: sproutVaultAbi, functionName: 'executeInvestment', args: [ready.venue, (ready.minOuts ?? []).map(BigInt)] },
+      'invest-now execute',
+    );
+    const stockAfter = await stockBalance();
+    check('parent-run purchase bought stock', stockAfter > stockBefore, { stockBefore, stockAfter });
+    const execBlock = (await publicClient.getTransactionReceipt({ hash: execHash })).blockNumber;
+    const freshHoldings = await getJson<{ holdings: Array<{ symbol: string; rawBalance: string }> }>(
+      base,
+      `/api/sprouts/${vault}/holdings?after=${execBlock}`,
+    );
+    check(
+      'holdings show the purchase immediately when asked for its block',
+      freshHoldings.holdings.find((h) => h.symbol === 'AAA')?.rawBalance === stockAfter.toString(),
+      freshHoldings.holdings,
+    );
+    const spent = await getJson<InvestQuote>(base, quoteUrl(nowAmount, execBlock));
+    check('the same purchase is not due again until next period', !spent.due && !spent.minOuts, spent);
+
+    // A stale price is reported before any signature, not as a wallet revert.
+    const feedAnswer = (await publicClient.readContract({
+      address: deployment.feedA,
+      abi: mockPriceFeedAbi,
+      functionName: 'latestAnswer',
+    })) as bigint;
+    const chainTime = (await publicClient.getBlock()).timestamp;
+    const staleHash = await walletClient.writeContract({
+      account: walletClient.account!,
+      chain: walletClient.chain ?? null,
+      address: deployment.feedA,
+      abi: mockPriceFeedAbi,
+      functionName: 'setAnswerAt',
+      args: [feedAnswer, chainTime - 7_200n],
+    });
+    const staleBlock = (await publicClient.waitForTransactionReceipt({ hash: staleHash })).blockNumber;
+    const stale = await getJson<InvestQuote>(base, quoteUrl(nowAmount, staleBlock));
+    check('a stale price blocks invest-now with a plain explanation', stale.blocker?.code === 'stale-price', stale.blocker);
+    const freshHash = await walletClient.writeContract({
+      account: walletClient.account!,
+      chain: walletClient.chain ?? null,
+      address: deployment.feedA,
+      abi: mockPriceFeedAbi,
+      functionName: 'setAnswer',
+      args: [feedAnswer],
+    });
+    await publicClient.waitForTransactionReceipt({ hash: freshHash });
 
     // 4. Gift link + payment indexed independently of any client callback
     const gift = await signedPost<{ gift: { id: string } }>(base, '/api/gifts', parentAccount, 'gift-create', {

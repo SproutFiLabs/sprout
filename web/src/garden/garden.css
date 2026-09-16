@@ -1314,3 +1314,30 @@ html[data-appearance="dark"] .risk-line svg { color: #e8b75c; }
   padding: 6px 2px;
 }
 .welcome-sprout-later:hover { color: #fff; }
+
+/* Invest now: the plan card's actions, and the dialog body. */
+.garden-plan-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.garden-plan-buttons:empty { display: none; }
+.invest-now { display: grid; gap: 12px; }
+.invest-now-lead { margin: 0; line-height: 1.5; }
+.garden-root .invest-now-available { margin: -6px 0 0; font-size: 12.5px; }
+.invest-now-legs {
+  list-style: none; margin: 0; padding: 10px 12px; display: grid; gap: 6px;
+  border: 1px solid var(--garden-line, #ece7dc); border-radius: 12px;
+  font-size: 13px; font-variant-numeric: tabular-nums;
+}
+.invest-now-legs li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.invest-now-legs li > span:first-child { min-width: 88px; color: var(--garden-soft, #5f5c54); }
+.garden-root .invest-now-keep {
+  flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px;
+  font-size: 14px; font-weight: 400; cursor: pointer;
+}
+.invest-now-keep input { width: 18px; height: 18px; margin: 0; flex: none; }
+.invest-now-note { margin: 0; font-size: 12.5px; line-height: 1.5; }
+.invest-now-step {
+  margin: 0; padding: 10px 12px; border-radius: 12px;
+  background: #eef6ec; color: #2f5a2c; font-size: 13.5px; font-weight: 600;
+}
+html[data-appearance="dark"] .invest-now-step { background: #1f3a2a; color: #cfe8d2; }
+html[data-appearance="dark"] .invest-now-legs { border-color: #3a4a40; }
+

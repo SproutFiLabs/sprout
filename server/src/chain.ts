@@ -89,6 +89,8 @@ export const READ_TTL = {
   /** Stock token multiplier; changes only on a corporate action. */
   multiplier: 60_000,
   chainId: 10_000,
+  /** An invest-now preview; short because it feeds a signature. */
+  investQuote: 3_000,
 } as const;
 
 const caches = new WeakMap<ChainContext, ReadCache>();
@@ -501,7 +503,7 @@ export async function readHoldings(
 }
 
 /** The shared clock, re-read if it is older than `minBlock`. */
-async function chainClockAtLeast(ctx: ChainContext, minBlock?: number): Promise<ChainClock> {
+export async function chainClockAtLeast(ctx: ChainContext, minBlock?: number): Promise<ChainClock> {
   const clock = await chainClock(ctx);
   if (!minBlock || clock.number >= minBlock) return clock;
   chainCache(ctx).invalidate('block');

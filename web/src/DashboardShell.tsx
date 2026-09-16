@@ -13,7 +13,7 @@ import type {
 import type { WalletState } from './wallet';
 import { PublicCa, SproutAddressRow } from './components/PublicCa';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
-import { getMilestoneTitle } from './localStore';
+import { getMilestoneTitle, isOneOffSchedule } from './localStore';
 import { formatRunDateTime } from './dates';
 import { cadenceLabel, choreRewardText, holdingSharesText } from './garden/format';
 import { growthSummary, putInSteps } from './garden/growthSummary';
@@ -90,6 +90,8 @@ export interface DashboardShellProps {
   onOpenPlant: () => void;
   onOpenFund: () => void;
   onOpenSchedule: () => void;
+  /** Parent buys the sprout's mix now from their own wallet. */
+  onOpenInvestNow: () => void;
   onOpenGift: () => void;
   onOpenGiftPay: (g: GiftSummary) => void;
   anyModalOpen: boolean;
@@ -376,7 +378,7 @@ export function DashboardShell(props: DashboardShellProps) {
     onFundTool, onAdvanceSeconds, onConnect, onConnectLocal, onLocalRole, onLocalAccount, sprouts, selectedId,
     onSelect, getNickname, selected, automation, milestones, jobs, gifts, holdings, growth, events, beneficiaryState,
     isParent, isBeneficiary, isGraduated, graduationProgress, balanceChange, chainReady, loading, txn, view, setView,
-    drawerOpen, setDrawerOpen, onOpenPlant, onOpenFund, onOpenSchedule, onOpenGift, onOpenAllocation, onOpenWithdraw,
+    drawerOpen, setDrawerOpen, onOpenPlant, onOpenFund, onOpenSchedule, onOpenInvestNow, onOpenGift, onOpenAllocation, onOpenWithdraw,
     onOpenChore, onOpenMilestone, onCancelSchedule, onReleaseMilestone, onCancelMilestone, onClaim, onOpenSettings, onOpenNotifications,
     onOpenHelp, onOpenOnboarding, onOpenAsset, onRunToolFund, onRunToolAdvance, onReconcile, onRunJobs, symbolFor, decimalsFor, anyModalOpen, onOpenGiftPay,
     mode = 'live', sample = null, nowMs,
@@ -396,7 +398,12 @@ export function DashboardShell(props: DashboardShellProps) {
   const settlementDecimals = chain?.contracts.settlementDecimals ?? 6;
   const activeJobs = jobs.filter((j) => j.status !== 'cancelled');
   const scheduled = activeJobs[0] ?? null;
-  const previousJob = jobs.filter((j) => j.status === 'cancelled' || j.status === 'paused').slice(-1)[0] ?? null;
+  const previousJob =
+    jobs
+      .filter((j) => j.status === 'cancelled' || j.status === 'paused')
+      // A one-off Invest now purchase is not a plan the parent paused.
+      .filter((j) => !(j.status === 'cancelled' && isOneOffSchedule(j.vaultId, j.lastTxHash)))
+      .slice(-1)[0] ?? null;
   const chores = milestones;
   const openChores = chores.filter((m) => m.status === 'created');
   const releasedChores = chores.filter((m) => m.status === 'released');
@@ -530,6 +537,11 @@ export function DashboardShell(props: DashboardShellProps) {
     if (!cash || cash.rawBalance === '0' || stock) return null;
     return fmtTokenAmount(cash.rawBalance, cash.address);
   })();
+
+  /** Settlement in the vault that a parent could invest right now. */
+  const hasCashToInvest: boolean =
+    !isSample && !!holdings?.available && holdings.holdings.some((h) => h.kind === 'settlement' && h.rawBalance !== '0');
+  const canInvestNow = canParentAct && hasCashToInvest;
 
   const holdingsRows: ReactNode = vaultIsEmpty ? (
     <div className="garden-empty-vault" data-testid="empty-vault-holdings">
@@ -711,6 +723,14 @@ export function DashboardShell(props: DashboardShellProps) {
       ) : (
         putInSummary ?? <div className="garden-change">{changeText()}</div>
       )}
+      {fundedNotInvested && canParentAct ? (
+        <div className="garden-fund-prompt" data-testid="invest-prompt">
+          <span>{fundedNotInvested} is in the sprout, waiting to be invested.</span>
+          <button className="garden-pill garden-pill--dark" data-testid="prompt-invest" onClick={onOpenInvestNow} disabled={!chainReady}>
+            Invest it now <ArrowUpRight size={15} />
+          </button>
+        </div>
+      ) : null}
       {growth?.available ? (
         <GardenChart snapshots={growth.snapshots} contributions={growth.contributions} period={period} feedDecimals={growth.snapshots[0]?.feedDecimals ?? 8} nowMs={chartNow} />
       ) : (
@@ -964,10 +984,24 @@ export function DashboardShell(props: DashboardShellProps) {
               <summary>How it works</summary>
               <p>Your plan is a recurring instruction on the vault. The service checks it each period and places one purchase; if it was offline, the next check places a single catch-up purchase. Quotes, funding and eligibility depend on the market feed connected to the vault.</p>
             </details>
-            {canParentAct && !activeJobs.length ? (
-              <button data-testid="schedule-open" className="garden-pill garden-pill--dark" onClick={onOpenSchedule} disabled={!chainReady}>
-                {previousJob ? 'Resume weekly plan' : 'Set weekly plan'}
-              </button>
+            <div className="garden-plan-buttons">
+              {canParentAct && !activeJobs.length ? (
+                <button data-testid="schedule-open" className="garden-pill garden-pill--dark" onClick={onOpenSchedule} disabled={!chainReady}>
+                  {previousJob ? 'Resume weekly plan' : 'Set weekly plan'}
+                </button>
+              ) : null}
+              {canInvestNow ? (
+                <button data-testid="invest-now-open" className="garden-pill" onClick={onOpenInvestNow} disabled={!chainReady}>
+                  {activeJobs.length ? 'Run this week’s purchase now' : 'Invest now'}
+                </button>
+              ) : null}
+            </div>
+            {canParentAct && !automation?.enabled ? (
+              <p className="garden-empty-note" data-testid="invest-now-hint">
+                {hasCashToInvest
+                  ? 'While automatic investing is off, use Invest now to buy the mix from your own wallet.'
+                  : 'Add funds first; then Invest now buys the mix from your own wallet.'}
+              </p>
             ) : null}
           </div>
           <div className="garden-card garden-plan-mix">

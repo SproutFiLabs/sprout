@@ -22,6 +22,7 @@ import { contributionHistory, type ContributionHistory } from './contributions';
 import { AuthError, authenticate, issueNonce } from './auth';
 import { reconcile, snapshotAll } from './indexer';
 import { automationCapability, runDueJobs } from './jobs';
+import { investQuote } from './invest';
 import { localFixtures } from './fixtures';
 import {
   LocalWalletError,
@@ -677,6 +678,25 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const afterBlock = afterRaw && /^\d{1,12}$/.test(afterRaw) ? Number(afterRaw) : undefined;
     const holdings = await cachedHoldings(deps.chain, sprout.id as Address, { afterBlock });
     return c.json(holdings);
+  });
+
+  // Preview (and, once due, the signed minimums for) a parent-run purchase.
+  app.get('/api/sprouts/:id/invest-quote', async (c) => {
+    const sprout = getSprout(deps.db, c.req.param('id'));
+    if (!sprout) throw new HttpError(404, 'sprout not found');
+    requireConfigured(deps);
+    const amountRaw = c.req.query('amount') ?? '';
+    if (!/^\d{1,30}$/.test(amountRaw)) throw new HttpError(400, 'amount must be a whole number of settlement base units');
+    const afterRaw = c.req.query('after');
+    const minBlock = afterRaw && /^\d{1,12}$/.test(afterRaw) ? Number(afterRaw) : undefined;
+    const amount = BigInt(amountRaw);
+    // Unauthenticated, so share identical requests for a moment.
+    const quote = await chainCache(deps.chain).get(
+      `invest-quote:${sprout.id.toLowerCase()}:${amount}:${minBlock ?? 0}`,
+      READ_TTL.investQuote,
+      () => investQuote(deps.chain, sprout.id as Address, amount, { minBlock }),
+    );
+    return c.json(quote);
   });
 
   app.get('/api/sprouts/:id/jobs', (c) => c.json({ jobs: listJobsByVault(deps.db, c.req.param('id')) }));

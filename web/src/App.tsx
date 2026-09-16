@@ -35,6 +35,7 @@ import { DemoBanner } from './components/DemoBanner';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
+import { InvestNowForm } from './components/InvestNow';
 import { GiftPage } from './GiftPage';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
 import { TITLE_MAX, endOfDayUtc, textProblem } from './components/Campaign';
@@ -114,6 +115,7 @@ export function App() {
   const [showPlant, setShowPlant] = useState(false);
   const [showFund, setShowFund] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showInvestNow, setShowInvestNow] = useState(false);
   const [showGift, setShowGift] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
   const [showAllocation, setShowAllocation] = useState(false);
@@ -483,6 +485,7 @@ export function App() {
     showPlant ||
     showFund ||
     showSchedule ||
+    showInvestNow ||
     showGift ||
     showPayGift !== null ||
     showMilestone ||
@@ -884,6 +887,7 @@ export function App() {
       }
       setShowSchedule(true);
     },
+    onOpenInvestNow: () => setShowInvestNow(true),
     onOpenGift: () => setShowGift(true),
     onOpenAllocation: () => {
       const percents: Record<string, string> = {};
@@ -1053,6 +1057,21 @@ export function App() {
           <button data-testid="schedule-submit" className="btn btn--primary" onClick={() => void submitSchedule()}>
             Schedule
           </button>
+        </Modal>
+      ) : null}
+
+      {showInvestNow && selected && wallet && chain ? (
+        <Modal title="Invest now" onClose={() => setShowInvestNow(false)} txn={txn} explorerUrl={chain.explorerUrl}>
+          <InvestNowForm
+            wallet={wallet}
+            vault={selected.id}
+            chain={chain}
+            settlementBalance={holdings?.holdings.find((h) => h.kind === 'settlement')?.rawBalance ?? null}
+            runTxn={withTxn}
+            automationEnabled={health?.automation.enabled ?? null}
+            onDone={() => loadDetailSynced(selected.id)}
+            onClose={() => setShowInvestNow(false)}
+          />
         </Modal>
       ) : null}
 

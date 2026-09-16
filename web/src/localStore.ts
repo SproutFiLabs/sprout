@@ -66,3 +66,33 @@ export function toggleFavorite(vaultId: string): string[] {
   }
   return next;
 }
+
+const ONE_OFF_SCHEDULE_PREFIX = 'sprout.investNow.scheduleTx.';
+
+/**
+ * Invest now sets the vault's schedule for a moment to run a one-off purchase,
+ * then clears it. The indexer records that as a plan that was cancelled, which
+ * the dashboard would otherwise offer to "resume". Remember which schedule
+ * transactions were one-off purchases so they are not presented as plans.
+ */
+export function rememberOneOffSchedule(vaultId: string, txHash: string): void {
+  try {
+    const key = ONE_OFF_SCHEDULE_PREFIX + vaultId.toLowerCase();
+    const current = JSON.parse(window.localStorage.getItem(key) ?? '[]') as string[];
+    const next = [...current.filter((h) => h !== txHash.toLowerCase()), txHash.toLowerCase()].slice(-20);
+    window.localStorage.setItem(key, JSON.stringify(next));
+  } catch {
+    // storage may be unavailable in private mode
+  }
+}
+
+export function isOneOffSchedule(vaultId: string, txHash: string | null | undefined): boolean {
+  if (!txHash) return false;
+  try {
+    const list = JSON.parse(window.localStorage.getItem(ONE_OFF_SCHEDULE_PREFIX + vaultId.toLowerCase()) ?? '[]') as string[];
+    return list.includes(txHash.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+

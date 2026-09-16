@@ -30,6 +30,30 @@ export interface ChainPublic {
   };
 }
 
+/** Mirrors server/src/invest.ts. */
+export interface InvestQuote {
+  vault: Address;
+  venue: Address | null;
+  amount: string;
+  available: string;
+  chainTime: number;
+  blockNumber: number;
+  schedule: { active: boolean; amount: string; periodSeconds: number; nextExecution: number; maxSlippageBps: number };
+  due: boolean;
+  legs: Array<{
+    asset: Address;
+    symbol: string;
+    weightBps: number;
+    amountIn: string;
+    expectedOut: string;
+    floorOut: string;
+    simulatedOut: string | null;
+    minOut: string | null;
+  }>;
+  minOuts: string[] | null;
+  blocker: { code: string; message: string; asset?: Address } | null;
+}
+
 export interface AutomationCapability {
   keeperConfigured: boolean;
   gasBudgetConfigured: boolean;
@@ -82,6 +106,8 @@ export interface Job {
   nextRunAt: number;
   status: 'active' | 'cancelled' | 'paused' | 'unavailable';
   lastError: string | null;
+  /** The schedule transaction (or, after a keeper run, the purchase). */
+  lastTxHash?: string | null;
 }
 
 export interface GiftSummary {
@@ -261,6 +287,8 @@ export const api = {
     }>(`/api/sprouts/${id}`),
   holdings: (id: string, afterBlock = 0) =>
     getJson<Holdings>(`/api/sprouts/${id}/holdings${afterBlock > 0 ? `?after=${afterBlock}` : ''}`),
+  investQuote: (id: string, amount: bigint, afterBlock = 0) =>
+    getJson<InvestQuote>(`/api/sprouts/${id}/invest-quote?amount=${amount}${afterBlock > 0 ? `&after=${afterBlock}` : ''}`),
   growth: (id: string) => getJson<Growth>(`/api/sprouts/${id}/growth`),
   events: (id: string) => getJson<{ events: ChainEvent[] }>(`/api/sprouts/${id}/events`),
   beneficiaryState: (id: string) => getJson<BeneficiaryState>(`/api/sprouts/${id}/beneficiary`),
