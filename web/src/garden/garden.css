@@ -1300,6 +1300,24 @@ html[data-appearance="dark"] .risk-line svg { color: #e8b75c; }
 }
 .garden-fund-prompt > span { flex: 1; min-width: 220px; }
 
+/* Starter mixes in the allocation step. */
+.starter-mixes { display: grid; gap: 8px; margin-bottom: 4px; }
+.starter-mix-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.starter-mix {
+  min-height: 36px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--garden-line, #ece7dc); background: var(--garden-surface, #fffdfa);
+  color: var(--garden-ink, #1d1d1b); font: inherit; font-size: 13px;
+}
+.starter-mix:hover { border-color: #c9c1b1; }
+.starter-mix--active { border-color: #3e7839; background: #eef6ec; color: #2f5a2c; }
+.starter-mix-note { margin: 0; }
+.starter-mix-total { margin: 0; font-size: 13px; font-weight: 600; color: #9a5b12; }
+.starter-mix-total--ok { color: #3e7839; }
+html[data-appearance="dark"] .starter-mix { background: #183025; border-color: #466451; color: #f3efe4; }
+html[data-appearance="dark"] .starter-mix--active { background: #294536; border-color: #8cc58a; color: #e4f4e2; }
+html[data-appearance="dark"] .starter-mix-total { color: #e8b75c; }
+html[data-appearance="dark"] .starter-mix-total--ok { color: #9fd49b; }
+
 .garden-empty-vault { padding: 6px 0 2px; }
 .garden-empty-vault-lead {
   margin: 0 0 6px; font-size: 15px;

@@ -33,6 +33,7 @@ import { formatUtcDate, formatZonedDateTime, parseDateOnlyToUtcTs, viewerTimeZon
 import { GrowthRing } from './components/GrowthRing';
 import { DemoBanner } from './components/DemoBanner';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
+import { StarterMixPicker } from './components/StarterMixes';
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
 import { InvestNowForm } from './components/InvestNow';
@@ -967,6 +968,7 @@ export function App() {
           {plantStep === 2 ? (
             <fieldset>
               <legend>Allocation (percent, must total 100%)</legend>
+              <StarterMixPicker tokens={stockTokens} percents={plantForm.percents} onPick={(percents) => setPlantForm({ ...plantForm, percents })} />
               {stockTokens.map((t) => (
                 <label key={t.address} className="inline">
                   {t.symbol}
@@ -1192,6 +1194,7 @@ export function App() {
         <Modal title="Edit allocation" onClose={() => setShowAllocation(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <fieldset>
             <legend>Percent (must total 100%; zero removes an asset)</legend>
+            <StarterMixPicker tokens={stockTokens} percents={allocationForm.percents} onPick={(percents) => setAllocationForm({ ...allocationForm, percents })} />
             {stockTokens.map((t) => (
               <label key={t.address} className="inline">
                 {t.symbol}
