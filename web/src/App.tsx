@@ -135,7 +135,7 @@ export function App() {
     graduation: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10),
     percents: {} as Record<string, string>,
   });
-  const [fundForm, setFundForm] = useState({ token: '', amount: '100' });
+  const [fundForm, setFundForm] = useState({ token: '', amount: '10' });
   const [scheduleForm, setScheduleForm] = useState({ amount: '25', periodDays: '7' });
   const [giftForm, setGiftForm] = useState({ label: 'Birthday gift' });
   const [milestoneForm, setMilestoneForm] = useState({ token: '', amount: '10', unlock: '', title: '' });
@@ -823,7 +823,7 @@ export function App() {
     holdings, growth, events, beneficiaryState, isParent, isBeneficiary, isGraduated, graduationProgress, balanceChange,
     chainReady, loading, txn, view, setView, drawerOpen, setDrawerOpen,
     onOpenPlant: () => { setPlantStep(1); setShowPlant(true); },
-    onOpenFund: () => { setFundForm({ token: settlementToken ?? '', amount: '100' }); setShowFund(true); },
+    onOpenFund: () => { setFundForm({ token: settlementToken ?? '', amount: '10' }); setShowFund(true); },
     onOpenSchedule: () => {
       const jobs = detail?.jobs ?? [];
       const job = jobs.find((j) => j.status === 'active') ?? jobs.filter((j) => j.status !== 'active').slice(-1)[0];
@@ -873,7 +873,7 @@ export function App() {
       <DashboardShell {...shell} />
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}
-      <WelcomeSprout open={welcomeOpen} onClose={() => setWelcomeOpen(false)} onFund={() => { setFundForm({ token: settlementToken ?? '', amount: '100' }); setShowFund(true); }} />
+      <WelcomeSprout open={welcomeOpen} onClose={() => setWelcomeOpen(false)} onFund={() => { setFundForm({ token: settlementToken ?? '', amount: '10' }); setShowFund(true); }} />
 
       {showPlant ? (
         <Modal title="Plant a sprout" onClose={() => setShowPlant(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
