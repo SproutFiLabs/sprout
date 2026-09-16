@@ -99,3 +99,12 @@ describe('chain configuration honesty', () => {
     expect(() => createChainContext(config)).toThrow(/Anvil/);
   });
 });
+
+describe('snapshot interval', () => {
+  test('defaults to five minutes, including when the variable is blank', () => {
+    expect(loadServerConfig({}).snapshotIntervalSeconds).toBe(300);
+    expect(loadServerConfig({ SPROUT_SNAPSHOT_INTERVAL_SECONDS: '' }).snapshotIntervalSeconds).toBe(300);
+    expect(loadServerConfig({ SPROUT_SNAPSHOT_INTERVAL_SECONDS: '60' }).snapshotIntervalSeconds).toBe(60);
+    expect(() => loadServerConfig({ SPROUT_SNAPSHOT_INTERVAL_SECONDS: '-1' })).toThrow();
+  });
+});

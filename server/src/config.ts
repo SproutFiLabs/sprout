@@ -95,7 +95,8 @@ export function loadServerConfig(env: EnvLike = process.env): ServerConfig {
     throw new Error('SPROUT_MAX_LOG_RANGE must be an integer between 1 and 100000');
   }
 
-  const snapshotIntervalSeconds = Number(env.SPROUT_SNAPSHOT_INTERVAL_SECONDS ?? DEFAULT_SNAPSHOT_INTERVAL_SECONDS);
+  // An empty value (as in .env.example) means the default, not zero.
+  const snapshotIntervalSeconds = Number(env.SPROUT_SNAPSHOT_INTERVAL_SECONDS?.trim() || DEFAULT_SNAPSHOT_INTERVAL_SECONDS);
   if (!Number.isInteger(snapshotIntervalSeconds) || snapshotIntervalSeconds < 0 || snapshotIntervalSeconds > 86_400) {
     throw new Error('SPROUT_SNAPSHOT_INTERVAL_SECONDS must be an integer between 0 and 86400');
   }
