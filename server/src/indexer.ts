@@ -40,6 +40,13 @@ export interface ReconcileResult {
   vaultsTouched: string[];
 }
 
+/** Smallest log range tried before a pass gives up (Alchemy's free tier allows 10 blocks). */
+const MIN_LOG_RANGE = 10;
+/** Successful chunks in a row before the log range is doubled again. */
+const GROW_AFTER = 8;
+/** The log range that last worked, per chain context. */
+const logRanges = new WeakMap<ChainContext, { span: number; streak: number }>();
+
 export interface ReconcileOptions {
   fromBlock?: number;
   toBlock?: number;
@@ -91,12 +98,42 @@ export async function reconcile(
 
   // Bounded, resumable chunks: each chunk commits its cursor, so a rate-limit or
   // transport error on a later chunk is retried rather than losing earlier events.
+  //
+  // The free RPC tiers refuse log queries for different reasons: a block-count
+  // cap (Alchemy: 10, drpc: about 100), a slow-query timeout on older blocks, or
+  // a rate limit. No single range suits all of them, and a fixed range that is
+  // too wide fails on every pass while the backlog grows. So a refused chunk is
+  // retried from the same block with a quarter of the range, down to
+  // MIN_LOG_RANGE; the range that works is remembered for the next pass and
+  // only grows again after a run of successes.
   const maxRange = Math.max(1, ctx.config.maxLogRange ?? 2000);
-  for (let start = fromBlock; start <= toBlock; start += maxRange) {
-    const end = Math.min(start + maxRange - 1, toBlock);
-    await processRange(ctx, db, chainId, start, end, result);
+  const floor = Math.min(MIN_LOG_RANGE, maxRange);
+  const learned = logRanges.get(ctx);
+  let span = Math.min(maxRange, learned?.span ?? maxRange);
+  let streak = learned?.streak ?? 0;
+  let start = fromBlock;
+  while (start <= toBlock) {
+    const end = Math.min(start + span - 1, toBlock);
+    try {
+      await processRange(ctx, db, chainId, start, end, result);
+    } catch (error) {
+      streak = 0;
+      if (span <= floor) {
+        logRanges.set(ctx, { span, streak });
+        throw error;
+      }
+      span = Math.max(floor, Math.floor(span / 4));
+      continue;
+    }
     setCursor(db, chainId, end);
+    start = end + 1;
+    streak += 1;
+    if (streak >= GROW_AFTER && span < maxRange) {
+      span = Math.min(maxRange, span * 2);
+      streak = 0;
+    }
   }
+  logRanges.set(ctx, { span, streak });
 
   await resyncJobs(ctx, db);
   if (result.vaultsTouched.length > 0) {
@@ -119,12 +156,20 @@ async function processRange(
   toBlock: number,
   result: ReconcileResult,
 ): Promise<void> {
+  // One query covers the factory and every known vault; a vault the factory
+  // creates inside this chunk is queried separately below.
+  const factory = ctx.config.chain.contracts.factory;
+  const known = listAllVaults(db, chainId);
+  const addresses = [...(factory ? [factory] : []), ...known] as Address[];
+  if (addresses.length === 0) return;
+  const logs = await getLogsFor(ctx, addresses, fromBlock, toBlock);
+  const isFactory = (address: string) => !!factory && address.toLowerCase() === factory.toLowerCase();
+  const discovered: Address[] = [];
+
   // 1. Factory-created sprouts (also discovers vaults not yet in the DB). A
   //    failed discovery aborts the chunk so the cursor does not move past it.
-  const factory = ctx.config.chain.contracts.factory;
   if (factory) {
-    const logs = await ctx.publicClient!.getLogs({ address: factory, fromBlock: BigInt(fromBlock), toBlock: BigInt(toBlock) });
-    for (const log of logs) {
+    for (const log of logs.filter((l) => isFactory(l.address))) {
       let decoded;
       try {
         decoded = decodeEventLog({ abi: sproutFactoryAbi, data: log.data, topics: log.topics });
@@ -149,6 +194,7 @@ async function processRange(
           createdBlock: Number(log.blockNumber),
         });
         result.sproutsIndexed += 1;
+        discovered.push(state.vault);
       }
       if (
         insertChainEvent(db, {
@@ -170,14 +216,11 @@ async function processRange(
   }
 
   // 2. Vault events for every known sprout, applied in chain order.
-  const vaults = listAllVaults(db, chainId);
-  if (vaults.length > 0) {
-    const logs = await ctx.publicClient!.getLogs({
-      address: vaults as Address[],
-      fromBlock: BigInt(fromBlock),
-      toBlock: BigInt(toBlock),
-    });
-    for (const log of logs) {
+  const vaultLogs = logs.filter((l) => !isFactory(l.address));
+  if (discovered.length > 0) vaultLogs.push(...(await getLogsFor(ctx, discovered, fromBlock, toBlock)));
+  vaultLogs.sort((a, b) => Number(a.blockNumber) - Number(b.blockNumber) || a.logIndex - b.logIndex);
+  if (vaultLogs.length > 0) {
+    for (const log of vaultLogs) {
       let decoded;
       try {
         decoded = decodeEventLog({ abi: sproutVaultAbi, data: log.data, topics: log.topics });
@@ -222,6 +265,10 @@ async function processRange(
       }
     }
   }
+}
+
+function getLogsFor(ctx: ChainContext, addresses: Address[], fromBlock: number, toBlock: number) {
+  return ctx.publicClient!.getLogs({ address: addresses, fromBlock: BigInt(fromBlock), toBlock: BigInt(toBlock) });
 }
 
 function vaultExists(db: SproutDb, vault: string): boolean {
