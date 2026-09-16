@@ -48,9 +48,12 @@ export function BetaNotice(): JSX.Element {
           {open ? 'Hide details' : 'What else should I know?'}
         </button>
         {open ? (
-          <ul className="beta-notice-list">
-            {BETA_POINTS.map((point) => <li key={point}>{point}</li>)}
-          </ul>
+          <>
+            <ul className="beta-notice-list">
+              {BETA_POINTS.map((point) => <li key={point}>{point}</li>)}
+            </ul>
+            <a className="beta-notice-more" href="/faq">Read the full FAQ</a>
+          </>
         ) : null}
       </div>
     </div>

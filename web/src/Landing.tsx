@@ -46,6 +46,7 @@ const questions: Array<[string, string]> = [
   ['Can I look around before connecting?', 'The illustrations on this page show sample portfolios. Open the dashboard to connect your wallet and view your own sprouts. The hosted dashboard uses real assets; transactions require your signature.'],
   ['Which assets does SPROUT use?', 'SPROUT supports the stock tokens and settlement token configured for its vaults. The dashboard shows each supported asset, your token balance, and valuation when a current price is available.'],
   ['Who can fund a sprout?', 'A connected wallet can contribute supported tokens to a sprout. Family and friends can use its gift link. Bank and card payments are not available.'],
+  ['Can I take money out early?', 'No. Nobody can withdraw before the graduation date, including the parent who planted the sprout. Before then, value only leaves as a chore reward you approve, which your child claims.'],
   ['What happens when they graduate?', 'Parent powers stop at the immutable graduation timestamp and full control moves to the child. That final handover is irreversible.'],
   ['Will the portfolio always grow?', 'No. Investments can lose value. The chart shows recorded portfolio values; balance changes include deposits and withdrawals as well as market movement. No return is promised.'],
 ];
@@ -245,6 +246,7 @@ export function Landing() {
                 <a href="#how-it-works" onClick={() => { setResources(false); setMenu(false); }}>How it works</a>
                 <a href="#family" onClick={() => { setResources(false); setMenu(false); }}>For your family</a>
                 <a href="#questions" onClick={() => { setResources(false); setMenu(false); }}>Good to know</a>
+                <a href="/faq">Questions</a>
                 <a href="/guide">Getting started</a>
                 <a href="/docs">Documentation</a>
                 <a href="/whitepaper">Whitepaper</a>
@@ -417,6 +419,7 @@ export function Landing() {
                 </details>
               </div>
             ))}
+            <p className="reference-faq-more"><a href="/faq">More questions: costs, safety, gift links and beta →</a></p>
           </section>
           <section className="reference-closing">
             <div className="closing-leaf left" /><div className="closing-leaf right" />
@@ -440,7 +443,7 @@ export function Landing() {
             </div>
             <div className="reference-footer-links">
               <div><span>SPROUT</span><a href={DASHBOARD}>Dashboard</a><a href={`${DASHBOARD}?new=1`}>Plant a sprout</a><a href="/gift">Gift preview</a></div>
-              <div><span>Learn</span><a href="/guide">Getting started</a><a href="/docs">Documentation</a><a href="/whitepaper">Whitepaper</a><a href="/settings">Appearance</a></div>
+              <div><span>Learn</span><a href="/faq">Questions</a><a href="/guide">Getting started</a><a href="/docs">Documentation</a><a href="/whitepaper">Whitepaper</a><a href="/settings">Appearance</a></div>
             </div>
           </footer>
         </div>

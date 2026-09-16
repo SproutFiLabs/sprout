@@ -1,12 +1,12 @@
 import { ArrowRight, BookOpen, ChevronRight, ExternalLink, Leaf, Printer, ShieldCheck, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-export type KnowledgePageKind = 'docs' | 'whitepaper' | 'guide';
+export type KnowledgePageKind = 'docs' | 'whitepaper' | 'guide' | 'faq';
 
 type Section = { id: string; eyebrow?: string; title: string; body: ReactNode };
 
 const links = [
-  ['/docs', 'Docs'], ['/whitepaper', 'Whitepaper'], ['/guide', 'Guide'], ['/settings', 'Settings'],
+  ['/faq', 'FAQ'], ['/docs', 'Docs'], ['/whitepaper', 'Whitepaper'], ['/guide', 'Guide'], ['/settings', 'Settings'],
   ['/test/', 'Sample mode'], ['/dashboard', 'Dashboard'],
 ] as const;
 
@@ -41,10 +41,26 @@ const guideSections: Section[] = [
   { id: 'tips', eyebrow: 'Small habits', title: 'Tips for using Sprout', body: <><ul><li>Try the sample preview before your first signature.</li><li>Read the supported assets and current price status in the dashboard.</li><li>Keep your wallet connected while checking a transaction result.</li><li>Treat the chart as a record of available snapshots, not a promise of growth.</li><li>Pause a weekly plan when your family’s budget or schedule changes.</li></ul></> },
 ];
 
+const faqSections: Section[] = [
+  { id: 'what', eyebrow: 'The basics', title: 'What is a sprout?', body: <><p>A sprout is a savings vault for a child. It lives on Robinhood Chain as its own smart contract and holds tokens that track Apple, NVIDIA, Microsoft and the S&amp;P 500, in the mix you choose when you plant it. Family can add to it with a gift link, and on the graduation date you pick, it becomes your child’s.</p></> },
+  { id: 'custody', eyebrow: 'Safety', title: 'Who holds the money?', body: <><p>The sprout’s own contract does. Sprout the website never has custody and cannot move funds: the server only reads the chain to show balances and history. Every change to a sprout is a transaction signed in your wallet.</p><Callout tone="orange"><b>Sprout is in beta.</b> The contracts have not been independently audited. Mainnet transactions use real funds and cannot be reversed, so only put in what you are prepared to lose.</Callout></> },
+  { id: 'withdraw', eyebrow: 'Getting money out', title: 'Can I take money out early?', body: <><p>No. Nobody can withdraw from a sprout before its graduation date, including the parent who planted it. That is the point: it works like a trust, not a checking account.</p><p>The one way value leaves early is a chore reward: you set aside an amount, approve it when the chore is done, and your child claims it to their wallet. On the graduation date, your child’s wallet can withdraw everything.</p></> },
+  { id: 'date', eyebrow: 'Getting money out', title: 'Can the graduation date or the child’s wallet change?', body: <><p>No. Both are fixed when the sprout is planted. Double-check the child’s wallet address before you sign, and make sure it is a wallet they will be able to use when the date comes. Sprout cannot recover a lost wallet.</p></> },
+  { id: 'funding', eyebrow: 'Adding money', title: 'What do I add money with?', body: <><p>USDG, a dollar stablecoin on Robinhood Chain. It is the token a sprout holds before it is invested. You can also add the supported stock tokens directly. You need a wallet connected to Robinhood Chain, with a little ETH on that chain for network fees.</p></> },
+  { id: 'buying', eyebrow: 'Investing', title: 'How does the money turn into stocks?', body: <><p>Money you add arrives as USDG and waits in the sprout until it is invested. Use <b>Invest now</b> on the dashboard to buy your sprout’s mix from your own wallet. Each purchase is checked against the market price feed and refused if the trading pool would pay more than 1% less than that price.</p><p>Automatic weekly investing is switched off for now. You can still keep a weekly plan and run each week’s purchase with Invest now.</p></> },
+  { id: 'closed', eyebrow: 'Investing', title: 'Why can’t I buy right now?', body: <><p>Purchases pause when a stock’s price feed has not updated within the last day, which usually means US markets are closed (weekends and holidays). Buying works again once prices update. The dashboard tells you when this is the reason.</p></> },
+  { id: 'fees', eyebrow: 'Costs', title: 'What does it cost?', body: <><p>Sprout’s contracts take no fee. You pay the network fee for each transaction you sign (in ETH on Robinhood Chain), and purchases pay the trading pool’s fee, which is part of the price you get.</p></> },
+  { id: 'gifts', eyebrow: 'Family', title: 'How do gift links work?', body: <><p>Create a link from the Gifts page and share it. Anyone with the link can add money to that sprout from their own wallet. A gift cannot be taken back, and the link gives no one any control over the sprout.</p></> },
+  { id: 'site', eyebrow: 'Safety', title: 'What if this website goes away?', body: <><p>The sprout keeps existing on-chain without it. After graduation, your child can withdraw by calling the vault’s <code className="knowledge-code">withdraw</code> function from any tool that can send a contract transaction, such as the block explorer’s contract page. The contract source is public.</p></> },
+  { id: 'privacy', eyebrow: 'Privacy', title: 'What do you store about my family?', body: <><p>Nicknames and chore titles stay in your browser. The server stores wallet addresses, vault addresses, the labels you give gift links, and the on-chain events it indexes. Everything except the gift labels is public on the chain anyway. Anyone who knows a vault address can see its balance, like any other on-chain account.</p></> },
+  { id: 'eligibility', eyebrow: 'Before you start', title: 'Can I use Sprout?', body: <><p>Robinhood’s stock tokens are not available everywhere. Check that you are allowed to hold them where you live before you plant a sprout. Nothing on this site is financial, tax or legal advice.</p></> },
+];
+
 const pageData: Record<KnowledgePageKind, { label: string; title: string; intro: string; sections: Section[] }> = {
   docs: { label: 'Developer docs', title: 'How the garden works', intro: 'A readable map of the contracts, backend, and browser app behind Sprout.', sections: docsSections },
   whitepaper: { label: 'Technical draft', title: 'A small system for growing ownership', intro: 'The current design, its boundaries, and the conditions that make each action possible.', sections: whitepaperSections },
   guide: { label: 'Family guide', title: 'Start small. Grow together.', intro: 'A straightforward path through the real Sprout experience, from sample mode to graduation.', sections: guideSections },
+  faq: { label: 'Questions', title: 'Good to know before you start', intro: 'Where the money lives, when it can come out, what it costs, and what beta means.', sections: faqSections },
 };
 
 export function KnowledgePage({ page }: { page: KnowledgePageKind }) {

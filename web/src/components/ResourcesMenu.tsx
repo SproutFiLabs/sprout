@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { BookOpen, ChevronUp, FileText, Moon, Compass } from 'lucide-react';
+import { BookOpen, ChevronUp, FileText, Moon, Compass, HelpCircle } from 'lucide-react';
 
 export function ResourcesMenu() {
   const ref = useRef<HTMLDetailsElement>(null);
@@ -8,6 +8,7 @@ export function ResourcesMenu() {
   }}>
     <summary className="garden-side-link" data-testid="resources-menu"><BookOpen size={22} /><span>Guide &amp; docs</span><ChevronUp size={14} /></summary>
     <nav className="garden-resources-panel" aria-label="Sprout resources">
+      <a href="/faq"><HelpCircle size={17} /><span>Questions<small>Money, withdrawals, costs, beta</small></span></a>
       <a href="/guide"><Compass size={17} /><span>Getting started<small>A practical family guide</small></span></a>
       <a href="/docs"><BookOpen size={17} /><span>Documentation<small>Features and how they work</small></span></a>
       <a href="/whitepaper"><FileText size={17} /><span>Whitepaper<small>Technical design</small></span></a>

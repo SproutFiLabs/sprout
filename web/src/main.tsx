@@ -31,7 +31,9 @@ function Root() {
   if (path === '/' || path === '/index.html') return <Landing />;
   if (path === '/gift') return <GiftLanding />;
   if (path === '/dashboard/preview') return <Preview />;
-  if (path === '/docs' || path === '/whitepaper' || path === '/guide') return <KnowledgePage page={path.slice(1) as 'docs' | 'whitepaper' | 'guide'} />;
+  if (path === '/docs' || path === '/whitepaper' || path === '/guide' || path === '/faq') {
+    return <KnowledgePage page={path.slice(1) as 'docs' | 'whitepaper' | 'guide' | 'faq'} />;
+  }
   if (path === '/settings') return <AppearancePage />;
   if (path === '/test') return <TestExperience />;
   return <App />;
