@@ -70,6 +70,10 @@ describe('production / mainnet mode', () => {
     expect(kid.status).toBe(200);
     expect(kid.headers.get('x-robots-tag')).toBe('noindex, nofollow');
     expect(await kid.text()).toContain('sprout');
+    const lesson = await app.request(`/kid/0x${'ab'.repeat(20)}/learn/share`);
+    expect(lesson.status).toBe(200);
+    expect(lesson.headers.get('x-robots-tag')).toBe('noindex, nofollow');
+    expect(await lesson.text()).toContain('sprout');
     expect((await app.request('/dashboard')).headers.get('x-robots-tag')).toBeNull();
 
     const apiMissing = await app.request('/api/does-not-exist');

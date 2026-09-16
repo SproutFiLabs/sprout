@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import { CalendarHeart, Gift, Leaf, Sprout as SproutIcon, Star } from 'lucide-react';
 import { formatUnits } from '@sprout/shared';
 import { api, type BeneficiaryState, type ChainPublic, type Holdings, type Milestone } from './api';
@@ -6,6 +6,8 @@ import { BloomGarden } from './garden/BloomGarden';
 import { holdingSharesText } from './garden/format';
 import { getMilestoneTitle, getNickname } from './localStore';
 import { ThemeToggle } from './theme/ThemeSettings';
+import { KidLearn } from './kid/KidLearn';
+import { findLesson, lessonForSymbol } from './kid/lessons';
 
 /**
  * A read-only page a parent can open on their child's tablet: how big the
@@ -64,16 +66,65 @@ export function kidViewPath(vault: string, name?: string | null): string {
   return `/kid/${vault}${clean ? `?name=${encodeURIComponent(clean)}` : ''}`;
 }
 
-export function KidView({ vault }: { vault: string }) {
+/** `/kid/<vault>` or `/kid/<vault>/learn/<lessonId>`, keeping the query (the name). */
+export function kidLessonPath(vault: string, lessonId: string | null, search = ''): string {
+  return `/kid/${vault}${lessonId ? `/learn/${encodeURIComponent(lessonId)}` : ''}${search}`;
+}
+
+export function parseKidPath(pathname: string): { vault: string; lessonId: string | null } | null {
+  const match = pathname.replace(/\/+$/, '').match(/^\/kid\/(0x[0-9a-fA-F]{40})(?:\/learn\/([^/]+))?$/);
+  if (!match) return null;
+  let lessonId: string | null = null;
+  try {
+    lessonId = match[2] ? decodeURIComponent(match[2]) : null;
+  } catch {
+    lessonId = null;
+  }
+  return { vault: match[1]!, lessonId };
+}
+
+export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: string | null }) {
   const [data, setData] = useState<KidData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openLesson, setOpenLesson] = useState<string | null>(() => findLesson(lessonId)?.id ?? null);
   const params = new URLSearchParams(window.location.search);
   const name = (params.get('name') ?? getNickname(vault) ?? '').trim().slice(0, 24);
   const heading = name ? `${name}’s sprout` : 'Your sprout';
+  const lessonTitle = findLesson(openLesson)?.title;
 
   useEffect(() => {
-    document.title = `${heading} · Sprout`;
-  }, [heading]);
+    document.title = lessonTitle ? `${lessonTitle} · ${heading} · Sprout` : `${heading} · Sprout`;
+  }, [heading, lessonTitle]);
+
+  // Lessons have their own address so a reload or the back button keeps the
+  // child where they were. An address for a lesson that doesn't exist falls
+  // back to the plain kid view.
+  useEffect(() => {
+    if (lessonId && !findLesson(lessonId)) {
+      window.history.replaceState(null, '', kidLessonPath(vault, null, window.location.search));
+    }
+    const onPop = () => {
+      const parsed = parseKidPath(window.location.pathname);
+      setOpenLesson(findLesson(parsed?.lessonId)?.id ?? null);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [vault, lessonId]);
+
+  const openLessonAt = useCallback(
+    (id: string | null) => {
+      const target = kidLessonPath(vault, id, window.location.search);
+      if (`${window.location.pathname}${window.location.search}` !== target) window.history.pushState(null, '', target);
+      setOpenLesson(id);
+    },
+    [vault],
+  );
+
+  const followLessonLink = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    openLessonAt(id);
+  };
 
   useEffect(() => {
     let live = true;
@@ -160,12 +211,20 @@ export function KidView({ vault }: { vault: string }) {
             <h2 id="kid-own"><Leaf size={20} aria-hidden /> What you own</h2>
             {stocks.length === 0 && !cash ? <p className="kid-muted">Nothing yet. When money is added and invested, it shows up here.</p> : null}
             <ul className="kid-list" data-testid="kid-holdings">
-              {stocks.map((s) => (
-                <li key={s.address}>
-                  <b>{holdingSharesText({ shareEquivalent: s.shareEquivalent, rawBalance: s.rawBalance, decimals: s.decimals })} {s.symbol}</b>
-                  <span>a little piece of {COMPANY[s.symbol] ?? s.symbol}</span>
-                </li>
-              ))}
+              {stocks.map((s) => {
+                const lesson = lessonForSymbol(s.symbol);
+                return (
+                  <li key={s.address}>
+                    <b>{holdingSharesText({ shareEquivalent: s.shareEquivalent, rawBalance: s.rawBalance, decimals: s.decimals })} {s.symbol}</b>
+                    <span>a little piece of {COMPANY[s.symbol] ?? s.symbol}</span>
+                    {lesson ? (
+                      <a className="kid-learn-link" href={kidLessonPath(vault, lesson.id, window.location.search)} onClick={(e) => followLessonLink(e, lesson.id)}>
+                        Learn about {lesson.name ?? lesson.title}
+                      </a>
+                    ) : null}
+                  </li>
+                );
+              })}
               {cash ? (
                 <li>
                   <b>{dollars(cash.valueUsd, cash.feedDecimals) ?? '—'}</b>
@@ -208,6 +267,10 @@ export function KidView({ vault }: { vault: string }) {
             </p>
           </section>
         </div>
+      ) : null}
+
+      {data ? (
+        <KidLearn vault={vault} heldSymbols={stocks.map((s) => s.symbol)} openId={openLesson} onNavigate={openLessonAt} />
       ) : null}
 
       <footer className="kid-foot">
