@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ThemeToggle } from './theme/ThemeSettings';
 import { api } from './api';
+import { useAutomationEnabled } from './automationStatus';
 import { BloomGarden } from './garden/BloomGarden';
 import {
   ArrowUp, ArrowRight, ArrowLeft, ChevronDown, Menu, X, Play, Pause, Plus, Repeat2, Gift, Check,
@@ -233,6 +234,7 @@ function Feature({ index, paused }: { index: number; paused: boolean }) {
 }
 
 export function Landing() {
+  const automationEnabled = useAutomationEnabled();
   const [menu, setMenu] = useState(false);
   const [resources, setResources] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -466,8 +468,8 @@ export function Landing() {
               <p>Investments can fall in value. Graduation transfers full control to the beneficiary at the date chosen when the sprout is planted.</p>
               <p className="reference-footer-risk">
                 <strong>Beta software, real money.</strong> Sprout settles on Robinhood Chain mainnet
-                and transactions cannot be reversed. Automatic weekly investing is currently
-                switched off; the contracts have not been independently audited; and graduation
+                and transactions cannot be reversed.{automationEnabled === false ? ' Automatic weekly investing is currently switched off.' : ''} The
+                contracts have not been independently audited, and graduation
                 withdrawal and backup restoration have not yet been verified on mainnet. Only commit what you are prepared
                 to lose. Nothing here is financial advice.
               </p>

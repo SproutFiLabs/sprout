@@ -5,7 +5,7 @@ import { AlertTriangle } from 'lucide-react';
  * Risk disclosure for a beta product that moves real money.
  *
  * Every limitation named here is one the project already documents in its
- * README - unaudited contracts, automatic investing switched off, graduation
+ * README - unaudited contracts, automatic investing (when switched off), graduation
  * withdrawal and backup restore not yet verified against mainnet. The lead line
  * and the in-dialog note stay short on purpose; the full list sits one click
  * away rather than shouting at every screen. None of it
@@ -19,7 +19,6 @@ import { AlertTriangle } from 'lucide-react';
 export const BETA_POINTS: string[] = [
   'Transactions settle on Robinhood Chain mainnet with real funds and cannot be reversed.',
   'The contracts have not been independently audited.',
-  'Automatic weekly investing is switched off, so nothing invests on its own.',
   'Graduation withdrawal has not yet been verified on mainnet.',
   'Backup restoration has not yet been verified.',
   'Balances and activity are read from the chain and can lag behind it.',
@@ -27,12 +26,26 @@ export const BETA_POINTS: string[] = [
 ];
 
 /**
+ * The detail list, with the automation line taken from the server rather than
+ * hard-coded: it has to stop saying "switched off" the day a keeper runs.
+ */
+export function betaPoints(automationEnabled: boolean | null): string[] {
+  const automation =
+    automationEnabled === false
+      ? ['Automatic weekly investing is switched off, so nothing invests on its own.']
+      : automationEnabled === true
+        ? ['Weekly plans run automatically from a service wallet; a run can be delayed or skipped when prices are stale.']
+        : [];
+  return [...BETA_POINTS.slice(0, 2), ...automation, ...BETA_POINTS.slice(2)];
+}
+
+/**
  * The full-width banner that sits above the dashboard. It cannot be dismissed:
  * "automatic investing is switched off" is the kind of thing someone closes on
  * day one and has forgotten by week three, and being wrong about it costs real
  * money. Only the detail list collapses.
  */
-export function BetaNotice(): JSX.Element {
+export function BetaNotice({ automationEnabled = null }: { automationEnabled?: boolean | null }): JSX.Element {
   const [open, setOpen] = useState(false);
 
   return (
@@ -50,7 +63,7 @@ export function BetaNotice(): JSX.Element {
         {open ? (
           <>
             <ul className="beta-notice-list">
-              {BETA_POINTS.map((point) => <li key={point}>{point}</li>)}
+              {betaPoints(automationEnabled).map((point) => <li key={point}>{point}</li>)}
             </ul>
             <a className="beta-notice-more" href="/faq">Read the full FAQ</a>
           </>

@@ -1,5 +1,6 @@
 import { ArrowRight, BookOpen, ChevronRight, ExternalLink, Leaf, Printer, ShieldCheck, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useAutomationEnabled } from '../automationStatus';
 
 export type KnowledgePageKind = 'docs' | 'whitepaper' | 'guide' | 'faq';
 
@@ -9,6 +10,15 @@ const links = [
   ['/faq', 'FAQ'], ['/docs', 'Docs'], ['/whitepaper', 'Whitepaper'], ['/guide', 'Guide'], ['/settings', 'Settings'],
   ['/test/', 'Sample mode'], ['/dashboard', 'Dashboard'],
 ] as const;
+
+/** Reports the server's actual automation status instead of a fixed claim. */
+function AutomationStatus() {
+  const enabled = useAutomationEnabled();
+  if (enabled === null) return <p>Weekly plans buy automatically whenever the service is running automatic purchases.</p>;
+  return enabled
+    ? <p>Weekly plans run automatically: once a week the service buys the mix for you, as long as prices are fresh and the sprout has the money.</p>
+    : <p>Automatic weekly buying is switched off right now, so money you add stays in USDG for the moment. Your weekly plan is saved and starts running when buying is switched on.</p>;
+}
 
 function Code({ children }: { children: ReactNode }) { return <code className="knowledge-code">{children}</code>; }
 function Callout({ children, tone = 'green' }: { children: ReactNode; tone?: 'green' | 'orange' }) { return <aside className={`knowledge-callout knowledge-callout--${tone}`}>{children}</aside>; }
@@ -47,8 +57,8 @@ const faqSections: Section[] = [
   { id: 'withdraw', eyebrow: 'Getting money out', title: 'Can I take money out early?', body: <><p>No. Nobody can withdraw from a sprout before its graduation date, including the parent who planted it. That is the point: it works like a trust, not a checking account.</p><p>The one way value leaves early is a chore reward: you set aside an amount, approve it when the chore is done, and your child claims it to their wallet. On the graduation date, your child’s wallet can withdraw everything.</p></> },
   { id: 'date', eyebrow: 'Getting money out', title: 'Can the graduation date or the child’s wallet change?', body: <><p>No. Both are fixed when the sprout is planted. Double-check the child’s wallet address before you sign, and make sure it is a wallet they will be able to use when the date comes. Sprout cannot recover a lost wallet.</p></> },
   { id: 'funding', eyebrow: 'Adding money', title: 'What do I add money with?', body: <><p>USDG, a dollar stablecoin on Robinhood Chain. It is the token a sprout holds before it is invested. You can also add the supported stock tokens directly. You need a wallet connected to Robinhood Chain, with a little ETH on that chain for network fees.</p></> },
-  { id: 'buying', eyebrow: 'Investing', title: 'How does the money turn into stocks?', body: <><p>Money you add arrives as USDG and waits in the sprout until it is invested. Use <b>Invest now</b> on the dashboard to buy your sprout’s mix from your own wallet. Each purchase is checked against the market price feed and refused if the trading pool would pay more than 1% less than that price.</p><p>Automatic weekly investing is switched off for now. You can still keep a weekly plan and run each week’s purchase with Invest now.</p></> },
-  { id: 'closed', eyebrow: 'Investing', title: 'Why can’t I buy right now?', body: <><p>Purchases pause when a stock’s price feed has not updated within the last day, which usually means US markets are closed (weekends and holidays). Buying works again once prices update. The dashboard tells you when this is the reason.</p></> },
+  { id: 'buying', eyebrow: 'Investing', title: 'How does the money turn into stocks?', body: <><p>Money you add arrives as USDG and waits in the sprout until a purchase runs. Purchases follow the sprout’s weekly plan and its stock mix, and each one is checked against the market price feed and refused if the trading pool would pay more than 1% less than that price.</p><AutomationStatus /></> },
+  { id: 'closed', eyebrow: 'Investing', title: 'Why does a price say it’s unavailable?', body: <><p>Sprout only uses a stock price that has updated within the last day. Over weekends and market holidays the feeds can go quiet, so Sprout shows that value as unavailable and holds off on purchases until prices update, rather than guessing.</p></> },
   { id: 'fees', eyebrow: 'Costs', title: 'What does it cost?', body: <><p>Sprout’s contracts take no fee. You pay the network fee for each transaction you sign (in ETH on Robinhood Chain), and purchases pay the trading pool’s fee, which is part of the price you get.</p></> },
   { id: 'gifts', eyebrow: 'Family', title: 'How do gift links work?', body: <><p>Create a link from the Gifts page and share it. Anyone with the link can add money to that sprout from their own wallet. A gift cannot be taken back, and the link gives no one any control over the sprout.</p></> },
   { id: 'site', eyebrow: 'Safety', title: 'What if this website goes away?', body: <><p>The sprout keeps existing on-chain without it. After graduation, your child can withdraw by calling the vault’s <code className="knowledge-code">withdraw</code> function from any tool that can send a contract transaction, such as the block explorer’s contract page. The contract source is public.</p></> },

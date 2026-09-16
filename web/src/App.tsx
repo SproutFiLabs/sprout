@@ -875,7 +875,7 @@ export function App() {
 
   return (
     <main className="garden-root">
-      <BetaNotice />
+      <BetaNotice automationEnabled={health?.automation.enabled ?? null} />
       <DashboardShell {...shell} />
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}
