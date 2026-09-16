@@ -845,7 +845,20 @@ export function DashboardShell(props: DashboardShellProps) {
     <div className="garden-card garden-activity-card">
       <div className="garden-card-head">
         <h2>Recent activity</h2>
-        <button className="garden-see-all" onClick={onOpenNotifications}>See all</button>
+        <div className="garden-card-head-actions">
+          {!isSample && selected ? (
+            <a
+              className="garden-see-all"
+              href={`/api/sprouts/${selected.id}/history.csv`}
+              download
+              data-testid="history-download"
+              title="Download every deposit, gift and purchase as a spreadsheet (CSV)"
+            >
+              Download
+            </a>
+          ) : null}
+          <button className="garden-see-all" onClick={onOpenNotifications}>See all</button>
+        </div>
       </div>
       {activityRows.length === 0 ? (
         <p className="garden-empty-note">No activity indexed yet. On-chain history is still being read in — a sprout you just created can take a while to appear here. Nothing is lost; this list trails the chain.</p>

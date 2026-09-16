@@ -503,6 +503,28 @@ export function activityTotals(db: SproutDb, chainId: number): {
   };
 }
 
+/** Every indexed event for a vault, in chain order, with its transaction. */
+export function listChainEventRows(
+  db: SproutDb,
+  vaultId: string,
+): Array<{ eventName: string; blockNumber: number; logIndex: number; txHash: string; payload: unknown }> {
+  return db
+    .prepare(
+      'SELECT event_name, block_number, log_index, tx_hash, payload_json FROM chain_events WHERE lower(vault_id) = lower(?) ORDER BY block_number ASC, log_index ASC',
+    )
+    .all(vaultId)
+    .map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        eventName: r.event_name as string,
+        blockNumber: r.block_number as number,
+        logIndex: r.log_index as number,
+        txHash: r.tx_hash as string,
+        payload: JSON.parse(r.payload_json as string),
+      };
+    });
+}
+
 export function getCursor(db: SproutDb, chainId: number): number {
   const row = db.prepare('SELECT last_block FROM indexer_cursor WHERE chain_id = ?').get(chainId) as { last_block: number } | null;
   return row?.last_block ?? 0;

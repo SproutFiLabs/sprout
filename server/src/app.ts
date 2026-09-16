@@ -20,6 +20,7 @@ import {
 } from './chain';
 import { contributionHistory, type ContributionHistory } from './contributions';
 import { AuthError, authenticate, issueNonce } from './auth';
+import { historyCsv, historyFilename } from './history';
 import { reconcile, snapshotAll } from './indexer';
 import { automationCapability, runDueJobs } from './jobs';
 import { investQuote } from './invest';
@@ -700,6 +701,21 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   });
 
   app.get('/api/sprouts/:id/jobs', (c) => c.json({ jobs: listJobsByVault(deps.db, c.req.param('id')) }));
+
+  // The sprout's history as a spreadsheet download. Built from the same public
+  // chain events as /events.
+  app.get('/api/sprouts/:id/history.csv', async (c) => {
+    const sprout = getSprout(deps.db, c.req.param('id'));
+    if (!sprout) throw new HttpError(404, 'sprout not found');
+    const csv = await historyCsv(deps.chain, deps.db, sprout.id);
+    return new Response(csv, {
+      headers: {
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': `attachment; filename="${historyFilename(sprout.id)}"`,
+        'cache-control': 'no-store',
+      },
+    });
+  });
 
   app.get('/api/sprouts/:id/events', (c) => c.json({ events: listChainEvents(deps.db, c.req.param('id')) }));
 

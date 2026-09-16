@@ -309,6 +309,10 @@ button.garden-menu-action:disabled { opacity: .6; cursor: default; }
 .garden-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .garden-see-all { font-size: 13px; color: var(--garden-soft); background: none; border: 0; padding: 0; }
 .garden-see-all:hover { color: var(--garden-ink); }
+
+/* Card header with more than one action (e.g. Download + See all). */
+.garden-card-head-actions { display: flex; align-items: center; gap: 14px; }
+a.garden-see-all { text-decoration: none; }
 .garden-portfolio { padding: 26px 28px; }
 
 .garden-periods { display: inline-flex; gap: 6px; }
