@@ -32,6 +32,7 @@ import {
   localWalletStatus,
 } from './localWallet';
 import { createMutex } from './lock';
+import { DEFAULT_PUBLIC_ORIGIN, giftPreviewHtml } from './sharePreview';
 import {
   activityTotals,
   getGift,
@@ -62,6 +63,8 @@ export interface AppDeps {
   runExclusive?: <T>(fn: () => Promise<T>) => Promise<T>;
   serveWeb?: boolean;
   webDistPath?: string;
+  /** Canonical public origin for absolute URLs in link previews. */
+  publicOrigin?: string;
 }
 
 export class HttpError extends Error {
@@ -687,7 +690,17 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       const candidate = Bun.file(join(dist, safe === '/' ? 'index.html' : safe));
       if (await candidate.exists()) return new Response(candidate);
       const index = Bun.file(join(dist, 'index.html'));
-      if (await index.exists()) return new Response(index);
+      if (await index.exists()) {
+        // A known gift link previews as a gift, not as the home page.
+        const giftId = path.match(/^\/gift\/(0x[0-9a-fA-F]{64})\/?$/)?.[1];
+        const gift = giftId ? getGift(deps.db, giftId) : null;
+        if (gift) {
+          const origin = deps.publicOrigin ?? DEFAULT_PUBLIC_ORIGIN;
+          const html = giftPreviewHtml(await index.text(), gift, `${origin}/gift/${gift.id}`, origin);
+          return new Response(html, { headers: { 'content-type': 'text/html;charset=utf-8' } });
+        }
+        return new Response(index);
+      }
       return c.json({ error: 'not found' }, 404);
     });
   }

@@ -25,6 +25,8 @@ export interface ServerConfig {
   snapshotIntervalSeconds?: number;
   /** RPC URL that is safe to hand to a browser wallet, if explicitly public. */
   publicWalletRpcUrl?: string;
+  /** Canonical public origin (no trailing slash) used in link previews. */
+  publicOrigin?: string;
   /** Decimals of the settlement token, if known without a chain read. */
   settlementDecimals?: number;
   /** A token contract address visitors can copy from the site; hidden when unset. */
@@ -131,6 +133,7 @@ export function loadServerConfig(env: EnvLike = process.env): ServerConfig {
     maxLogRange,
     snapshotIntervalSeconds,
     publicWalletRpcUrl: env.SPROUT_PUBLIC_WALLET_RPC_URL,
+    publicOrigin: env.SPROUT_PUBLIC_ORIGIN?.replace(/\/+$/, '') || undefined,
     settlementDecimals: env.SPROUT_SETTLEMENT_DECIMALS ? Number(env.SPROUT_SETTLEMENT_DECIMALS) : undefined,
     publicCa,
     keeperMaxFeePerGasWei: parseWei(env.SPROUT_KEEPER_MAX_FEE_PER_GAS_WEI),

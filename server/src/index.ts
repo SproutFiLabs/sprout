@@ -28,6 +28,7 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
     runExclusive: serialize,
     serveWeb: config.serveWeb,
     webDistPath: config.webDistPath,
+    publicOrigin: config.publicOrigin,
   });
 
   const snapshotIntervalMs = (config.snapshotIntervalSeconds ?? DEFAULT_SNAPSHOT_INTERVAL_SECONDS) * 1000;
