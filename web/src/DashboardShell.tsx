@@ -457,13 +457,18 @@ export function DashboardShell(props: DashboardShellProps) {
         {holdings.holdings.slice(0, 4).map((h) => {
           const shares = holdingSharesText({ shareEquivalent: h.shareEquivalent, rawBalance: h.rawBalance, decimals: h.decimals });
           const change = assetChange(h.symbol);
+          // The server labels the settlement row "SETTLEMENT", which reads as
+          // jargon beside AAPL and NVDA. Show the ticker instead where one is
+          // configured. data-testid keeps the server's symbol: the browser and
+          // hosted suites select on holding-SETTLEMENT.
+          const label = h.kind === 'settlement' ? (chain?.contracts.settlementSymbol ?? h.symbol) : h.symbol;
           return (
             <tr key={h.address + h.kind} data-testid={`holding-${h.symbol}`}>
               <td>
                 <button className="garden-asset" onClick={() => onOpenAsset(h.address)}>
-                  <AssetGlyph symbol={h.symbol} />
+                  <AssetGlyph symbol={label} />
                   <span className="garden-asset-name">
-                    <b>{h.symbol}</b>
+                    <b>{label}</b>
                     <small>{assetName(h.symbol) ?? (h.kind === 'settlement' ? 'Cash balance' : 'Stock token')}</small>
                   </span>
                 </button>
