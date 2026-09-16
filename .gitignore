@@ -18,3 +18,7 @@ output/
 *.sqlite*
 *.pem
 *.key
+
+# A global `token*` ignore rule drops OpenZeppelin's token/ sources, which the
+# contracts import. Keep them tracked so a fresh clone builds.
+!contracts/lib/openzeppelin-contracts/token/
