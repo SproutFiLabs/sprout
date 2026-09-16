@@ -162,9 +162,9 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
         // keep fallback
       }
     }
-    // Deliberately omit the internal RPC URL (it may carry credentials). Only an
-    // explicitly public wallet RPC is exposed.
-    const { rpcUrl: _rpcUrl, ...publicChain } = chain;
+    // Deliberately omit the internal RPC URLs, primary and fallback alike: they
+    // may carry provider API keys. Only an explicitly public wallet RPC is exposed.
+    const { rpcUrl: _rpcUrl, rpcFallbackUrls: _rpcFallbackUrls, ...publicChain } = chain;
     return c.json({
       chain: {
         ...publicChain,

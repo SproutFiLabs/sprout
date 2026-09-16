@@ -64,10 +64,11 @@ describe('read endpoints', () => {
     expect(body.label).toContain('LOCAL DEMO FIXTURE');
   });
 
-  test('public config never leaks the internal RPC URL', async () => {
+  test('public config never leaks the internal RPC URLs', async () => {
     const config = loadServerConfig({
       SPROUT_CHAIN_ID: '4663',
       SPROUT_RPC_URL: 'https://user:supersecret@rpc.example.invalid',
+      SPROUT_RPC_FALLBACK_URLS: 'https://backup.example.invalid/v2/fallbackkey123,https://second.example.invalid',
       SPROUT_FACTORY_ADDRESS: '0x00000000000000000000000000000000000000aa',
       SPROUT_SETTLEMENT_TOKEN: TOKEN,
       SPROUT_VENUE_ADDRESS: '0x00000000000000000000000000000000000000bb',
@@ -81,6 +82,9 @@ describe('read endpoints', () => {
     expect(text).not.toContain('supersecret');
     expect(text).not.toContain('rpc.example.invalid');
     expect(text).not.toContain('"rpcUrl"');
+    expect(text).not.toContain('fallbackkey123');
+    expect(text).not.toContain('example.invalid');
+    expect(text).not.toContain('rpcFallbackUrls');
   });
 });
 
