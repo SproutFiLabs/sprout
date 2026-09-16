@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sprout - family stock-token savings</title>
+    <!-- SVG first for browsers that take it; .ico is the fallback, and without
+         it a request for /favicon.ico falls through to the SPA and returns
+         index.html as text/html, which renders as a broken icon. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#fc7c1d" />
   </head>
   <body>
     <div id="root"></div>

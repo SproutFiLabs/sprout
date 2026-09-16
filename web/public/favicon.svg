@@ -1,1 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#148b4b"/><path d="M16 25V15C7 16 5 11 6 7c6-1 11 2 10 8 0-8 4-11 10-10 1 6-2 12-10 11" fill="#f3efdf"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Sprout">
+  <!--
+    Simplified from web/public/brand/sprout-logo.png. The full mark has banded
+    leaves and a hand-drawn outline; both turn to mush below about 32px, so this
+    keeps only what survives a 16px tab: the orange ground, two leaf
+    silhouettes at the same angles, and two greens so the leaves stay distinct.
+
+    The artwork is scaled to fill roughly three quarters of the tile. At the
+    logo's own proportions it sat in the middle with heavy padding, which at
+    16px left the sprout about six pixels across and unreadable.
+  -->
+  <rect width="64" height="64" rx="14" fill="#fc7c1d"/>
+  <g transform="translate(30 53) scale(1.5)">
+    <path d="M0 0v-10" stroke="#11995e" stroke-width="5.5" stroke-linecap="round"/>
+    <!-- right leaf: larger, darker, so the pair reads as two shapes not one blob -->
+    <path d="M1.5 -8.5c1-12 8-19 17-20 2 11-4 19-17 20z" fill="#11995e"/>
+    <!-- left leaf -->
+    <path d="M-1.5 -8.5c-1-9-7-14-14-14-2 8 3 14 14 14z" fill="#77cc70"/>
+  </g>
+</svg>
