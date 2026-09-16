@@ -38,6 +38,7 @@ import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
 import { InvestNowForm } from './components/InvestNow';
 import { GiftPage } from './GiftPage';
+import { GiftQrCard } from './components/GiftQr';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
 import { TITLE_MAX, endOfDayUtc, textProblem } from './components/Campaign';
 import {
@@ -122,6 +123,7 @@ export function App() {
   const [showAllocation, setShowAllocation] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showPayGift, setShowPayGift] = useState<GiftSummary | null>(null);
+  const [giftQr, setGiftQr] = useState<GiftSummary | null>(null);
   const [view, setView] = useState<'overview' | 'portfolio' | 'invest' | 'chores' | 'gifts' | 'graduation'>('overview');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showChore, setShowChore] = useState(false);
@@ -489,6 +491,7 @@ export function App() {
     showInvestNow ||
     showGift ||
     showPayGift !== null ||
+    giftQr !== null ||
     showMilestone ||
     showAllocation ||
     showWithdraw ||
@@ -930,6 +933,7 @@ export function App() {
     onRunToolAdvance: () => void runToolAdvance(),
     onReconcile: () => void withTxn('Reconcile', async () => { await fetch('/api/index/reconcile', { method: 'POST' }); if (selectedId) await loadDetail(selectedId); }),
     onRunJobs: () => void withTxn('Run due investments', async () => { await api.runJobs(); if (selectedId) await loadDetail(selectedId); }),
+    onOpenGiftQr: (g) => setGiftQr(g),
     onOpenGiftPay: (g) => { setPayGiftForm({ token: g.acceptedAssets[0] ?? '', amount: '25' }); setShowPayGift(g); },
     anyModalOpen, symbolFor, decimalsFor,
   };
@@ -1151,6 +1155,12 @@ export function App() {
           <button data-testid="paygift-submit" className="btn btn--primary" onClick={() => void submitPayGift()}>
             Approve and pay
           </button>
+        </Modal>
+      ) : null}
+
+      {giftQr ? (
+        <Modal title="Gift link QR code" onClose={() => setGiftQr(null)} txn={txn} explorerUrl={chain?.explorerUrl}>
+          <GiftQrCard url={`${window.location.origin}/gift/${giftQr.id}`} label={giftQr.label} />
         </Modal>
       ) : null}
 

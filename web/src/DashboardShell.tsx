@@ -94,6 +94,8 @@ export interface DashboardShellProps {
   onOpenInvestNow: () => void;
   onOpenGift: () => void;
   onOpenGiftPay: (g: GiftSummary) => void;
+  /** Show a printable QR code for a gift link. */
+  onOpenGiftQr?: (g: GiftSummary) => void;
   anyModalOpen: boolean;
   onOpenAllocation: () => void;
   onOpenWithdraw: () => void;
@@ -380,7 +382,7 @@ export function DashboardShell(props: DashboardShellProps) {
     isParent, isBeneficiary, isGraduated, graduationProgress, balanceChange, chainReady, loading, txn, view, setView,
     drawerOpen, setDrawerOpen, onOpenPlant, onOpenFund, onOpenSchedule, onOpenInvestNow, onOpenGift, onOpenAllocation, onOpenWithdraw,
     onOpenChore, onOpenMilestone, onCancelSchedule, onReleaseMilestone, onCancelMilestone, onClaim, onOpenSettings, onOpenNotifications,
-    onOpenHelp, onOpenOnboarding, onOpenAsset, onRunToolFund, onRunToolAdvance, onReconcile, onRunJobs, symbolFor, decimalsFor, anyModalOpen, onOpenGiftPay,
+    onOpenHelp, onOpenOnboarding, onOpenAsset, onRunToolFund, onRunToolAdvance, onReconcile, onRunJobs, symbolFor, decimalsFor, anyModalOpen, onOpenGiftPay, onOpenGiftQr,
     mode = 'live', sample = null, nowMs,
   } = props;
 
@@ -1111,7 +1113,10 @@ export function DashboardShell(props: DashboardShellProps) {
                     </span>
                     <code data-testid="gift-link">{`${window.location.origin}/gift/${g.id}`}</code>
                     <span className="garden-muted" data-testid="gift-count">{g.paymentCount} gift(s)</span>
-                    <button data-testid="gift-pay" className="garden-pill" onClick={() => onOpenGiftPay(g)} disabled={!chainReady}>Pay</button>
+                    <span className="garden-gift-actions">
+                      {onOpenGiftQr ? <button data-testid="gift-qr" className="garden-pill" onClick={() => onOpenGiftQr(g)}>QR code</button> : null}
+                      <button data-testid="gift-pay" className="garden-pill" onClick={() => onOpenGiftPay(g)} disabled={!chainReady}>Pay</button>
+                    </span>
                   </li>
                 ))}
               </ul>
