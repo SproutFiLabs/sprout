@@ -82,7 +82,7 @@ const questions: Array<[string, string]> = [
   ['Who can fund a sprout?', 'A connected wallet can contribute supported tokens to a sprout. Family and friends can use its gift link. Bank and card payments are not available.'],
   ['Can I take money out early?', 'No. Nobody can withdraw before the graduation date, including the parent who planted the sprout. Before then, value only leaves as a chore reward you approve, which your child claims.'],
   ['What happens when they graduate?', 'Parent powers stop at the immutable graduation timestamp and full control moves to the child. That final handover is irreversible.'],
-  ['Will the portfolio always grow?', 'No. Investments can lose value. The chart shows recorded portfolio values; balance changes include deposits and withdrawals as well as market movement. No return is promised.'],
+  ['Will the portfolio always grow?', 'No. Investments can lose value. The chart shows recorded portfolio values next to the money put in (deposits and gifts, less claims and withdrawals). Growth is the gap between the two, and it can be negative. No return is promised.'],
 ];
 
 const principles = [
