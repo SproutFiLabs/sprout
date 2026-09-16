@@ -431,9 +431,9 @@ export function Landing() {
               <p>Investments can fall in value. Graduation transfers full control to the beneficiary at the date chosen when the sprout is planted.</p>
               <p className="reference-footer-risk">
                 <strong>Beta software, real money.</strong> Sprout settles on Robinhood Chain mainnet
-                and transactions cannot be reversed. The contracts have not been audited. Automatic
-                weekly investing is currently switched off, and graduation withdrawal and backup
-                restoration have not yet been verified on mainnet. Only commit what you are prepared
+                and transactions cannot be reversed. Automatic weekly investing is currently
+                switched off; the contracts have not been independently audited; and graduation
+                withdrawal and backup restoration have not yet been verified on mainnet. Only commit what you are prepared
                 to lose. Nothing here is financial advice.
               </p>
               <p>© {new Date().getFullYear()} SPROUT. A little, together.</p>

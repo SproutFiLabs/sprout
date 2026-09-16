@@ -6,7 +6,9 @@ import { AlertTriangle } from 'lucide-react';
  *
  * Every limitation named here is one the project already documents in its
  * README - unaudited contracts, automatic investing switched off, graduation
- * withdrawal and backup restore not yet verified against mainnet. None of it
+ * withdrawal and backup restore not yet verified against mainnet. The lead line
+ * and the in-dialog note stay short on purpose; the full list sits one click
+ * away rather than shouting at every screen. None of it
  * was visible anywhere in the product, so the only people who knew were the
  * ones reading the repository.
  *
@@ -15,8 +17,8 @@ import { AlertTriangle } from 'lucide-react';
  */
 
 export const BETA_POINTS: string[] = [
-  'The contracts have not been audited.',
   'Transactions settle on Robinhood Chain mainnet with real funds and cannot be reversed.',
+  'The contracts have not been independently audited.',
   'Automatic weekly investing is switched off, so nothing invests on its own.',
   'Graduation withdrawal has not yet been verified on mainnet.',
   'Backup restoration has not yet been verified.',
@@ -39,8 +41,8 @@ export function BetaNotice(): JSX.Element {
       <div className="beta-notice-body">
         <b>Sprout is in beta, and it moves real money.</b>{' '}
         <span>
-          The contracts are not audited and mainnet transactions cannot be reversed. Only commit what
-          you are prepared to lose.
+          Mainnet transactions settle with real funds and cannot be reversed. Only commit what you
+          are prepared to lose.
         </span>
         <button type="button" className="beta-notice-more" onClick={() => setOpen(!open)} aria-expanded={open}>
           {open ? 'Hide details' : 'What else should I know?'}
@@ -65,7 +67,6 @@ export function RiskLine({ action }: { action: string }): JSX.Element {
       <AlertTriangle size={14} aria-hidden />
       <span>
         <b>Beta, real funds.</b> {action} settles on Robinhood Chain mainnet and cannot be undone.
-        The contracts are not audited.
       </span>
     </p>
   );
