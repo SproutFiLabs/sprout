@@ -7,6 +7,7 @@ import { Preview } from './Preview';
 import { TestExperience } from './TestExperience';
 import { KnowledgePage } from './knowledge/KnowledgePages';
 import { AppearancePage } from './AppearancePage';
+import { KidView } from './KidView';
 import { initializeTheme } from './theme/ThemeSettings';
 import './app.css';
 import './reference/landing.css';
@@ -35,6 +36,8 @@ function Root() {
     return <KnowledgePage page={path.slice(1) as 'docs' | 'whitepaper' | 'guide' | 'faq'} />;
   }
   if (path === '/settings') return <AppearancePage />;
+  const kid = path.match(/^\/kid\/(0x[0-9a-fA-F]{40})$/);
+  if (kid) return <KidView vault={kid[1]!} />;
   if (path === '/test') return <TestExperience />;
   return <App />;
 }

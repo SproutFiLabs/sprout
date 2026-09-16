@@ -21,6 +21,7 @@ import { ThemeToggle } from './theme/ThemeSettings';
 import { CampaignProgress, GiftNotesList, giftAmountLabel } from './components/Campaign';
 import { ResourcesMenu } from './components/ResourcesMenu';
 import { BloomGarden } from './garden/BloomGarden';
+import { kidViewPath } from './KidView';
 
 export type ViewId = 'overview' | 'portfolio' | 'invest' | 'chores' | 'gifts' | 'graduation';
 
@@ -400,6 +401,16 @@ export function DashboardShell(props: DashboardShellProps) {
   const openChores = chores.filter((m) => m.status === 'created');
   const releasedChores = chores.filter((m) => m.status === 'released');
   const canPlant = isParent && !isGraduated && chainReady;
+  const [kidLinkCopied, setKidLinkCopied] = useState(false);
+  const copyKidLink = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(new URL(kidViewPath(id, getNickname(id)), window.location.origin).href);
+      setKidLinkCopied(true);
+      window.setTimeout(() => setKidLinkCopied(false), 2500);
+    } catch {
+      setKidLinkCopied(false);
+    }
+  };
   const canParentAct = isParent && !isGraduated;
 
   const choreTitle = (m: Milestone): string => {
@@ -1129,7 +1140,28 @@ export function DashboardShell(props: DashboardShellProps) {
               {isGraduated ? <button data-testid="withdraw-open" className="garden-pill" onClick={onOpenWithdraw} disabled={!chainReady}>Withdraw balances</button> : <p className="garden-empty-note">Withdrawal unlocks after graduation.</p>}
             </>
           ) : (
-            <><h2>Their future. Their keys.</h2><p className="garden-empty-note">Graduation hands full control to the child and is irreversible.</p></>
+            <>
+              <h2>Their future. Their keys.</h2>
+              <p className="garden-empty-note">Graduation hands full control to the child and is irreversible.</p>
+              {selected && !isSample ? (
+                <div className="garden-kid-link">
+                  <b>Their own view</b>
+                  <p className="garden-empty-note">
+                    A read-only page {nameFor(selected.id)} can open on any device to watch their sprout grow: what it holds,
+                    chores and rewards, and how long until it’s theirs. It can’t move money. The link includes the name you
+                    gave this sprout.
+                  </p>
+                  <div className="garden-kid-link-actions">
+                    <a className="garden-pill garden-pill--dark" href={kidViewPath(selected.id, getNickname(selected.id))} target="_blank" rel="noopener" data-testid="kid-view-open">
+                      Open their view <ArrowUpRight size={15} />
+                    </a>
+                    <button className="garden-pill" data-testid="kid-view-copy" onClick={() => void copyKidLink(selected.id)}>
+                      {kidLinkCopied ? 'Link copied' : 'Copy link'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </>
           )}
         </div>
       </div>

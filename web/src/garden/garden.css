@@ -938,6 +938,48 @@ html[data-appearance="dark"] .garden-gift-form textarea { background: #0f1b14; b
 .garden--empty .garden-branch { display: none; }
 .garden-connect-tour { display: inline-flex; align-items: center; gap: 7px; margin: 18px 0 0; padding: 0; border: 0; background: transparent; color: var(--garden-green); font-size: 13px; cursor: pointer; }
 
+/* Kid view (/kid/<vault>): read-only, big type, same garden palette. */
+.kid-root {
+  --garden-ink: #1d1d1b; --garden-soft: #5f5c54; --garden-line: #ece7dc; --garden-surface: #fffdfa;
+  --garden-green: #3f7a3a; --garden-serif: Georgia, 'Times New Roman', serif;
+  color: var(--garden-ink); font-family: Arial, Helvetica, sans-serif; padding: 20px 28px 40px;
+}
+.kid-top { display: flex; align-items: center; gap: 16px; max-width: 1180px; margin: 0 auto; }
+.kid-top .garden-brand { margin: 0; padding: 0; }
+.kid-badge { margin-left: auto; padding: 8px 14px; border-radius: 999px; background: #eef6ec; color: #2f5a2c; font-size: 13px; }
+.kid-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 24px; max-width: 1180px; margin: 24px auto 8px; min-height: 300px; }
+.kid-hero h1 { margin: 0 0 12px; font-family: var(--garden-serif); font-weight: 400; font-size: clamp(40px, 6vw, 72px); line-height: 1; letter-spacing: -2px; }
+.kid-value { margin: 18px 0 6px; font-family: var(--garden-serif); font-size: clamp(48px, 8vw, 96px); line-height: 1; letter-spacing: -2px; color: var(--garden-green); }
+.kid-lead { margin: 0; font-size: 20px; line-height: 1.4; color: var(--garden-soft); max-width: 480px; }
+.kid-garden { position: relative; min-height: 280px; }
+.kid-garden .garden-bouquet, .kid-garden canvas { max-width: 100%; }
+.kid-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 1180px; margin: 0 auto; }
+.kid-card { padding: 26px 28px; border: 1px solid var(--garden-line); border-radius: 26px; background: var(--garden-surface); }
+.kid-card h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-family: var(--garden-serif); font-weight: 400; font-size: 26px; }
+.kid-card h2 svg { color: var(--garden-green); }
+.kid-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.kid-list li { display: grid; gap: 2px; padding-bottom: 12px; border-bottom: 1px solid var(--garden-line); }
+.kid-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.kid-list b { font-size: 20px; }
+.kid-list span, .kid-muted { color: var(--garden-soft); font-size: 15px; margin: 0; }
+.kid-big { margin: 0; font-family: var(--garden-serif); font-size: 44px; line-height: 1.05; }
+.kid-highlight { margin: 16px 0 0; padding: 12px 14px; border-radius: 14px; background: #fff3d6; color: #6b4a0e; font-size: 16px; }
+.kid-foot { display: flex; align-items: center; justify-content: center; gap: 8px; max-width: 1180px; margin: 28px auto 0; color: var(--garden-soft); font-size: 14px; text-align: center; }
+.garden-kid-link { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--garden-line); }
+.garden-kid-link > b { font-size: 16px; }
+.garden-kid-link-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+html[data-appearance="dark"] .kid-root { --garden-ink: #f3efe4; --garden-soft: #c9c4b6; --garden-line: #34463b; --garden-surface: #16261d; --garden-green: #9fd49b; background: #0f1b14; }
+html[data-appearance="dark"] .kid-badge { background: #1f3a2a; color: #cfe8d2; }
+html[data-appearance="dark"] .kid-highlight { background: #3a2f14; color: #f3dca4; }
+@media (max-width: 760px) {
+  .kid-root { padding: 16px 16px 32px; }
+  .kid-top { flex-wrap: wrap; }
+  .kid-badge { order: 3; margin-left: 0; width: 100%; text-align: center; }
+  .kid-hero, .kid-grid { grid-template-columns: 1fr; }
+  .kid-hero { min-height: 0; }
+  .kid-garden { min-height: 200px; }
+}
+
 /* ---------------------------------------------------------- onboarding */
 .onboarding-backdrop,
 .welcome-sprout-backdrop { --garden-ink: #1d1d1b; --garden-soft: #5f5c54; --garden-quiet: #6c685f; --garden-line: #ece7dc; --garden-surface: #fffdfa; --garden-serif: Georgia, 'Times New Roman', serif; position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 24px; background: rgba(35, 29, 19, .48); }

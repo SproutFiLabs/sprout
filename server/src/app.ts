@@ -796,6 +796,11 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       const safe = path.replace(/\.\./g, '');
       const candidate = Bun.file(join(dist, safe === '/' ? 'index.html' : safe));
       if (await candidate.exists()) return new Response(candidate);
+      // A child's page is for the family, not for search engines.
+      if (/^\/kid\//.test(path)) {
+        const index = Bun.file(join(dist, 'index.html'));
+        if (await index.exists()) return new Response(index, { headers: { 'x-robots-tag': 'noindex, nofollow' } });
+      }
       const index = Bun.file(join(dist, 'index.html'));
       if (await index.exists()) {
         // A known gift link previews as a gift, not as the home page.
