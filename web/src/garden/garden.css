@@ -912,6 +912,22 @@
 .onboarding-dots { display: flex; gap: 6px; margin-top: 28px; }
 .onboarding-dots i { width: 7px; height: 7px; border-radius: 50%; background: #d8d0c1; }
 .onboarding-dots i.active { background: #f5793b; }
+/* "The money stays theirs": larger than the reasons panel, because it matters more. */
+.onboarding-dialog:has(.onboarding-promises) h2 { font-size: 42px; letter-spacing: -1.5px; }
+.onboarding-promises { gap: 4px; margin-top: 18px; }
+.onboarding-promises .onboarding-reason { gap: 14px; padding: 13px 0; }
+.onboarding-promises .onboarding-reason > span { width: 40px; height: 40px; flex-basis: 40px; }
+.onboarding-promises .onboarding-reason b { font-size: 16px; }
+.onboarding-promises .onboarding-reason p { font-size: 13.5px; line-height: 1.45; }
+.onboarding-guide-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; color: #b65b2f; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.welcome-sprout-address { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: -12px auto 30px; max-width: 460px; padding: 0 16px; }
+.welcome-sprout-address > span { font-size: 15px; line-height: 1.45; color: rgba(255,255,255,.92); }
+.welcome-sprout-address button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border: 1px solid rgba(255,255,255,.55); border-radius: 999px; background: rgba(255,255,255,.16); color: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.welcome-sprout-address button:hover { background: rgba(255,255,255,.26); }
+.welcome-sprout-address code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+@media (max-width: 560px) {
+  .onboarding-dialog:has(.onboarding-promises) h2 { font-size: 32px; }
+}
 .onboarding-flower-field { position: absolute; inset: 0; pointer-events: none; }
 .onboarding-flower { --flower-angle: 0deg; --flower-scale: 1; --flower-start-scale: .35; position: absolute; bottom: -8px; width: 82px; height: 245px; transform-origin: 50% 100%; animation: onboarding-pop .7s cubic-bezier(.2, .85, .3, 1.15) both; animation-delay: var(--flower-delay, 0ms); }
 .onboarding-flower i { position: absolute; bottom: 54px; left: 8px; width: 67px; height: 82px; background: center / contain no-repeat; transform: rotate(-18deg); }

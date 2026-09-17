@@ -89,6 +89,7 @@ html[data-appearance="dark"] .onboarding-reason { border-color: #355342; }
 html[data-appearance="dark"] .onboarding-reason > span { background: #294a35; color: #b9dc9e; }
 html[data-appearance="dark"] .onboarding-reason:nth-child(2) > span { background: #563d2e; color: #ffc09b; }
 html[data-appearance="dark"] .onboarding-reason:nth-child(3) > span { background: #443965; color: #d3c1ff; }
+html[data-appearance="dark"] .onboarding-guide-link { color: #ffc09b; }
 html[data-appearance="dark"] .garden-root .modal-head .btn,
 html[data-appearance="dark"] .garden-root .modal .btn { background: #294536; color: #f5efe3; border-color: #466451; }
 html[data-appearance="dark"] .reference-landing {

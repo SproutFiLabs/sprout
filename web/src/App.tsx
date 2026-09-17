@@ -879,7 +879,7 @@ export function App() {
       <DashboardShell {...shell} />
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}
-      <WelcomeSprout open={welcomeOpen} onClose={() => setWelcomeOpen(false)} onFund={() => { setFundForm({ token: settlementToken ?? '', amount: '10' }); setShowFund(true); }} />
+      <WelcomeSprout open={welcomeOpen} address={selectedId} onClose={() => setWelcomeOpen(false)} onFund={() => { setFundForm({ token: settlementToken ?? '', amount: '10' }); setShowFund(true); }} />
 
       {showPlant ? (
         <Modal title="Plant a sprout" onClose={() => setShowPlant(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
@@ -901,7 +901,7 @@ export function App() {
                 Beneficiary wallet
                 <input data-testid="plant-beneficiary" value={plantForm.beneficiary} onChange={(e) => setPlantForm({ ...plantForm, beneficiary: e.target.value })} placeholder="0x..." />
               </label>
-              <p className="fine-print">The nickname stays on this device. The beneficiary is the wallet that receives control at graduation.</p>
+              <p className="fine-print" data-testid="plant-beneficiary-note"><b>Money in this sprout can only ever be paid to this wallet</b>: rewards you approve before graduation, and everything at graduation. It can’t be changed later, so use a wallet your family can open. The nickname stays on this device.</p>
             </>
           ) : null}
 

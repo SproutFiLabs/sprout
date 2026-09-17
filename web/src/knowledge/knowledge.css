@@ -3,3 +3,4 @@
 @media print{.knowledge{background:#fff;color:#000}.knowledge-topbar nav,.knowledge-print,.knowledge-sidebar,.knowledge-hero-links{display:none}.knowledge-topbar{border:0;padding:0;height:45px}.knowledge-layout{display:block;padding:0;max-width:none}.knowledge-hero{padding:20px 0}.knowledge-hero h1{font-size:34px}.knowledge-section{break-inside:avoid;padding:24px 0}.knowledge-section h2{font-size:24px}.knowledge-section p,.knowledge-section li{font-size:12px;line-height:1.5}.knowledge-callout,.knowledge-steps>div{background:#fff}.knowledge-footer{border-top:1px solid #ccc;margin-top:20px}.knowledge-footer a{display:none}}
 
 .knowledge-brand-mark{overflow:hidden}.knowledge-brand-mark img{width:21px;height:21px;object-fit:contain}
+.knowledge-code{overflow-wrap:anywhere}

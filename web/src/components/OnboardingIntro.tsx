@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { OnboardingGarden } from './OnboardingGarden';
-import { ArrowRight, Gift, Leaf, Repeat2, Sprout, X } from 'lucide-react';
+import { ArrowRight, Check, Copy, Gift, Leaf, Repeat2, ShieldCheck, Sprout, Unplug, X } from 'lucide-react';
+import { copyToClipboard, shortCa } from './PublicCa';
 
 export interface OnboardingIntroProps {
   open: boolean;
@@ -16,6 +17,23 @@ const reasons: Array<{ icon: typeof Repeat2; title: string; text: string }> = [
   { icon: Gift, title: 'Gifts from their people', text: 'Birthdays and little surprises can join the same growing portfolio.' },
   { icon: Leaf, title: 'Earned rewards', text: 'Everyday effort can become an allowance they can see and understand.' },
 ];
+
+/**
+ * The last panel before anyone plants: where the money lives, who it can go
+ * to, and that it does not depend on this website. Kept plain and prominent
+ * on purpose; the guide has the steps.
+ */
+const promises: Array<{ icon: typeof Repeat2; title: string; text: string }> = [
+  { icon: ShieldCheck, title: 'Sprout can’t touch it', text: 'Each sprout is its own contract on Robinhood Chain. Nobody at Sprout can move, freeze or refund the money in it.' },
+  { icon: Gift, title: 'It only ever goes to your child', text: 'As rewards you approve before the big day, and all of it on the big day. Pick a child’s wallet your family can open: it can’t be changed later.' },
+  { icon: Unplug, title: 'It doesn’t need this website', text: 'If Sprout ever shuts down, the money stays put. Save your sprout’s address, and free tools can still take it out.' },
+];
+
+const PANELS = [
+  { eyebrow: 'A little introduction', title: 'A little future, grown together.', text: 'SPROUT gives a child a place of their own for contributions, rewards and thoughtful gifts.' },
+  { eyebrow: 'A little introduction', title: 'Small ways to help it grow.', text: 'One sprout can hold the habits and moments your family already shares.' },
+  { eyebrow: 'Before you add money', title: 'The money stays theirs, not ours.', text: 'Here is what that means, in plain words.' },
+] as const;
 
 function useDialogFocus(open: boolean, onClose: () => void, ref: RefObject<HTMLDivElement>) {
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -49,7 +67,7 @@ function useDialogFocus(open: boolean, onClose: () => void, ref: RefObject<HTMLD
 }
 
 export function OnboardingIntro({ open, connected, canConnect, onClose, onConnect, onPlant }: OnboardingIntroProps) {
-  const [stage, setStage] = useState<0 | 1>(0);
+  const [stage, setStage] = useState<0 | 1 | 2>(0);
   const ref = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   useDialogFocus(open, onClose, ref);
@@ -58,7 +76,7 @@ export function OnboardingIntro({ open, connected, canConnect, onClose, onConnec
   useEffect(() => { if (open) heading.current?.focus(); }, [open, stage]);
   if (!open) return null;
   const primary = () => {
-    if (stage === 0) { setStage(1); return; }
+    if (stage < 2) { setStage(stage === 0 ? 1 : 2); return; }
     if (connected) onPlant(); else if (canConnect) onConnect();
   };
   return (
@@ -67,28 +85,33 @@ export function OnboardingIntro({ open, connected, canConnect, onClose, onConnec
         <button className="onboarding-close" type="button" onClick={onClose} aria-label="Close welcome tour"><X size={18} /></button>
         <OnboardingGarden chapter={stage} />
         <div className="onboarding-content onboarding-chapter-enter" key={stage}>
-          <span className="garden-eyebrow">A little introduction</span>
-          <h2 id="onboarding-title" ref={heading} tabIndex={-1}>{stage === 0 ? 'A little future, grown together.' : 'Small ways to help it grow.'}</h2>
-          <p id="onboarding-description">{stage === 0 ? 'SPROUT gives a child a place of their own for contributions, rewards and thoughtful gifts.' : 'One sprout can hold the habits and moments your family already shares.'}</p>
-          {stage === 1 ? (
+          <span className="garden-eyebrow">{PANELS[stage].eyebrow}</span>
+          <h2 id="onboarding-title" ref={heading} tabIndex={-1}>{PANELS[stage].title}</h2>
+          <p id="onboarding-description">{PANELS[stage].text}</p>
+          {stage === 2 ? (
+            <div className="onboarding-reasons onboarding-promises" data-testid="onboarding-promises">
+              {promises.map(({ icon: Icon, title, text }) => <div className="onboarding-reason" key={title}><span><Icon size={20} /></span><div><b>{title}</b><p>{text}</p></div></div>)}
+              <a className="onboarding-guide-link" href="/guide#without-sprout">How to take money out without Sprout <ArrowRight size={14} /></a>
+            </div>
+          ) : stage === 1 ? (
             <div className="onboarding-reasons">
               {reasons.map(({ icon: Icon, title, text }) => <div className="onboarding-reason" key={title}><span><Icon size={18} /></span><div><b>{title}</b><p>{text}</p></div></div>)}
             </div>
           ) : <div className="onboarding-quote">A small beginning can become something they can carry into their own future.</div>}
           <div className="onboarding-actions">
-            <button type="button" data-onboarding-primary className="garden-pill garden-pill--dark" onClick={primary} disabled={stage === 1 && !connected && !canConnect}>
-              {stage === 0 ? <>See how it grows <ArrowRight size={15} /></> : connected ? <>Plant their first sprout <Sprout size={15} /></> : <>Connect &amp; plant <ArrowRight size={15} /></>}
+            <button type="button" data-onboarding-primary className="garden-pill garden-pill--dark" onClick={primary} disabled={stage === 2 && !connected && !canConnect}>
+              {stage === 0 ? <>See how it grows <ArrowRight size={15} /></> : stage === 1 ? <>Where the money lives <ArrowRight size={15} /></> : connected ? <>Plant their first sprout <Sprout size={15} /></> : <>Connect &amp; plant <ArrowRight size={15} /></>}
             </button>
             <button type="button" className="onboarding-skip" onClick={onClose}>{stage === 0 ? 'Skip for now' : 'I’ll explore myself'}</button>
           </div>
-          <div className="onboarding-dots" aria-label={`Introduction panel ${stage + 1} of 2`}><i className={stage === 0 ? 'active' : ''} /><i className={stage === 1 ? 'active' : ''} /></div>
+          <div className="onboarding-dots" aria-label={`Introduction panel ${stage + 1} of ${PANELS.length}`}>{PANELS.map((panel, i) => <i key={panel.title} className={stage === i ? 'active' : ''} />)}</div>
         </div>
       </div>
     </div>
   );
 }
 
-export function WelcomeSprout({ open, onClose, onFund }: { open: boolean; onClose: () => void; onFund?: () => void }) {
+export function WelcomeSprout({ open, onClose, onFund, address }: { open: boolean; onClose: () => void; onFund?: () => void; address?: string | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [fading, setFading] = useState(false);
   useDialogFocus(open, onClose, ref);
@@ -106,8 +129,27 @@ export function WelcomeSprout({ open, onClose, onFund }: { open: boolean; onClos
     <div className={'welcome-sprout-backdrop' + (fading ? ' is-fading' : '')} data-testid="welcome-sprout">
       <div className="welcome-sprout" ref={ref} role="dialog" aria-modal="true" aria-labelledby="welcome-title">
         <OnboardingGarden />
-        <div className="welcome-sprout-copy"><span className="garden-eyebrow">The first little beginning</span><h2 id="welcome-title">Welcome.</h2><p>Their sprout is ready to grow. It has no money in it yet — adding the first funds is the next step.</p><div className="welcome-sprout-actions">{onFund ? <button type="button" data-testid="welcome-fund" className="garden-pill garden-pill--light" onClick={() => { onFund(); dismiss(); }}>Add the first funds <ArrowRight size={15} /></button> : null}<button type="button" data-testid="welcome-continue" className="welcome-sprout-later" onClick={dismiss}>I{'\u2019'}ll do this later</button></div></div>
+        <div className="welcome-sprout-copy"><span className="garden-eyebrow">The first little beginning</span><h2 id="welcome-title">Welcome.</h2><p>Their sprout is ready to grow. It has no money in it yet — adding the first funds is the next step.</p>{address ? <SaveSproutAddress address={address} /> : null}<div className="welcome-sprout-actions">{onFund ? <button type="button" data-testid="welcome-fund" className="garden-pill garden-pill--light" onClick={() => { onFund(); dismiss(); }}>Add the first funds <ArrowRight size={15} /></button> : null}<button type="button" data-testid="welcome-continue" className="welcome-sprout-later" onClick={dismiss}>I{'\u2019'}ll do this later</button></div></div>
       </div>
+    </div>
+  );
+}
+
+/** The one thing to write down after planting: the sprout's own address. */
+function SaveSproutAddress({ address }: { address: string }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+  return (
+    <div className="welcome-sprout-address" data-testid="welcome-address">
+      <span>Save this sprout’s address. With it, the money can be reached even if Sprout ever shuts down.</span>
+      <button type="button" title={address} aria-label={`Copy this sprout’s address ${address}`} onClick={() => void copyToClipboard(address).then(setCopied)}>
+        <code>{shortCa(address)}</code>
+        {copied ? <><Check size={15} aria-hidden /> Copied</> : <><Copy size={15} aria-hidden /> Copy</>}
+      </button>
     </div>
   );
 }
