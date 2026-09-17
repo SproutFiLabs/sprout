@@ -3,9 +3,12 @@ import { Check, Copy } from 'lucide-react';
 import './public-ca.css';
 
 /**
- * The token contract address ("CA") with a one-tap copy, on the landing page
- * and the dashboard. The server sends it in /api/config from
- * SPROUT_PUBLIC_CA; with nothing set, this renders nothing.
+ * Copyable addresses. `PublicCa` is the token contract address ("CA") on the
+ * landing page and the dashboard: the server sends it in /api/config from
+ * SPROUT_PUBLIC_CA, and with nothing set it renders nothing.
+ * `SproutAddressRow` is the selected sprout's own contract address in the
+ * dashboard's wallet menu, which a family needs to reach their sprout
+ * without this website.
  */
 
 let pending: Promise<string | null> | null = null;
@@ -23,7 +26,7 @@ export function shortCa(ca: string): string {
   return ca.length > 14 ? `${ca.slice(0, 6)}…${ca.slice(-4)}` : ca;
 }
 
-async function copyToClipboard(text: string): Promise<boolean> {
+export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     return true;
@@ -86,5 +89,33 @@ export function PublicCa({ variant }: { variant: 'landing' | 'dashboard' }) {
         <span className="public-ca-action-text">{copied === 'yes' ? 'Copied' : copied === 'no' ? 'Copy failed' : 'Copy'}</span>
       </span>
     </button>
+  );
+}
+
+export function SproutAddressRow({ address }: { address: string }) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1800);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  return (
+    <div className="garden-menu-row">
+      <span>This sprout</span>
+      <button
+        type="button"
+        className="sprout-address"
+        data-testid="sprout-address"
+        title={address}
+        aria-label={`Copy this sprout’s address ${address}`}
+        onClick={() => void copyToClipboard(address).then(setCopied)}
+      >
+        <code>{shortCa(address)}</code>
+        {copied ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}
+        <span className="sprout-address-status" role="status">{copied ? 'Copied' : ''}</span>
+      </button>
+    </div>
   );
 }

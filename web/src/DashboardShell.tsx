@@ -11,7 +11,7 @@ import type {
   Holdings, Job, LocalWalletInfo, Milestone, Sprout,
 } from './api';
 import type { WalletState } from './wallet';
-import { PublicCa } from './components/PublicCa';
+import { PublicCa, SproutAddressRow } from './components/PublicCa';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
 import { getMilestoneTitle } from './localStore';
 import { formatRunDateTime } from './dates';
@@ -544,6 +544,7 @@ export function DashboardShell(props: DashboardShellProps) {
             </summary>
             <div className="garden-menu">
               <div className="garden-menu-row"><span>Network</span><b>{chain?.name ?? 'Not configured'}</b></div>
+              {selected ? <SproutAddressRow address={selected.id} /> : null}
               {chain && !chain.configured ? <div className="garden-menu-row"><span>Status</span><b>Unconfigured</b></div> : null}
             </div>
           </details>
