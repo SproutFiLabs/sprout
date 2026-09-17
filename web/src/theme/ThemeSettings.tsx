@@ -6,6 +6,13 @@ type ResolvedAppearance = Exclude<Appearance, 'system'>;
 type Subscriber = () => void;
 
 const STORAGE_KEY = 'sprout-appearance';
+/**
+ * Choices saved before light became the default (mostly from testing the
+ * toggle) kept those browsers on dark. Bumping this clears a saved choice
+ * once; anything picked after that is kept.
+ */
+const PREFERENCE_VERSION = '2';
+const VERSION_KEY = 'sprout-appearance-version';
 const subscribers = new Set<Subscriber>();
 let mediaQuery: MediaQueryList | null = null;
 let mediaListener: (() => void) | null = null;
@@ -17,7 +24,19 @@ function readPreference(): Appearance {
     // Light is the brand default; System stays available as an explicit choice.
     return value === 'light' || value === 'dark' || value === 'system' ? value : 'light';
   } catch {
-    return 'system';
+    // Storage blocked (some in-app and private browsers): still light, never the device's dark mode.
+    return 'light';
+  }
+}
+
+function clearStalePreference(): void {
+  try {
+    const storage = window.localStorage;
+    if (storage.getItem(VERSION_KEY) === PREFERENCE_VERSION) return;
+    storage.removeItem(STORAGE_KEY);
+    storage.setItem(VERSION_KEY, PREFERENCE_VERSION);
+  } catch {
+    /* storage can be unavailable */
   }
 }
 
@@ -44,6 +63,7 @@ function notify(): void {
 
 /** Apply the saved appearance before React paints, and keep System in sync. */
 export function initializeTheme(): Appearance {
+  if (typeof window !== 'undefined') clearStalePreference();
   const preference = readPreference();
   apply(preference);
   if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
