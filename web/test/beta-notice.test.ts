@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { betaPoints } from '../src/components/BetaNotice';
 
-describe('beta notice automation line', () => {
+describe('risk list automation line', () => {
   test('says automatic investing is off only when the server says so', () => {
     expect(betaPoints(false).some((p) => p.includes('switched off'))).toBe(true);
     expect(betaPoints(true).some((p) => p.includes('switched off'))).toBe(false);

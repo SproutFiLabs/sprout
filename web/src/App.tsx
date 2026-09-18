@@ -33,7 +33,7 @@ import { GrowthRing } from './components/GrowthRing';
 import { DemoBanner } from './components/DemoBanner';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
-import { BetaNotice, RiskLine } from './components/BetaNotice';
+import { RiskLine } from './components/BetaNotice';
 import { GiftPage } from './GiftPage';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
 import {
@@ -875,7 +875,6 @@ export function App() {
 
   return (
     <main className="garden-root">
-      <BetaNotice automationEnabled={health?.automation.enabled ?? null} />
       <DashboardShell {...shell} />
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}

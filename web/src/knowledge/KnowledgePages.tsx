@@ -1,6 +1,13 @@
 import { ArrowRight, BookOpen, ChevronRight, ExternalLink, Leaf, Printer, ShieldCheck, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAutomationEnabled } from '../automationStatus';
+import { betaPoints } from '../components/BetaNotice';
+
+/** The beta risk list, with the automation line taken from the server. */
+function RiskList() {
+  const enabled = useAutomationEnabled();
+  return <ul>{betaPoints(enabled).map((point) => <li key={point}>{point}</li>)}</ul>;
+}
 
 export type KnowledgePageKind = 'docs' | 'whitepaper' | 'guide' | 'faq';
 
@@ -69,6 +76,7 @@ const guideSections: Section[] = [
 const faqSections: Section[] = [
   { id: 'what', eyebrow: 'The basics', title: 'What is a sprout?', body: <><p>A sprout is a savings vault for a child. It lives on Robinhood Chain as its own smart contract and holds tokens that track Apple, NVIDIA, Microsoft and the S&amp;P 500, in the mix you choose when you plant it. Family can add to it with a gift link, and on the graduation date you pick, it becomes your child’s.</p></> },
   { id: 'custody', eyebrow: 'Safety', title: 'Who holds the money?', body: <><p>The sprout’s own contract does. Sprout the website never has custody and cannot move funds: the server only reads the chain to show balances and history. Every change to a sprout is a transaction signed in your wallet.</p><Callout tone="orange"><b>Sprout is in beta.</b> The contracts have not been independently audited. Mainnet transactions use real funds and cannot be reversed, so only put in what you are prepared to lose.</Callout></> },
+  { id: 'risks', eyebrow: 'Safety', title: 'What are the risks?', body: <><p><b>Sprout is in beta, and it moves real money.</b> Only put in what you are prepared to lose.</p><RiskList /></> },
   { id: 'withdraw', eyebrow: 'Getting money out', title: 'Can I take money out early?', body: <><p>No. Nobody can withdraw from a sprout before its graduation date, including the parent who planted it. That is the point: it works like a trust, not a checking account.</p><p>The one way value leaves early is a chore reward: you set aside an amount, approve it when the chore is done, and your child claims it to their wallet. On the graduation date, your child’s wallet can withdraw everything.</p></> },
   { id: 'date', eyebrow: 'Getting money out', title: 'Can the graduation date or the child’s wallet change?', body: <><p>No. Both are fixed when the sprout is planted. Double-check the child’s wallet address before you sign, and make sure it is a wallet they will be able to use when the date comes. Sprout cannot recover a lost wallet.</p></> },
   { id: 'without-site', eyebrow: 'Getting money out', title: 'How do I get money out if the website is down?', body: <><p>With a free contract tool such as Remix and your sprout’s address. Before the graduation date, the parent releases rewards and your child claims them to their wallet. From the graduation date, your child withdraws everything. The <a href="/guide#without-sprout">family guide</a> has the steps, the token addresses and the units. Save a copy of it, and your sprout’s address, before you need them.</p></> },
