@@ -236,6 +236,8 @@
   margin-top: 8px;
   text-decoration: none;
 }
+button.garden-menu-action { width: 100%; border: 0; font: inherit; font-size: 13px; cursor: pointer; }
+button.garden-menu-action:disabled { opacity: .6; cursor: default; }
 
 /* ------------------------------------------------------------------- hero */
 .garden-hero { position: relative; margin: 34px 26px 0; padding-left: 17px; min-height: 237px; overflow: hidden; }

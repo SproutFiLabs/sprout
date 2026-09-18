@@ -627,6 +627,18 @@ export function DashboardShell(props: DashboardShellProps) {
               <div className="garden-menu-row"><span>Network</span><b>{chain?.name ?? 'Not configured'}</b></div>
               {selected ? <SproutAddressRow address={selected.id} /> : null}
               {chain && !chain.configured ? <div className="garden-menu-row"><span>Status</span><b>Unconfigured</b></div> : null}
+              {/* A first-time visitor reaches for this menu to connect, so it must offer to. */}
+              {wallet ? null : (
+                <button
+                  type="button"
+                  className="garden-menu-action"
+                  data-testid="wallet-menu-connect"
+                  disabled={connecting || !chain}
+                  onClick={(e) => { e.currentTarget.closest('details')?.removeAttribute('open'); onConnect(); }}
+                >
+                  {connecting ? 'Connecting…' : 'Connect wallet'}
+                </button>
+              )}
             </div>
           </details>
         )}
