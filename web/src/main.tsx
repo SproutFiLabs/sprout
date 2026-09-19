@@ -1,6 +1,7 @@
 import { ProofVerifier } from './privacy/ProofVerifier';
 import { StrictMode, lazy, Suspense } from 'react';
 const IntelligencePage=lazy(()=>import('./intelligence/IntelligencePage').then(m=>({default:m.IntelligencePage})));
+const HarvestPage=lazy(()=>import('./harvest/HarvestPage').then(m=>({default:m.HarvestPage})));
 const GuardianPage=lazy(()=>import('./guardian/GuardianPage').then(m=>({default:m.GuardianPage})));
 
 import { createRoot } from 'react-dom/client';
@@ -38,6 +39,7 @@ function Root() {
   useLocale(); // the whole tree re-renders in the new language
   const path = currentPath();
   if (path === '/' || path === '/index.html') return <Landing />;
+  if (path === '/harvest') return <Suspense fallback={<main style={{padding:'64px'}}>Opening Harvest…</main>}><HarvestPage /></Suspense>;
   if (path === '/intelligence') return <Suspense fallback={<main style={{padding:'64px'}}>Opening Intelligence…</main>}><IntelligencePage /></Suspense>;
   if (path === '/guardian') return <Suspense fallback={<main style={{padding:'64px',fontFamily:'sans-serif'}}>Opening Guardian…</main>}><GuardianPage /></Suspense>;
   if (path === '/verify') return <ProofVerifier />;
