@@ -10,7 +10,7 @@
  * two mock tokens offer.
  */
 
-import { t } from '../i18n';
+import { getLocale, t } from '../i18n';
 import { MAX_STOCKS } from '../stocks';
 
 export interface MixToken {
@@ -18,12 +18,28 @@ export interface MixToken {
   address: string;
 }
 
+/**
+ * What a Sprout basket is about, one word (English source text; translate with
+ * t() where shown). Baskets are ETF-style bundles of the admitted stocks: the
+ * sprout holds the stocks themselves, not a fund.
+ */
+export type BasketTheme = 'Market' | 'Tech' | 'AI' | 'Chips' | 'Space' | 'Innovation' | 'Brands' | 'Games' | 'Commodities' | 'Global' | 'Mixed' | 'Speculative';
+
 export interface StarterMix {
+  /** Also the basket's id: its factsheet lives at /stocks/basket/<id> (see basketHref). */
   id: string;
   label: string;
   note: string;
   /** Whole percentages by ticker, at most 5 stocks, totalling 100; null means an even split of the picked stocks. */
   weights: Record<string, number> | null;
+  /** Ticker-style basket code shown beside the name ("SPRT-CHIPS"): unique, uppercase, at most 10 characters. Never translated. */
+  code?: string;
+  theme?: BasketTheme;
+}
+
+/** A basket's factsheet page. */
+export function basketHref(id: string): string {
+  return `/stocks/basket/${encodeURIComponent(id)}`;
 }
 
 export const STARTER_MIXES: StarterMix[] = [
@@ -33,30 +49,48 @@ export const STARTER_MIXES: StarterMix[] = [
     label: 'Big tech',
     note: 'Apple, Microsoft, NVIDIA, Google and Amazon, 20% each.',
     weights: { AAPL: 20, MSFT: 20, NVDA: 20, GOOGL: 20, AMZN: 20 },
+    code: 'SPRT-TECH',
+    theme: 'Tech',
   },
   {
     id: 'space',
     label: 'Space & future',
     note: '30% SpaceX, 25% Tesla, 20% NVIDIA, 15% Palantir and 10% in the Nasdaq-100.',
     weights: { SPCX: 30, TSLA: 25, NVDA: 20, PLTR: 15, QQQ: 10 },
+    code: 'SPRT-SPACE',
+    theme: 'Space',
   },
   {
     id: 'market',
     label: 'The whole market',
     note: '60% SPY, which follows 500 large US companies, and 40% QQQ, which follows the Nasdaq-100.',
     weights: { SPY: 60, QQQ: 40 },
+    code: 'SPRT-MKT',
+    theme: 'Market',
   },
   {
     id: 'chips',
     label: 'Chips',
     note: 'NVIDIA, TSMC, AMD, ASML and Micron, 20% each.',
     weights: { NVDA: 20, TSM: 20, AMD: 20, ASML: 20, MU: 20 },
+    code: 'SPRT-CHIPS',
+    theme: 'Chips',
   },
   {
     id: 'index',
     label: 'Mostly the S&P 500',
     note: '70% SPY, which follows 500 large US companies; the rest split across Apple, NVIDIA and Microsoft.',
     weights: { SPY: 70, AAPL: 10, NVDA: 10, MSFT: 10 },
+    code: 'SPRT-SP500',
+    theme: 'Market',
+  },
+  {
+    id: 'spread',
+    label: 'Spread out',
+    note: '40% SPY and 20% QQQ, which follow hundreds of companies, plus 15% NVIDIA, 15% Amazon and 10% silver.',
+    weights: { SPY: 40, QQQ: 20, NVDA: 15, AMZN: 15, SLV: 10 },
+    code: 'SPRT-MIX',
+    theme: 'Mixed',
   },
 ];
 
@@ -102,16 +136,50 @@ function sameChoice(selected: string[], percents: Record<string, string>, choice
  * caller already translated. A locked mix is shown with a 🔒 and its note, and
  * cannot be picked.
  */
-export type ExtraMix = StarterMix & { locked?: boolean; lockNote?: string };
+export type ExtraMix = StarterMix & {
+  locked?: boolean;
+  lockNote?: string;
+  /** The basket's own id, for its factsheet, when the row's `id` differs from it. */
+  basketId?: string;
+};
 
 /** Whether a stock can be picked right now; `note` says why not. Nothing is locked by default. */
 export type StockLock = (symbol: string) => { locked: boolean; note?: string };
 
 export interface MixOption {
-  mix: StarterMix;
+  mix: ExtraMix;
   choice: MixChoice;
   locked: boolean;
   lockNote: string | null;
+}
+
+export interface LockLine {
+  /** The locked mixes this line explains, in row order. */
+  ids: string[];
+  labels: string[];
+  note: string;
+}
+
+/**
+ * The lock notes under the row. Mixes locked for the same reason share one
+ * line ("Behind the Chips and Around the World: for Sapling and up"), so a row
+ * of bouquets from several tiers reads as one line per tier.
+ */
+export function lockLines(options: readonly MixOption[]): LockLine[] {
+  const lines = new Map<string, LockLine>();
+  for (const { mix, locked, lockNote } of options) {
+    if (!locked || !lockNote) continue;
+    const line = lines.get(lockNote) ?? { ids: [], labels: [], note: lockNote };
+    line.ids.push(mix.id);
+    line.labels.push(mix.label);
+    lines.set(lockNote, line);
+  }
+  return [...lines.values()];
+}
+
+/** "A, B and C" (or "A、B和C") in the current language; British English has no serial comma, like the rest of the copy. */
+function listOf(items: string[]): string {
+  return new Intl.ListFormat(getLocale() === 'zh' ? 'zh-CN' : 'en-GB', { style: 'long', type: 'conjunction' }).format(items);
 }
 
 /**
@@ -164,7 +232,7 @@ export function StarterMixPicker({
   // A named mix of equal shares is also an even split of its stocks; name it by the mix.
   const matches = options.filter((o) => !o.locked && sameChoice(addresses, percents, o.choice));
   const active = matches.find((o) => o.mix.weights !== null) ?? matches[0];
-  const lockedNotes = options.filter((o) => o.locked && o.lockNote);
+  const lockedNotes = lockLines(options);
   return (
     <div className="starter-mixes">
       <div className="starter-mix-row" role="group" aria-label={t('Starter mixes')}>
@@ -182,17 +250,33 @@ export function StarterMixPicker({
           >
             {locked ? <span aria-hidden="true">🔒 </span> : null}
             {t(mix.label)}
+            {mix.code ? <span className="starter-mix-code" translate="no"> · {mix.code}</span> : null}
           </button>
         ))}
       </div>
       <p className="fine-print starter-mix-note" aria-live="polite">
         {active ? `${t(active.mix.note)} ` : ''}
         {t('Starter mixes are examples to start from, not advice.')}
+        {active?.mix.code ? (
+          <>
+            {' '}
+            <a
+              className="starter-mix-factsheet"
+              href={basketHref(active.mix.basketId ?? active.mix.id)}
+              target="_blank"
+              rel="noopener"
+              aria-label={t('View {code} factsheet (opens in a new tab)', { code: active.mix.code })}
+              data-testid={`starter-mix-factsheet-${active.mix.id}`}
+            >
+              {t('View {code} factsheet', { code: active.mix.code })}
+            </a>
+          </>
+        ) : null}
       </p>
-      {lockedNotes.map(({ mix, lockNote }) => (
-        <p key={mix.id} className="fine-print starter-mix-note starter-mix-lock-note" data-testid={`starter-mix-lock-${mix.id}`}>
+      {lockedNotes.map(({ ids, labels, note }) => (
+        <p key={ids[0]} className="fine-print starter-mix-note starter-mix-lock-note" data-testid={`starter-mix-lock-${ids[0]}`}>
           <span aria-hidden="true">🔒 </span>
-          {t('{label}: {note}', { label: t(mix.label), note: t(lockNote!) })}
+          {t('{label}: {note}', { label: listOf(labels.map((label) => t(label))), note: t(note) })}
         </p>
       ))}
     </div>

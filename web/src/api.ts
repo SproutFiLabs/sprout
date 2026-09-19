@@ -250,7 +250,7 @@ export async function authorizeFamily(wallet: WalletState) {
 export async function lockFamilySession() {
   try { await fetch('/api/family/lock', { method: 'POST', headers: familyHeaders() }); } finally { clearFamilySession(); }
 }
-function familyHeaders(): Record<string, string> { return readSession ? { authorization: `Bearer ${readSession.token}` } : {}; }
+export function familyHeaders(): Record<string, string> { return readSession ? { authorization: `Bearer ${readSession.token}` } : {}; }
 export async function decodeGiftNotes(id: string, notes: GiftNote[]) {
   const epoch = privateEpoch();
   const version = sessionVersion;
@@ -272,7 +272,7 @@ export async function kidRequest<T>(path: string, token: string, body?: unknown)
   if (!res.ok) throw new Error('This invitation has ended. Ask a grown-up for a new one.');
   return await res.json() as T;
 }
-async function getJson<T>(url: string): Promise<T> {
+export async function getJson<T>(url: string): Promise<T> {
   const version = sessionVersion;
   const res = await fetch(url, { headers: familyHeaders(), cache: 'no-store' });
   if (!res.ok) {
@@ -296,7 +296,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return JSON.parse(text) as T;
 }
 
-async function signedPostJson<T>(wallet: WalletState, url: string, purpose: string, body: unknown): Promise<T> {
+export async function signedPostJson<T>(wallet: WalletState, url: string, purpose: string, body: unknown, extraHeaders: Record<string, string> = {}): Promise<T> {
   const version = sessionVersion;
   const challenge = await postJson<{ nonce: string; message: string }>('/api/auth/nonce', {
     address: wallet.address,
@@ -310,6 +310,7 @@ async function signedPostJson<T>(wallet: WalletState, url: string, purpose: stri
       'x-sprout-address': wallet.address,
       'x-sprout-nonce': challenge.nonce,
       'x-sprout-signature': signature,
+      ...extraHeaders,
     },
     body: JSON.stringify(body),
   });

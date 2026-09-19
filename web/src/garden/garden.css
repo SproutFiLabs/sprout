@@ -1336,12 +1336,21 @@ html[data-appearance="dark"] .risk-line svg { color: #e8b75c; }
 .starter-mix:hover { border-color: #c9c1b1; }
 .starter-mix--active { border-color: #3e7839; background: #eef6ec; color: #2f5a2c; }
 .starter-mix-note { margin: 0; }
+/* A basket's ticker-style code beside its name ("Chips · SPRT-CHIPS"). */
+.starter-mix-code { font-size: 11px; letter-spacing: .3px; color: var(--garden-soft, #5f5c54); white-space: nowrap; }
+.starter-mix--active .starter-mix-code { color: inherit; }
+.starter-mix-factsheet { color: var(--garden-green, #3f7a3a); font-weight: 600; white-space: nowrap; }
+/* On a phone the row wraps a lot already; the code shows in the factsheet link instead. */
+@media (max-width: 560px) { .starter-mix-code { display: none; } }
 .starter-mix-total { margin: 0; font-size: 13px; font-weight: 600; color: #9a5b12; }
 .starter-mix-total--ok { color: #3e7839; }
 html[data-appearance="dark"] .starter-mix { background: #183025; border-color: #466451; color: #f3efe4; }
 html[data-appearance="dark"] .starter-mix--active { background: #294536; border-color: #8cc58a; color: #e4f4e2; }
 html[data-appearance="dark"] .starter-mix-total { color: #e8b75c; }
 html[data-appearance="dark"] .starter-mix-total--ok { color: #9fd49b; }
+html[data-appearance="dark"] .starter-mix-code { color: #b5c4b4; }
+html[data-appearance="dark"] .starter-mix--active .starter-mix-code { color: inherit; }
+html[data-appearance="dark"] .starter-mix-factsheet { color: #9fd49b; }
 
 .garden-empty-vault { padding: 6px 0 2px; }
 .garden-empty-vault-lead {

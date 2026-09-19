@@ -5,6 +5,7 @@ const HarvestPage=lazy(()=>import('./harvest/HarvestPage').then(m=>({default:m.H
 const ManualHarvestPage=lazy(()=>import('./harvest/ManualHarvestPage').then(m=>({default:m.ManualHarvestPage})));
 const HarvestOperator=lazy(()=>import('./harvest/HarvestOperator').then(m=>({default:m.HarvestOperator})));
 const GuardianPage=lazy(()=>import('./guardian/GuardianPage').then(m=>({default:m.GuardianPage})));
+const StockGuidePage=lazy(()=>import('./stockGuide/StockGuidePage').then(m=>({default:m.StockGuidePage})));
 
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
@@ -18,6 +19,8 @@ import { PerksPage } from './perks/PerksPage';
 import { KidView, parseKidPath } from './KidView';
 import { initializeTheme } from './theme/ThemeSettings';
 import { initializeLocale, t, useLocale } from './i18n';
+import { initializeDiscreet } from './privacyPack/discreet';
+import { mountDiscreetIndicator } from './privacyPack/DiscreetControls';
 import './app.css';
 import './reference/landing.css';
 import './reference/dashboard.css';
@@ -32,6 +35,7 @@ import './theme/theme.css';
 
 initializeTheme();
 initializeLocale();
+initializeDiscreet();
 
 function currentPath(): string {
   return window.location.pathname.replace(/\/+$/, '') || '/';
@@ -53,6 +57,7 @@ function Root() {
   }
   if (path === '/settings') return <AppearancePage />;
   if (path === '/perks') return <PerksPage />;
+  if (path === '/stocks' || path.startsWith('/stocks/')) return <Suspense fallback={null}><StockGuidePage path={path} /></Suspense>;
   const kid = parseKidPath(path);
   if (kid) return <KidView vault={kid.vault} lessonId={kid.lessonId} />;
   if (path === '/test') return <TestExperience />;
@@ -66,3 +71,4 @@ createRoot(container).render(
     <Root />
   </StrictMode>,
 );
+mountDiscreetIndicator();

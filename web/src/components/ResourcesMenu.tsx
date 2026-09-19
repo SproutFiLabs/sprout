@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { BookOpen, ChevronUp, FileText, Moon, Compass, HelpCircle } from 'lucide-react';
+import { BookOpen, ChevronUp, FileText, Moon, Compass, HelpCircle, Sprout } from 'lucide-react';
 import { t } from '../i18n';
 
 export function ResourcesMenu() {
@@ -12,6 +12,7 @@ export function ResourcesMenu() {
       <a href="/intelligence"><Compass size={17} /><span>Intelligence<small>{t('Thoughtful AI for parents')}</small></span></a>
       <a href="/harvest"><Compass size={17} /><span>{t('Harvest')}<small>{t('Holder rewards & payments')}</small></span></a>
       <a href="/faq"><HelpCircle size={17} /><span>{t('Questions')}<small>{t('Money, withdrawals, costs, beta')}</small></span></a>
+      <a href="/stocks" data-testid="resources-stock-guide"><Sprout size={17} /><span>{t('Stock guide')}<small>{t('What each stock and fund is')}</small></span></a>
       <a href="/guide"><Compass size={17} /><span>{t('Getting started')}<small>{t('A practical family guide')}</small></span></a>
       <a href="/docs"><BookOpen size={17} /><span>{t('Documentation')}<small>{t('Features and how they work')}</small></span></a>
       <a href="/whitepaper"><FileText size={17} /><span>{t('Whitepaper')}<small>{t('Technical design')}</small></span></a>

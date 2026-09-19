@@ -1,0 +1,25 @@
+/* Diversification meter (DiversificationMeter.tsx): in the stock picker and on the stock guide's baskets.
+   One hue for the filled cells: the meter shows how spread out a mix is, not whether that is good. */
+.spread-meter { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid #e3ddd0; border-radius: 14px; background: #fffdf8; color: #26352b; }
+.spread-meter-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+.spread-meter-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #5f675c; }
+.spread-meter-label { font-size: 15px; }
+.spread-meter-track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.spread-meter-track i { display: block; height: 8px; border-radius: 999px; background: #e7e2d6; }
+.spread-meter-track i.is-on { background: #3e7839; }
+.spread-meter-ends { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: #5f675c; }
+.spread-meter-why { margin: 2px 0 0; font-size: 13.5px; line-height: 1.45; }
+.spread-meter-note { margin: 0; font-size: 12px; line-height: 1.4; color: #5f675c; }
+
+html[data-appearance="dark"] .spread-meter { background: #183025; border-color: #466451; color: #f5efe3; }
+html[data-appearance="dark"] .spread-meter-title,
+html[data-appearance="dark"] .spread-meter-ends,
+html[data-appearance="dark"] .spread-meter-note { color: #c5d3c4; }
+html[data-appearance="dark"] .spread-meter-track i { background: #2c4a3a; }
+html[data-appearance="dark"] .spread-meter-track i.is-on { background: #9fd49b; }
+
+/* "What are these?" beside the picker's count: opens the stock guide in a new tab, so the form keeps its state. */
+.stock-picker-guide { font-size: 13px; font-weight: 600; color: #8a4520; text-decoration: underline; text-underline-offset: 2px; }
+.stock-picker-guide:hover { color: #5c2c12; }
+html[data-appearance="dark"] .stock-picker-guide { color: #f0b48a; }
+html[data-appearance="dark"] .stock-picker-guide:hover { color: #ffd7ba; }

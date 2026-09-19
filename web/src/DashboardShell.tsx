@@ -24,6 +24,7 @@ import { CampaignProgress, GiftNotesList, giftAmountLabel } from './components/C
 import { ResourcesMenu } from './components/ResourcesMenu';
 import { BloomGarden } from './garden/BloomGarden';
 import { HolderMenuRow, PerksSideLink } from './perks/DashboardBits';
+import { DiscreetMark, PrivacyMenuRows } from './privacyPack/DiscreetControls';
 import { t, tj, dateLocale } from './i18n';
 import { autoInvestPerkText, useAutoInvestLock } from './perks/autoInvest';
 import { displayName } from './stocks';
@@ -658,10 +659,12 @@ export function DashboardShell(props: DashboardShellProps) {
             <summary data-testid="sample-badge" className="garden-sample-badge">
               <FlaskConical size={18} />
               {t('Sample data')}
+              <DiscreetMark />
             </summary>
             <div className="garden-menu">
               <p className="garden-menu-note">{t('You are viewing a local sample. No wallet, vault or live data is used.')}</p>
               <a className="garden-menu-action" href="/dashboard" data-testid="sample-go-live">{t('Go to live dashboard')}</a>
+              <PrivacyMenuRows checkup={false} />
             </div>
           </details>
         ) : (
@@ -669,6 +672,7 @@ export function DashboardShell(props: DashboardShellProps) {
             <summary className="garden-wallet-summary" data-testid="wallet-control">
               <Wallet size={17} />
               <span>{wallet ? short(wallet.address) : t('Wallet')}</span>
+              <DiscreetMark />
               <ChevronDown size={15} />
             </summary>
             <div className="garden-menu">
@@ -688,6 +692,7 @@ export function DashboardShell(props: DashboardShellProps) {
                   {connecting ? t('Connecting…') : t('Connect wallet')}
                 </button>
               )}
+              <PrivacyMenuRows />
             </div>
           </details>
         )}

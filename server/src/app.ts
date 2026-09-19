@@ -1,6 +1,8 @@
 import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
 import { registerHarvestRoutes, type HarvestRuntime } from './harvest';
 import { registerZkRoutes } from './zk';
+import { registerStockPriceRoutes } from './stockPrices';
+import { registerPrivacyPackRoutes } from './privacyPack';
 import { randomBytes, createPublicKey } from 'node:crypto';
 import { join } from 'node:path';
 import { Hono, type Context } from 'hono';
@@ -237,6 +239,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   });
 
   registerZkRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
+  registerPrivacyPackRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
   registerHarvestRoutes(app, {db:deps.db,runtime:deps.harvest,now:deps.now,requireAuth:(c,purpose)=>requireAuth(c,deps,purpose),requireAdmin:c=>requireAdmin(c,deps)});
   registerIntelligenceRoutes(app, { db: deps.db, now: deps.now, runtime: deps.intelligence ?? createIntelligenceRuntime(deps.chain.config.intelligence ?? loadIntelligenceConfig({})) }, (c, purpose) => requireAuth(c, deps, purpose));
 
@@ -360,6 +363,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
 
   // SPROUT holder perks: the tier ladder, what is in early access, and one wallet's tier.
   app.get('/api/perks', (c) => c.json(publicPerks(holders.config)));
+  // Stock guide price history, from the stocks' own price feeds (see stockPrices.ts).
+  registerStockPriceRoutes(app, deps, logger);
   app.get('/api/holders/:address', async (c) => {
     const address = c.req.param('address');
     if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new HttpError(400, 'invalid address');
@@ -799,6 +804,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const name = null;
     const note = body.encryptedNote ?? null;
     const events = await decodeReceiptLogs(deps.chain.publicClient!, sproutVaultAbi, [gift.vaultId as Address], body.txHash as Hex);
+    // The family may have erased this link while the receipt was read; nothing below awaits.
+    if (!getGift(deps.db, gift.id)) throw new HttpError(404, 'gift not found');
     const payment = events.find(
       (e) => e.eventName === 'GiftReceived' && String(e.args.giftRef).toLowerCase() === gift.id.toLowerCase(),
     );

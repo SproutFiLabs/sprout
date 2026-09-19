@@ -1,0 +1,413 @@
+/* Privacy pack: the privacy checkup, "Delete my family's data" and discreet
+   mode. Built on the Family privacy center's look (privacy.css), with its own
+   light and dark tokens so the coworker's screens stay untouched. */
+
+.pp-layer,
+.pp-overlay {
+  --pp-bg: #edeee7;
+  --pp-ink: #203b2d;
+  --pp-soft: #4f5e47;
+  --pp-quiet: #5c6a55;
+  --pp-card: #fafbf6;
+  --pp-line: #d7dece;
+  --pp-rule: #cdd5c6;
+  --pp-accent: #677d55;
+  --pp-private-bg: #e3eadc;
+  --pp-private-ink: #34582c;
+  --pp-plain-bg: #f6e8cf;
+  --pp-plain-ink: #7a5317;
+  --pp-public-bg: #e6e9ef;
+  --pp-public-ink: #3d4a5c;
+  --pp-off-bg: #eceae4;
+  --pp-off-ink: #5c5a52;
+  --pp-danger: #9a3b25;
+  --pp-danger-bg: #f7e5d6;
+  --pp-button: #254431;
+  --pp-button-ink: #f7f9ef;
+}
+html[data-appearance='dark'] .pp-layer,
+html[data-appearance='dark'] .pp-overlay {
+  --pp-bg: #10221a;
+  --pp-ink: #f5efe3;
+  --pp-soft: #c9d4c5;
+  --pp-quiet: #b5c4b4;
+  --pp-card: #183025;
+  --pp-line: #355342;
+  --pp-rule: #355342;
+  --pp-accent: #b9dc9e;
+  --pp-private-bg: #22422f;
+  --pp-private-ink: #bfe3a5;
+  --pp-plain-bg: #4a3a1c;
+  --pp-plain-ink: #f3d49b;
+  --pp-public-bg: #26344a;
+  --pp-public-ink: #c9d7ee;
+  --pp-off-bg: #2a3530;
+  --pp-off-ink: #cfd6cf;
+  --pp-danger: #f0a58c;
+  --pp-danger-bg: #43241b;
+  --pp-button: #f5efe3;
+  --pp-button-ink: #16261d;
+}
+
+/* ---- the page (re-colours the privacy center's classes inside it) ---------- */
+.pp-overlay {
+  background: var(--pp-bg);
+  color: var(--pp-ink);
+}
+.pp-overlay .privacy-brand,
+.pp-overlay .privacy-icon { color: var(--pp-ink); }
+.pp-overlay .privacy-top { border-bottom-color: var(--pp-rule); }
+.pp-overlay .privacy-brand span,
+.pp-overlay .privacy-number,
+.pp-overlay .privacy-kicker { color: var(--pp-soft); }
+.pp-overlay .privacy-kicker > span { background: var(--pp-accent); }
+.pp-overlay .privacy-card {
+  background: var(--pp-card);
+  border-color: var(--pp-line);
+  animation: none;
+}
+.pp-overlay .privacy-card p,
+.pp-overlay .privacy-card small { color: var(--pp-quiet); }
+.pp-overlay .privacy-button { background: var(--pp-button); color: var(--pp-button-ink); }
+.pp-overlay .privacy-secondary { color: var(--pp-ink); border-color: var(--pp-line); }
+.pp-overlay .privacy-pills > span { background: var(--pp-private-bg); border-color: var(--pp-line); color: var(--pp-ink); }
+.pp-overlay .privacy-pills > .privacy-public { background: transparent; }
+.pp-overlay .privacy-connect { background: var(--pp-card); border: 1px solid var(--pp-line); gap: 16px; }
+.pp-overlay .privacy-error { background: var(--pp-danger-bg); color: var(--pp-danger); border-color: var(--pp-danger); }
+.pp-overlay .privacy-feedback { background: var(--pp-private-bg); color: var(--pp-ink); border-color: var(--pp-line); }
+.pp-overlay .privacy-footer { color: var(--pp-soft); }
+.pp-overlay .privacy-icon { border-color: var(--pp-line); }
+html[data-appearance='dark'] .pp-overlay .privacy-button:hover:not(:disabled) { background: #e3dccd; }
+html[data-appearance='dark'] .pp-overlay .privacy-secondary:hover:not(:disabled) { background: #20372b; }
+.pp-overlay :is(button, a, input):focus-visible {
+  outline: 3px solid #9cba73;
+  outline-offset: 3px;
+}
+
+.pp-page { max-width: 1100px; }
+.pp-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  padding: 30px 0 24px;
+}
+.pp-art { height: 300px; }
+.pp-overlay .privacy-orbit { border-color: var(--pp-line); }
+.pp-overlay .privacy-seal { background: var(--pp-private-bg); border-color: var(--pp-line); color: var(--pp-private-ink); }
+.pp-hero h1 {
+  font-family: Georgia, serif;
+  font-size: clamp(36px, 5vw, 58px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -2px;
+  margin: 20px 0;
+}
+.pp-hero h1 em,
+.pp-section h2 em { font-weight: 400; color: var(--pp-accent); }
+.pp-hero > p { font-size: 16px; line-height: 1.7; color: var(--pp-quiet); max-width: 640px; }
+.pp-hero .privacy-pills { align-items: center; }
+.pp-refresh { min-height: 40px; padding: 8px 14px; gap: 8px; }
+.pp-loading { padding: 30px 0; color: var(--pp-quiet); }
+
+.pp-section { padding: 34px 0 10px; border-top: 1px solid var(--pp-rule); margin-top: 16px; }
+.pp-section .privacy-card-top { margin-bottom: 18px; color: var(--pp-quiet); }
+.pp-section h2 {
+  font-family: Georgia, serif;
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 400;
+  letter-spacing: -1px;
+  line-height: 1.15;
+  margin: 0 0 14px;
+}
+.pp-section-lead { font-size: 15px; line-height: 1.65; color: var(--pp-quiet); max-width: 720px; margin: 0 0 22px; }
+.pp-muted { color: var(--pp-quiet); font-size: 14px; }
+.pp-small { font-size: 13px; line-height: 1.6; color: var(--pp-quiet); margin: 0 0 8px; }
+
+.pp-wallet-link {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--pp-public-bg);
+  color: var(--pp-public-ink);
+  margin-bottom: 20px;
+}
+.pp-wallet-link svg { flex: 0 0 auto; margin-top: 2px; }
+.pp-wallet-link b { font-weight: 600; }
+.pp-wallet-link p { margin: 6px 0 0; font-size: 14px; line-height: 1.6; }
+.pp-wallet-link code,
+.pp-wallets code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.92em; }
+
+.pp-sprouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 18px; }
+.pp-sprout { padding: 26px; min-width: 0; }
+.pp-sprout h3 { font-family: Georgia, serif; font-weight: 400; font-size: 25px; margin: 0 0 16px; letter-spacing: -0.5px; }
+.pp-facts { margin: 0; display: grid; gap: 0; }
+.pp-fact { display: grid; grid-template-columns: minmax(110px, 0.36fr) 1fr; gap: 14px; padding: 12px 0; border-top: 1px solid var(--pp-line); }
+.pp-fact dt { font-size: 12px; letter-spacing: 0.4px; color: var(--pp-soft); padding-top: 2px; }
+.pp-fact dd { margin: 0; min-width: 0; }
+.pp-fact-value { display: block; font-size: 14px; color: var(--pp-ink); overflow-wrap: anywhere; }
+.pp-fact dd > small { display: block; margin-top: 5px; font-size: 12px; line-height: 1.55; color: var(--pp-quiet); overflow-wrap: anywhere; }
+.pp-address {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12.5px;
+  word-break: break-all;
+  color: var(--pp-ink);
+}
+a.pp-address { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--pp-line); }
+a.pp-address svg { vertical-align: -2px; }
+.pp-wallets { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.pp-wallets li { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--pp-quiet); }
+.pp-wallets li code { color: var(--pp-ink); }
+
+.pp-caveat {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 20px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--pp-line);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--pp-ink);
+}
+.pp-caveat svg { flex: 0 0 auto; margin-top: 2px; }
+
+.pp-private-list { padding: 8px 26px; }
+.pp-private-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--pp-line);
+}
+.pp-private-row:first-child { border-top: 0; }
+.pp-private-row > div { min-width: 0; }
+.pp-private-row b { display: block; font-size: 14px; font-weight: 600; color: var(--pp-ink); }
+.pp-private-row small { display: block; margin-top: 4px; font-size: 13px; line-height: 1.5; color: var(--pp-quiet); }
+
+.pp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  max-width: 48%;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+}
+.pp-tone-private { background: var(--pp-private-bg); color: var(--pp-private-ink); }
+.pp-tone-plain { background: var(--pp-plain-bg); color: var(--pp-plain-ink); }
+.pp-tone-public { background: var(--pp-public-bg); color: var(--pp-public-ink); }
+.pp-tone-off { background: var(--pp-off-bg); color: var(--pp-off-ink); }
+.pp-tone-danger { background: var(--pp-danger-bg); color: var(--pp-danger); }
+
+.pp-fixes { display: grid; gap: 12px; }
+.pp-fix { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 20px 24px; }
+.pp-fix > div { min-width: 0; }
+.pp-fix b { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: var(--pp-ink); }
+.pp-fix p { margin: 6px 0 0; font-size: 13px !important; line-height: 1.6; max-width: 680px !important; }
+.pp-fix .privacy-button { flex: 0 0 auto; white-space: nowrap; }
+.pp-fix.is-done { opacity: 0.85; }
+.pp-advice-title { display: flex; align-items: center; gap: 8px; font: 600 15px var(--font-sans); letter-spacing: 0; margin: 30px 0 12px; }
+.pp-advice { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.pp-advice li { padding: 16px 18px; border-radius: 14px; border: 1px solid var(--pp-line); display: grid; gap: 6px; align-content: start; }
+.pp-advice b { font-size: 14px; font-weight: 600; }
+.pp-advice span { font-size: 13px; line-height: 1.6; color: var(--pp-quiet); }
+
+.pp-danger-zone { padding-bottom: 30px; }
+.pp-overlay .privacy-button.pp-danger,
+.pp-dialog .privacy-button.pp-danger { background: #9a3b25; color: #fff; }
+.pp-overlay .privacy-button.pp-danger:hover:not(:disabled),
+.pp-dialog .privacy-button.pp-danger:hover:not(:disabled) { background: #7f2f1d; }
+.pp-footer { flex-wrap: wrap; padding-top: 24px; }
+
+/* ---- the delete dialog --------------------------------------------------- */
+.pp-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1010;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(12, 38, 24, 0.5);
+  overflow-y: auto;
+}
+.pp-dialog {
+  width: min(620px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: var(--pp-card);
+  color: var(--pp-ink);
+  border: 1px solid var(--pp-line);
+  border-radius: 20px;
+  padding: 26px;
+  box-shadow: 0 24px 60px rgba(6, 19, 12, 0.35);
+  outline: none;
+}
+.pp-dialog-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.pp-dialog-head h2 { font-family: Georgia, serif; font-weight: 400; font-size: 26px; letter-spacing: -0.6px; margin: 0; flex: 1; line-height: 1.2; }
+.pp-dialog-head .privacy-icon { padding: 8px; border: 1px solid var(--pp-line); border-radius: 50%; background: transparent; color: var(--pp-ink); cursor: pointer; }
+.pp-dialog-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto; }
+.pp-lead { font-size: 15px; line-height: 1.6; color: var(--pp-ink); margin: 8px 0 16px; }
+.pp-dialog-sub { font: 600 11px var(--font-sans); letter-spacing: 1.5px; text-transform: uppercase; color: var(--pp-soft); margin: 18px 0 8px; }
+.pp-count-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--pp-line); }
+.pp-count-list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--pp-line); font-size: 14px; }
+.pp-count-list li > span { min-width: 0; }
+.pp-count-list small { display: block; font-size: 12px; color: var(--pp-quiet); margin-top: 3px; }
+.pp-count-list b { font-variant-numeric: tabular-nums; font-size: 15px; }
+.pp-stays { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; line-height: 1.55; color: var(--pp-quiet); }
+.pp-note { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.55; color: var(--pp-quiet); margin: 16px 0 0; }
+.pp-note svg { flex: 0 0 auto; margin-top: 2px; }
+.pp-confirm { margin-top: 20px !important; color: var(--pp-ink) !important; }
+.pp-dialog .privacy-field input {
+  background: var(--pp-bg);
+  color: var(--pp-ink);
+  border-color: var(--pp-line);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  letter-spacing: 2px;
+}
+.pp-dialog .privacy-button { background: var(--pp-button); color: var(--pp-button-ink); }
+.pp-dialog .privacy-secondary { color: var(--pp-ink); border-color: var(--pp-line); }
+.pp-dialog .privacy-error { position: static; margin-top: 14px; background: var(--pp-danger-bg); color: var(--pp-danger); }
+.pp-dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.pp-dialog :is(button, input):focus-visible { outline: 3px solid #9cba73; outline-offset: 3px; }
+
+/* ---- entry points ---------------------------------------------------------- */
+.pp-menu-rows { border-top: 1px solid var(--garden-line, #ece7dc); margin-top: 8px; padding-top: 4px; display: grid; gap: 2px; }
+.pp-menu-switch,
+.pp-menu-link {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px !important;
+  padding: 9px 8px !important;
+  border: 0;
+  border-radius: 10px;
+  background: transparent !important;
+  color: var(--garden-ink, #1d1d1b) !important;
+  font: inherit;
+  font-size: 13px;
+  text-align: left !important;
+  cursor: pointer;
+}
+.pp-menu-switch:hover,
+.pp-menu-link:hover { background: var(--garden-line, #f1ede4) !important; }
+.pp-menu-switch-text { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.pp-menu-switch-text small { font-size: 11px; color: var(--garden-quiet, #6c685f); }
+.pp-switch {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: #cfcabd;
+  position: relative;
+  transition: background 0.2s;
+}
+.pp-switch > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+.pp-menu-switch[aria-checked='true'] .pp-switch { background: #3f7a3a; }
+.pp-menu-switch[aria-checked='true'] .pp-switch > span { transform: translateX(14px); }
+html[data-appearance='dark'] .garden .pp-menu-switch,
+html[data-appearance='dark'] .garden .pp-menu-link { color: #fff !important; }
+html[data-appearance='dark'] .garden .pp-menu-switch-text small { color: #b5c4b4; }
+html[data-appearance='dark'] .garden .pp-menu-switch:hover,
+html[data-appearance='dark'] .garden .pp-menu-link:hover { background: #20372a !important; }
+
+.pp-checkup-launch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid #c8d3bd;
+  background: #e3eadc;
+  color: #203b2d;
+  font: 600 13px var(--font-sans);
+  cursor: pointer;
+}
+.pp-checkup-launch:hover { background: #d8e3cc; }
+
+/* ---- discreet mode ------------------------------------------------------------ */
+.pp-discreet-pill {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 75;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: #203b2d;
+  color: #f4f6e9;
+  font: 500 12px var(--font-sans, system-ui, sans-serif);
+  box-shadow: 0 6px 20px rgba(28, 48, 37, 0.25);
+}
+.pp-discreet-pill button {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  min-height: 32px;
+  background: #f4f6e9;
+  color: #203b2d;
+  font: 600 12px var(--font-sans, system-ui, sans-serif);
+  cursor: pointer;
+}
+.pp-discreet-pill button:focus-visible { outline: 3px solid #9cba73; outline-offset: 2px; }
+html[data-appearance='dark'] .pp-discreet-pill { background: #f5efe3; color: #16261d; }
+html[data-appearance='dark'] .pp-discreet-pill button { background: #16261d; color: #f5efe3; }
+
+/* Amount fields: the value is masked while typing; everything else is masked as text. */
+html.sprout-discreet :is(input[data-testid$='-amount'], input[data-testid='campaign-goal'], input[inputmode='decimal'], [data-sprout-money] input) {
+  -webkit-text-security: disc;
+}
+@supports not (-webkit-text-security: disc) {
+  html.sprout-discreet :is(input[data-testid$='-amount'], input[data-testid='campaign-goal'], input[inputmode='decimal'], [data-sprout-money] input) {
+    color: transparent !important;
+    text-shadow: 0 0 9px rgba(32, 59, 45, 0.85);
+  }
+}
+
+/* The dashboard shows discreet mode on its wallet button instead. */
+body:has(.garden-toprow) .pp-discreet-pill { display: none; }
+.pp-discreet-mark { display: inline-flex; align-items: center; color: var(--garden-green, #3f7a3a); }
+
+@media (max-width: 760px) {
+  .pp-hero { grid-template-columns: 1fr; }
+  .pp-art { height: 200px; }
+  .pp-address { font-size: 11.5px; }
+  .pp-fact { grid-template-columns: 1fr; gap: 4px; }
+  .pp-fix { flex-direction: column; align-items: stretch; padding: 18px; }
+  .pp-fix .privacy-button { white-space: normal; }
+  .pp-private-list { padding: 4px 18px; }
+  .pp-private-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .pp-chip { max-width: 100%; text-align: left; }
+  .pp-sprout { padding: 20px; }
+  .pp-dialog { padding: 20px; border-radius: 16px; }
+  .pp-dialog-actions { flex-direction: column-reverse; }
+  .pp-dialog-actions > button { width: 100%; }
+  .pp-overlay .privacy-connect { display: grid; }
+  .pp-checkup-launch { white-space: normal; text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-switch,
+  .pp-switch > span { transition: none; }
+}

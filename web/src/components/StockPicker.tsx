@@ -13,6 +13,7 @@ import { Check, Search, X } from 'lucide-react';
 import { t } from '../i18n';
 import { KNOWN_SYMBOLS, MAX_STOCKS, STOCK_CATEGORIES, displayDescription, displayName, stockInfo, stockMatches } from '../stocks';
 import { AllocationTotal, StarterMixPicker, type ExtraMix, type MixToken, type StockLock } from './StarterMixes';
+import { DiversificationMeter } from '../stockGuide/DiversificationMeter';
 
 export { MAX_STOCKS };
 export type { ExtraMix, StockLock };
@@ -121,6 +122,7 @@ export function StockMixEditor({
         <div className="stock-picker-head">
           <b>{t('Pick up to {max} stocks', { max: MAX_STOCKS })}</b>
           <span className="fine-print" data-testid="stock-pick-count">{t('{count} of {max} picked', { count: picked.length, max: MAX_STOCKS })}</span>
+          <a className="stock-picker-guide" href="/stocks" target="_blank" rel="noopener noreferrer" data-testid="stock-guide-link">{t('What are these?')}</a>
         </div>
         <div className="stock-search">
           <Search size={15} aria-hidden />
@@ -210,6 +212,9 @@ export function StockMixEditor({
         );
       })}
       {picked.length > 0 ? <AllocationTotal selected={picked} percents={value.percents} /> : null}
+      {picked.length > 0 ? (
+        <DiversificationMeter picks={picked.map((token) => ({ symbol: token.symbol, weight: Number(value.percents[token.address] ?? 0) || 0 }))} />
+      ) : null}
     </div>
   );
 }

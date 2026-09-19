@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { STARTER_MIXES, mixPercents, starterMixOptions, type ExtraMix } from '../src/components/StarterMixes';
+import { STARTER_MIXES, lockLines, mixPercents, starterMixOptions, type ExtraMix } from '../src/components/StarterMixes';
+import { ZH } from '../src/i18n/zh';
 import { MAX_STOCKS, initialPicks, pickAvailability, pickedTokens } from '../src/components/StockPicker';
 
 const config = JSON.parse(readFileSync(join(import.meta.dir, '..', '..', 'config', 'stocks.json'), 'utf8')) as {
@@ -24,11 +25,19 @@ describe('starter mixes', () => {
     }
   });
 
+  test('no two mixes are the same, and every name and note has Chinese', () => {
+    const key = (w: Record<string, number> | null) => JSON.stringify(Object.entries(w ?? {}).sort());
+    expect(new Set(STARTER_MIXES.map((m) => key(m.weights))).size).toBe(STARTER_MIXES.length);
+    for (const m of STARTER_MIXES) expect([m.label, ZH[m.label] !== undefined, ZH[m.note] !== undefined]).toEqual([m.label, true, true]);
+  });
+
   test('a named mix picks its stocks and fills their shares', () => {
     const choice = mixPercents(mix('space'), all, [])!;
     expect(choice.selected).toEqual(bySymbol('SPCX', 'TSLA', 'NVDA', 'PLTR', 'QQQ').map((s) => s.address));
     expect(choice.percents).toEqual(Object.fromEntries(bySymbol('SPCX', 'TSLA', 'NVDA', 'PLTR', 'QQQ').map((s, i) => [s.address, String([30, 25, 20, 15, 10][i])])));
     expect(mixPercents(mix('market'), all, [])!.percents).toEqual({ [bySymbol('SPY')[0]!.address]: '60', [bySymbol('QQQ')[0]!.address]: '40' });
+    // Spread out: two funds, two companies and silver.
+    expect(mixPercents(mix('spread'), all, [])!.selected).toEqual(bySymbol('SPY', 'QQQ', 'NVDA', 'AMZN', 'SLV').map((s) => s.address));
   });
 
   test('an even split shares out whatever is picked, the remainder to the first picks', () => {
@@ -100,6 +109,20 @@ describe('locked stocks and mixes', () => {
     expect(options.find((o) => o.mix.id === 'metals')).toMatchObject({ locked: false, lockNote: null });
     // Older sprouts can't hold silver, so the mix isn't offered to them at all.
     expect(starterMixOptions(legacy, legacy, extras).map((o) => o.mix.id)).toEqual(['even', 'index']);
+  });
+
+  test('mixes locked for the same reason share one note line, in row order', () => {
+    const extras: ExtraMix[] = [
+      { id: 'a', label: 'A', note: '', weights: { GME: 100 }, locked: true, lockNote: 'For Sapling and up.' },
+      { id: 'b', label: 'B', note: '', weights: { SLV: 100 }, locked: true, lockNote: 'For Bloom and up.' },
+      { id: 'c', label: 'C', note: '', weights: { USO: 100 }, locked: true, lockNote: 'For Sapling and up.' },
+      { id: 'd', label: 'D', note: '', weights: { SNDK: 100 } },
+    ];
+    expect(lockLines(starterMixOptions(all, [], extras))).toEqual([
+      { ids: ['a', 'c'], labels: ['A', 'C'], note: 'For Sapling and up.' },
+      { ids: ['b'], labels: ['B'], note: 'For Bloom and up.' },
+    ]);
+    expect(lockLines(starterMixOptions(all, []))).toEqual([]);
   });
 
   test('a mix naming a locked stock is locked too, with that stock’s note; the even split never is', () => {

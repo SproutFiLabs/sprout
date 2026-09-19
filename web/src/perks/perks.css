@@ -1,4 +1,8 @@
 /* SPROUT holder perks page. Reuses the knowledge page shell and the garden colours. */
+/* WCAG AA on this paper: the shell's muted grey (nav links) is 4.2:1 and its
+   orange eyebrow 3.7:1; these read at 4.9:1 and 4.7:1. Dark mode keeps its own. */
+.knowledge.perks-root { --knowledge-muted: #646b61; }
+.perks-root .knowledge-eyebrow { color: #a5552a; }
 .perks-main { max-width: 1040px; margin: 0 auto; padding: 32px 24px 72px; display: grid; gap: 22px; }
 .perks-hero { display: grid; gap: 12px; padding: 18px 0 4px; }
 .perks-hero h1 { font-family: var(--garden-serif, Georgia, serif); font-weight: 400; font-size: clamp(34px, 5vw, 54px); line-height: 1.08; letter-spacing: -1px; margin: 0; }
@@ -21,10 +25,38 @@
 .perks-table thead th.is-mine { background: rgba(63, 122, 58, .09); border-radius: 12px 12px 0 0; }
 .perks-table tbody th { text-align: left; font-weight: 500; }
 .perks-table td svg { color: var(--garden-green, #3f7a3a); }
-.perks-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; line-height: 1.5; }
+/* Holder bouquets, grouped by the tier that unlocks them. */
+.perks-bouquet-tiers { display: grid; margin-top: 4px; }
+.perks-bouquet-tier { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 10px 20px; padding: 16px 0; border-top: 1px solid var(--garden-line, #ece7dc); }
+.perks-bouquet-tier h3 { margin: 0; display: grid; gap: 3px; align-content: start; font-family: inherit; font-size: 16px; font-weight: 400; letter-spacing: 0; }
+.perks-bouquet-tier h3 small { color: var(--garden-soft, #5f5c54); font-size: 13px; }
+.perks-bouquet-open { display: inline-flex; align-items: center; gap: 5px; justify-self: start; margin-top: 4px; padding: 3px 9px; border-radius: 999px; background: rgba(63, 122, 58, .1); color: var(--garden-green, #3f7a3a); font-size: 12.5px; font-weight: 600; }
+.perks-bouquet-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.perks-bouquet-list li { display: grid; gap: 4px; align-content: start; padding: 13px 15px; border: 1px solid var(--garden-line, #ece7dc); border-radius: 14px; background: var(--garden-side, #faf8f2); line-height: 1.5; min-width: 0; }
+.perks-bouquet-list li > span { font-size: 14.5px; }
+.perks-basket-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.perks-basket-code { padding: 1px 8px; border: 1px solid var(--garden-line, #ece7dc); border-radius: 999px; background: var(--garden-surface, #fffdfa); color: var(--garden-soft, #5f5c54); font-size: 11.5px; font-weight: 600; letter-spacing: .4px; white-space: nowrap; }
+.perks-bouquet-mix { color: var(--garden-soft, #5f5c54); font-size: 12.5px; letter-spacing: .2px; }
+.perks-bouquet-weight { white-space: nowrap; }
 .perks-fine { display: grid; gap: 10px; color: var(--garden-soft, #5f5c54); font-size: 14px; line-height: 1.55; }
 .perks-fine p { margin: 0; max-width: 760px; }
 @media (max-width: 760px) {
   .perks-grid { grid-template-columns: 1fr; }
+  .perks-bouquet-tier { grid-template-columns: 1fr; }
+  .perks-bouquet-tier h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  .perks-bouquet-open { margin-top: 0; }
+  .perks-bouquet-list { grid-template-columns: 1fr; }
   .perks-main { padding: 20px 16px 56px; }
 }
+
+/* Dark appearance: the page sits in the knowledge shell, outside .garden, so it
+   takes the garden's dark tokens here (cards, lines, muted text). */
+html[data-appearance="dark"] .perks-root {
+  --garden-ink: #f5efe3; --garden-soft: #b5c4b4; --garden-quiet: #91a594; --garden-line: #355342;
+  --garden-surface: #183025; --garden-side: #132a1f; --garden-green: #a9cf91;
+}
+/* The theme keeps knowledge-page text white in dark, so buttons take the dark forest fill. */
+html[data-appearance="dark"] .perks-button { background: #294536; border: 1px solid #466451; }
+html[data-appearance="dark"] .perks-button--light { background: transparent; }
+html[data-appearance="dark"] .perks-table thead th.is-mine { background: rgba(169, 207, 145, .12); }
+html[data-appearance="dark"] .perks-bouquet-open { background: rgba(169, 207, 145, .14); }

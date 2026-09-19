@@ -173,7 +173,22 @@ export const zh: Record<string, string> = {
   '60% SPY, which follows 500 large US companies, and 40% QQQ, which follows the Nasdaq-100.':
     '60% 投入 SPY（追踪 500 家美国大公司），40% 投入 QQQ（追踪纳斯达克 100）。',
   'NVIDIA, TSMC, AMD, ASML and Micron, 20% each.': '英伟达、台积电、AMD、阿斯麦和美光，各占 20%。',
+  'Spread out': '分散配置',
+  '40% SPY and 20% QQQ, which follow hundreds of companies, plus 15% NVIDIA, 15% Amazon and 10% silver.':
+    '40% 投入 SPY、20% 投入 QQQ（两者追踪数百家公司），再加 15% 英伟达、15% 亚马逊和 10% 白银。',
   'Starter mixes': '入门配比',
+  'View {code} factsheet': '查看 {code} 概况',
+  'View {code} factsheet (opens in a new tab)': '查看 {code} 概况（在新标签页打开）',
+  // Basket themes (BasketTheme in StarterMixes.tsx); Tech, Chips and Commodities are with the stock groups below.
+  Market: '大盘',
+  AI: 'AI',
+  Space: '太空',
+  Innovation: '创新',
+  Brands: '品牌',
+  Games: '游戏',
+  Global: '全球',
+  Mixed: '多元',
+  Speculative: '投机',
   'Starter mixes are examples to start from, not advice.': '入门配比只是供你起步的示例，不构成投资建议。',
   'Total {total}%': '合计 {total}%',
   'Total {total}% of 100%': '合计 {total}% / 100%',

@@ -32,6 +32,7 @@ import { ThemeToggle } from "../theme/ThemeSettings";
 import { t, tj, useLocale } from "../i18n";
 import { LanguageToggle } from "../i18n/LanguageToggle";
 import { AnswerText } from "./AnswerText";
+import { prefillQuestion } from "./prefill";
 import {
   intelligenceChat,
   intelligenceConfig,
@@ -99,7 +100,7 @@ export function IntelligencePage() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [topic, setTopic] = useState(0),
-    [draft, setDraft] = useState(""),
+    [draft, setDraft] = useState(prefillQuestion),
     [messages, setMessages] = useState<IntelligenceMessage[]>([]),
     [copied, setCopied] = useState(false);
   const [showExample, setShowExample] = useState(false);

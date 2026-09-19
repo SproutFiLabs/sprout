@@ -1,4 +1,5 @@
 import { PrivacyCenter } from './privacy/PrivacyCenter';
+import { PrivacyPackHost } from './privacyPack/PrivacyPackHost';
 import { authorizeFamily, clearFamilySession } from './api';
 import { requirePrivateLabels, getPrivateLabel, lockLabels } from './localStore';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -1030,6 +1031,7 @@ export function App() {
       <div ref={el => { if (el) el.inert = showPrivacy; }} aria-hidden={showPrivacy || undefined}><DashboardShell {...shell} />
       <nav className="family-safety-launches" aria-label={t('Family safety')}><a className="privacy-launch" href="/guardian">◈ {t('Guardian wallets')}</a><button className="privacy-launch" onClick={() => setShowPrivacy(true)} data-testid="privacy-open">◈ {t('Family privacy')}</button></nav></div>
       {showPrivacy ? <PrivacyCenter wallet={wallet} sprouts={parentSprouts} onClose={closePrivacy} onConnect={() => void connect()} onLocked={() => { setWallet(null); setDetail(null); setParentSprouts([]); setBeneficiarySprouts([]); setSelectedId(null); setHoldings(null); setGrowth(null); setEvents([]); setShowPrivacy(false); }} /> : null}
+      <PrivacyPackHost wallet={wallet} chain={chain} onConnect={() => void connect()} />
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}
       <WelcomeSprout open={welcomeOpen} address={selectedId} onClose={() => setWelcomeOpen(false)} onFund={() => { setFundForm({ token: settlementToken ?? '', amount: '10' }); setShowFund(true); }} />

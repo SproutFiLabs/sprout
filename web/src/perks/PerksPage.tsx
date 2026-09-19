@@ -7,7 +7,7 @@ import { api } from '../api';
 import { useAutomationEnabled } from '../automationStatus';
 import { PublicCa } from '../components/PublicCa';
 import { holdPeriod, tierAtLeast, tierLabel, useHolder, wholeTokens, TIER_ORDER, type TierId } from './holder';
-import { HOLDER_BOUQUETS } from './locks';
+import { bouquetCount, bouquetsByTier } from './locks';
 import { HolderVotes } from './Votes';
 import './perks.css';
 
@@ -48,6 +48,7 @@ export function PerksPage() {
   const automation = useAutomationEnabled();
   const { perks, status } = holder;
   const tiers = perks?.tiers ?? [];
+  const tierIds = tiers.map((x) => x.id);
   const earlyTier = perks?.earlyAccess.tier ?? 'sapling';
   const autoTier = perks?.autoInvestTier ?? 'bloom';
 
@@ -56,7 +57,7 @@ export function PerksPage() {
   }, []);
 
   const perkRows: Array<{ label: string; has: (tier: TierId) => string | boolean }> = [
-    { label: t('Holder bouquets'), has: (tier) => tierAtLeast(tier, 'seedling') },
+    { label: t('Holder baskets'), has: (tier) => t('{n} baskets', { n: bouquetCount(tier, tierIds) }) },
     { label: t('First dibs on new stocks'), has: (tier) => tierAtLeast(tier, earlyTier) },
     { label: t('Automatic weekly investing'), has: (tier) => tierAtLeast(tier, autoTier) },
     { label: t('Votes on the next stock'), has: (tier) => t('{n}× vote', { n: VOTE_WEIGHT[tier] }) },
@@ -148,6 +149,44 @@ export function PerksPage() {
           </div>
         </section>
 
+        <section className="perks-card" id="bouquets" aria-labelledby="perks-bouquets">
+          <h2 id="perks-bouquets">💐 {t('Holder baskets')}</h2>
+          <p>{t('One-tap baskets only holders can pick when planting or changing a sprout’s stocks. Each tier adds its own and keeps the ones below it.')}</p>
+          <p className="perks-muted">{t('A Sprout basket is a ready-made mix of up to five stocks, like a small ETF you can see inside. Your sprout holds the stocks themselves, not a fund.')}</p>
+          <div className="perks-bouquet-tiers" data-testid="perks-bouquets">
+            {bouquetsByTier(tierIds).map(({ tier, bouquets }) => {
+              const min = tiers.find((x) => x.id === tier)?.min;
+              const open = tierAtLeast(status?.tier, tier);
+              return (
+                <div key={tier} className={'perks-bouquet-tier' + (open ? ' is-open' : '')} data-testid={`perks-bouquets-${tier}`}>
+                  <h3>
+                    <b>{tierLabel(tier)}</b>
+                    {min ? <small>{t('{amount} SPROUT', { amount: BigInt(min).toLocaleString('en-US') })}</small> : null}
+                    {open ? <span className="perks-bouquet-open"><Check size={14} aria-hidden /> {t('Unlocked for you')}</span> : null}
+                  </h3>
+                  <ul className="perks-bouquet-list">
+                    {bouquets.map((b) => (
+                      <li key={b.id} data-testid={`perks-bouquet-${b.id}`}>
+                        <span className="perks-basket-name">
+                          <b>{t(b.label)}</b>
+                          {b.code ? <span className="perks-basket-code" translate="no">{b.code}</span> : null}
+                        </span>
+                        <span>{t(b.note)}</span>
+                        <small className="perks-bouquet-mix">
+                          {Object.entries(b.weights).map(([symbol, weight], i) => (
+                            <span key={symbol}>{i > 0 ? ' · ' : ''}<span className="perks-bouquet-weight">{symbol} {weight}%</span></span>
+                          ))}
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+          <p className="perks-muted">{t('Examples, not advice.')}</p>
+        </section>
+
         <section className="perks-grid">
           <article className="perks-card">
             <h2>🚀 {t('First dibs on new stocks')}</h2>
@@ -162,16 +201,6 @@ export function PerksPage() {
             ) : (
               <p className="perks-muted">{t('Nothing in early access right now. The next batch of stocks goes to holders first.')}</p>
             )}
-          </article>
-          <article className="perks-card">
-            <h2>💐 {t('Holder bouquets')}</h2>
-            <p>{t('One-tap mixes only holders can pick when planting or changing a sprout’s stocks:')}</p>
-            <ul className="perks-list">
-              {HOLDER_BOUQUETS.map((b) => (
-                <li key={b.id}><b>{t(b.label)}</b> {t(b.note)}</li>
-              ))}
-            </ul>
-            <p className="perks-muted">{t('Examples, not advice.')}</p>
           </article>
           <article className="perks-card">
             <h2>⚡ {t('Automatic weekly investing')}</h2>

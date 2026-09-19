@@ -30,6 +30,7 @@ import {
 import { t, tj } from '../i18n';
 import './privacy.css';
 import './family-safety-fixes.css';
+import { CheckupLaunch } from '../privacyPack/DiscreetControls';
 
 export function PrivacyCenter({
   wallet,
@@ -173,6 +174,7 @@ export function PrivacyCenter({
           </button>
         </header>
         <a className="privacy-pill" href="/guardian" style={{display:"inline-flex",margin:"20px 0"}}>{t('Guardian wallets · recovery, passkeys & transfer limits ↗')}</a>
+        <CheckupLaunch onOpen={onClose} />
         <section className="privacy-hero">
           <div>
             <span className="privacy-kicker">
