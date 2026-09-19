@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { PublicClient } from 'viem';
-import { createHolderChecker, loadPerksConfig, sampleBlocks, tierAtLeast, tierFor, type PerksConfig } from '../src/holders';
+import { createHolderChecker, loadPerksConfig, requiredHoldSeconds, sampleBlocks, tierAtLeast, tierFor, type PerksConfig } from '../src/holders';
 
 const TOKEN = '0x5ec27c931fb49911128dddf7d914c1754da9f49f';
 const WALLET = '0x00000000000000000000000000000000000000aa';
@@ -96,12 +96,22 @@ describe('holder checker', () => {
     expect(s.currentTier).toBe('bloom');
   });
 
-  test('a token younger than the hold window counts from launch', async () => {
+  test('while the token is younger than the hold, 24 hours of holding is enough', async () => {
+    // Head is 1,000,000 s after launch (about 11.5 days): younger than a 30-day hold.
+    const head = 10_000_000n;
     const young = { ...config, holdDays: 30 };
-    const client = fakeClient(() => 1_000_000n * E18);
-    const s = await createHolderChecker(client, young).status(WALLET);
+    const boughtTwoDaysAgo = (b: bigint) => (b > head - 1_728_000n ? 1_000_000n * E18 : 0n);
+    const s = await createHolderChecker(fakeClient(boughtTwoDaysAgo), young).status(WALLET);
+    expect(s.holdSeconds).toBe(86_400);
     expect(s.tier).toBe('sapling');
-    expect(s.windowStart).toBe(50); // block 500 at 10 blocks a second
+    const boughtAnHourAgo = (b: bigint) => (b > head - 36_000n ? 1_000_000n * E18 : 0n);
+    expect((await createHolderChecker(fakeClient(boughtAnHourAgo), young).status(WALLET)).tier).toBeNull();
+  });
+
+  test('the hold is the full period once the token is old enough', () => {
+    expect(requiredHoldSeconds(7, 3 * 86_400)).toBe(86_400);
+    expect(requiredHoldSeconds(7, 8 * 86_400)).toBe(7 * 86_400);
+    expect(requiredHoldSeconds(0, 0)).toBe(0);
   });
 
   test('results are cached for ten minutes', async () => {

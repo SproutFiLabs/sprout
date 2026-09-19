@@ -7,6 +7,7 @@ import { Preview } from './Preview';
 import { TestExperience } from './TestExperience';
 import { KnowledgePage } from './knowledge/KnowledgePages';
 import { AppearancePage } from './AppearancePage';
+import { PerksPage } from './perks/PerksPage';
 import { KidView, parseKidPath } from './KidView';
 import { initializeTheme } from './theme/ThemeSettings';
 import { initializeLocale, useLocale } from './i18n';
@@ -39,6 +40,7 @@ function Root() {
     return <KnowledgePage page={path.slice(1) as 'docs' | 'whitepaper' | 'guide' | 'faq'} />;
   }
   if (path === '/settings') return <AppearancePage />;
+  if (path === '/perks') return <PerksPage />;
   const kid = parseKidPath(path);
   if (kid) return <KidView vault={kid.vault} lessonId={kid.lessonId} />;
   if (path === '/test') return <TestExperience />;

@@ -2,9 +2,10 @@ import { erc20Abi, getAddress, isAddress, type Address, type PublicClient } from
 
 /**
  * SPROUT holder tiers. A wallet's tier comes from the smallest SPROUT balance
- * it held across the last `holdDays` (or since the token launched, if that is
- * shorter), sampled every twelve hours from the chain's own history, so a
- * balance borrowed for a minute doesn't unlock anything.
+ * it held across the last `holdDays`, sampled from the chain's own history, so
+ * a balance borrowed for a minute doesn't unlock anything. While the token is
+ * younger than `holdDays`, nobody could have held that long, so the hold is 24
+ * hours instead.
  *
  * Tiers only unlock things inside this app. Nothing here moves money.
  */
@@ -114,13 +115,23 @@ export interface HolderStatus {
   /** Tier the current balance would earn once held through the window. */
   currentTier: TierId | null;
   holdDays: number;
-  /** Unix seconds the window starts (launch, if the token is younger). */
+  /** The hold that applied: `holdDays` in seconds, or 24 hours while the token is new. */
+  holdSeconds: number;
+  /** Unix seconds the window starts. */
   windowStart: number;
   checkedAt: number;
 }
 
 const STATUS_TTL_MS = 10 * 60 * 1000;
 const STEP_SECONDS = 12 * 60 * 60;
+/** The hold while the token is younger than the full hold period. */
+export const LAUNCH_HOLD_SECONDS = 24 * 60 * 60;
+
+/** Seconds a wallet must have held, given the token's age. */
+export function requiredHoldSeconds(holdDays: number, tokenAgeSeconds: number): number {
+  const full = holdDays * 86_400;
+  return tokenAgeSeconds < full ? Math.min(full, LAUNCH_HOLD_SECONDS) : full;
+}
 
 export interface HolderChecker {
   config: PerksConfig;
@@ -134,6 +145,7 @@ export function createHolderChecker(client: PublicClient | null, config: PerksCo
   let decimals: number | null = null;
   let deployBlock: bigint | null = null;
   let blocksPerSecond: number | null = null;
+  let launchTimestamp: bigint | null = null;
 
   async function tokenDecimals(): Promise<number> {
     decimals ??= Number(await client!.readContract({ address: config.token!, abi: erc20Abi, functionName: 'decimals' }));
@@ -166,15 +178,18 @@ export function createHolderChecker(client: PublicClient | null, config: PerksCo
   async function compute(address: Address): Promise<HolderStatus> {
     const now = Math.floor(nowMs() / 1000);
     if (!client || !config.token) {
-      return { address, enabled: false, decimals: 18, balance: '0', heldBalance: '0', tier: null, currentTier: null, holdDays: config.holdDays, windowStart: now, checkedAt: now };
+      return { address, enabled: false, decimals: 18, balance: '0', heldBalance: '0', tier: null, currentTier: null, holdDays: config.holdDays, holdSeconds: config.holdDays * 86_400, windowStart: now, checkedAt: now };
     }
     const dec = await tokenDecimals();
     const headBlock = await client.getBlock();
     const perSecond = await rate({ number: headBlock.number, timestamp: headBlock.timestamp });
     const launch = await launchBlock(headBlock.number);
-    const windowBlocks = BigInt(Math.ceil(config.holdDays * 86_400 * perSecond));
+    launchTimestamp ??= (await client.getBlock({ blockNumber: launch })).timestamp;
+    const holdSeconds = requiredHoldSeconds(config.holdDays, Number(headBlock.timestamp - launchTimestamp));
+    const windowBlocks = BigInt(Math.ceil(holdSeconds * perSecond));
     const windowStart = headBlock.number - windowBlocks > launch ? headBlock.number - windowBlocks : launch;
-    const blocks = sampleBlocks(headBlock.number, windowStart, BigInt(Math.max(1, Math.round(STEP_SECONDS * perSecond))));
+    const step = Math.min(STEP_SECONDS, Math.max(60, holdSeconds / 4));
+    const blocks = sampleBlocks(headBlock.number, windowStart, BigInt(Math.max(1, Math.round(step * perSecond))));
     const balances = await Promise.all(
       blocks.map((blockNumber) => client.readContract({ address: config.token!, abi: erc20Abi, functionName: 'balanceOf', args: [address], blockNumber }) as Promise<bigint>),
     );
@@ -190,6 +205,7 @@ export function createHolderChecker(client: PublicClient | null, config: PerksCo
       tier: tierFor(held, dec, config.tiers),
       currentTier: tierFor(balance, dec, config.tiers),
       holdDays: config.holdDays,
+      holdSeconds,
       windowStart: windowStartSeconds,
       checkedAt: now,
     };

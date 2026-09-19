@@ -22,6 +22,7 @@ import { LanguageToggle } from './i18n/LanguageToggle';
 import { CampaignProgress, GiftNotesList, giftAmountLabel } from './components/Campaign';
 import { ResourcesMenu } from './components/ResourcesMenu';
 import { BloomGarden } from './garden/BloomGarden';
+import { HolderMenuRow, PerksSideLink } from './perks/DashboardBits';
 import { kidViewPath } from './KidView';
 import { t, tj, dateLocale } from './i18n';
 import { displayName } from './stocks';
@@ -674,6 +675,7 @@ export function DashboardShell(props: DashboardShellProps) {
             <div className="garden-menu">
               <div className="garden-menu-row"><span>{t('Network')}</span><b>{chain?.name ?? t('Not configured')}</b></div>
               {selected ? <SproutAddressRow address={selected.id} /> : null}
+              <HolderMenuRow address={wallet?.address} />
               {chain && !chain.configured ? <div className="garden-menu-row"><span>{t('Status')}</span><b>{t('Unconfigured')}</b></div> : null}
               {/* A first-time visitor reaches for this menu to connect, so it must offer to. */}
               {wallet ? null : (
@@ -1290,6 +1292,7 @@ export function DashboardShell(props: DashboardShellProps) {
             <button className="garden-side-link" data-testid="plant-open" onClick={() => { setDrawerOpen(false); onOpenPlant(); }} disabled={!chainReady}><Plus size={22} />{t('Plant a sprout')}</button>
           ) : null}
           {onOpenOnboarding ? <button className="garden-side-link" data-testid="onboarding-open" onClick={onOpenOnboarding}><SproutIcon size={22} />{t('How SPROUT works')}</button> : null}
+          <PerksSideLink />
           <ResourcesMenu />
           <button className="garden-side-link" data-testid="settings-open" onClick={() => { setDrawerOpen(false); onOpenSettings(); }}><Settings size={22} />{t('Family settings')}</button>
           <button className="garden-side-link" data-testid="help-open" onClick={() => { setDrawerOpen(false); (onOpenHelp ?? onOpenNotifications)(); }}><HelpCircle size={22} />{t('Help')}</button>
