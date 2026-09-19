@@ -309,12 +309,21 @@ export function App() {
     if (selectedId) void loadDetail(selectedId);
   }, [selectedId, loadDetail]);
 
+  // Gift labels, campaign titles and notes are decrypted when the sprout loads,
+  // so unlocking Family privacy has to load it again to show them.
+  const reloadSelected = useRef<() => void>(() => undefined);
+  reloadSelected.current = () => {
+    if (selectedId) void loadDetail(selectedId);
+  };
+
   useEffect(() => {
     const ended = () => { setWallet(null); setDetail(null); setParentSprouts([]); setBeneficiarySprouts([]); setSelectedId(null); setHoldings(null); setGrowth(null); setEvents([]); setAllGiftNotes({}); setGiftQr(null); };
     const changed = () => {
       if (!getPrivateLabel('gift.privateKey')) {
         setAllGiftNotes({}); setGiftQr(null);
         setDetail(prev => prev ? { ...prev, gifts: prev.gifts.map(g => ({ ...g, label: 'A gift for the future', campaign: g.campaign ? { ...g.campaign, title: 'Family gift' } : null, notes: [] })) } : prev);
+      } else {
+        reloadSelected.current();
       }
     };
     window.addEventListener('sprout-family-session-ended', ended);

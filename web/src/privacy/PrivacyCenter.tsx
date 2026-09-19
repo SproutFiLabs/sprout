@@ -1,5 +1,5 @@
 import { ProofStudio } from './ProofStudio';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ShieldCheck,
   LockKeyhole,
@@ -28,6 +28,7 @@ import {
   unlockLabels,
 } from '../localStore';
 import './privacy.css';
+import './family-safety-fixes.css';
 
 export function PrivacyCenter({
   wallet,
@@ -43,6 +44,10 @@ export function PrivacyCenter({
   onLocked: () => void;
 }) {
   const [version, update] = useState(0);
+  // Remember the opener while rendering, before the page behind the dialog goes
+  // inert; read in the effect instead, React's development double mount would
+  // record the dialog itself and focus would fall to the page on close.
+  const opener = useRef(typeof document === 'undefined' ? null : (document.activeElement as HTMLElement | null));
   const [passphrase, setPassphrase] = useState('');
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [recovery, setRecovery] = useState('');
@@ -64,7 +69,6 @@ export function PrivacyCenter({
     return () => window.removeEventListener('sprout-privacy-change', change);
   }, []);
   useEffect(() => {
-    const before = document.activeElement as HTMLElement | null;
     const dialog = document.querySelector<HTMLElement>('.privacy-center');
     dialog?.focus();
     const keydown = (e: KeyboardEvent) => {
@@ -87,7 +91,7 @@ export function PrivacyCenter({
     window.addEventListener('keydown', keydown);
     return () => {
       window.removeEventListener('keydown', keydown);
-      before?.focus();
+      opener.current?.focus();
     };
   }, [onClose]);
   const refresh = async () => {

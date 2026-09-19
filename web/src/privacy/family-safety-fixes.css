@@ -1,0 +1,24 @@
+/* Fixes from the layout sweep for the Family privacy and proof screens
+   (kept apart from privacy.css / zk.css so upstream edits merge cleanly). */
+
+/* The floating "Guardian wallets" / "Family privacy" buttons covered the
+   dashboard's "Add money" and "See all" on phones and tablets; below desktop
+   width they sit at the end of the page instead of floating over it. */
+@media (max-width: 900px) {
+  .family-safety-launches { position: static; justify-content: flex-end; flex-wrap: wrap; padding: 8px 16px 24px; }
+}
+
+/* The decorative orbit ring pushed the privacy center wider than the screen
+   between roughly 760 and 860px. */
+.privacy-overlay { overflow-x: hidden; }
+.privacy-art { overflow: clip; }
+
+/* Small uppercase labels were below WCAG AA contrast (4.5:1). */
+.privacy-brand span,
+.privacy-number,
+.privacy-kicker { color: #4f5e47; }
+.zk-receipt-top,
+.zk-milestone-label { color: #4f5e47; }
+.zk-disclosure { color: #4f5e47; font-size: 11px; }
+.privacy-gift-preview p,
+.privacy-boundary p { color: #4f5e47; }

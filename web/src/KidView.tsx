@@ -61,7 +61,8 @@ let bootstrap: string | null =
   typeof window !== 'undefined' && window.location.pathname.startsWith('/kid/') ? window.location.hash.slice(1) : null;
 if (typeof window !== 'undefined' && window.location.pathname.startsWith('/kid/')) {
   const parsed = parseKidPath(window.location.pathname);
-  window.history.replaceState(null, '', parsed ? kidLessonPath(parsed.vault, parsed.lessonId) : '/kid/expired');
+  // An address for a lesson that doesn't exist falls back to the plain kid view.
+  window.history.replaceState(null, '', parsed ? kidLessonPath(parsed.vault, findLesson(parsed.lessonId)?.id ?? null) : '/kid/expired');
 }
 const pending = new Map<string, Promise<string>>();
 function getKidToken(id: string): Promise<string> {
