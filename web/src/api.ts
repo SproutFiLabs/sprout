@@ -67,7 +67,8 @@ export interface Health {
   configured: boolean;
   missing: string[];
   localDemo: boolean;
-  automation: AutomationCapability;
+  /** `autoInvestTier`: the SPROUT holder tier a parent needs for automatic weekly investing; null means everyone. */
+  automation: AutomationCapability & { autoInvestTier?: string | null };
 }
 
 export interface Sprout {

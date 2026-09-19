@@ -22,7 +22,7 @@ import { contributionHistory, type ContributionHistory } from './contributions';
 import { AuthError, authenticate, issueNonce } from './auth';
 import { historyCsv, historyFilename } from './history';
 import { reconcile, snapshotAll } from './indexer';
-import { automationCapability, runDueJobs } from './jobs';
+import { automationCapability, autoInvestRequirement, holderAutoInvestGate, runDueJobs } from './jobs';
 import { investQuote } from './invest';
 import { factoryAdmitsVenue, sproutDeploymentView } from './deployments';
 import { listDeployments } from './config';
@@ -203,7 +203,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       configured: deps.chain.config.chain.configured,
       missing: deps.chain.config.chain.missing,
       localDemo: deps.localDemo,
-      automation: automationCapability(deps.chain),
+      // autoInvestTier: the SPROUT tier a parent needs for the keeper to run their plan (null: everyone).
+      automation: { ...automationCapability(deps.chain), autoInvestTier: autoInvestRequirement(holders.config) },
     }),
   );
 
@@ -817,7 +818,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
 
   app.post('/api/jobs/run', async (c) => {
     requireAdmin(c, deps);
-    const results = await serialize(() => runDueJobs(deps.chain, deps.db));
+    const results = await serialize(() => runDueJobs(deps.chain, deps.db, { mayAutoInvest: holderAutoInvestGate(deps.db, holders) }));
     return c.json({ results });
   });
 

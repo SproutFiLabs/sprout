@@ -5,7 +5,8 @@ import type { ChainContext } from './chain';
 import { ChainConfigError, invalidateChainReads } from './chain';
 import { keeperBudget, type KeeperBudgetConfig } from './config';
 import { resolveVaultVenue } from './deployments';
-import { dueJobs, recordJobRun, setJobStatus, getJob, type JobRecord } from './repo';
+import { dueJobs, recordJobRun, setJobStatus, getJob, getSprout, type JobRecord } from './repo';
+import { tierAtLeast, type HolderChecker, type PerksConfig, type TierId } from './holders';
 import {
   keeperChain,
   keeperSigner,
@@ -73,9 +74,27 @@ export async function computeMinOuts(ctx: ChainContext, vault: Address, spend: b
 export interface RunDueJobsOptions {
   nowSeconds?: number;
   sinceMs?: number;
+  /** Whether the keeper may run this due plan; absent means every plan runs. */
+  mayAutoInvest?: (job: JobRecord) => Promise<boolean>;
 }
 
 const AUTOMATION_DISABLED = 'automation disabled: keeper key or gas budget not configured';
+export const AUTOINVEST_PERK = 'auto-invest is a SPROUT holder perk';
+
+/** The tier the keeper requires, or null when every plan runs (no tier set, or perks off). */
+export function autoInvestRequirement(config: PerksConfig): TierId | null {
+  return config.token ? config.autoInvestTier : null;
+}
+
+/** Lets the keeper run a plan only when the sprout's parent wallet holds the required tier. */
+export function holderAutoInvestGate(db: SproutDb, holders: HolderChecker): RunDueJobsOptions['mayAutoInvest'] {
+  const required = autoInvestRequirement(holders.config);
+  if (!required) return undefined;
+  return async (job) => {
+    const parent = getSprout(db, job.vaultId)?.parent;
+    return parent ? tierAtLeast(await holders.tier(parent), required) : false;
+  };
+}
 
 /**
  * Execute due investments. Reconciles any in-flight signed tx first (same hash,
@@ -117,6 +136,15 @@ export async function runDueJobs(ctx: ChainContext, db: SproutDb, options: RunDu
 
   const chain = keeperChain(ctx);
   for (const job of due) {
+    if (options.mayAutoInvest && !(await options.mayAutoInvest(job))) {
+      // Not this parent's perk (yet). Like a missing keeper: no transaction, the
+      // week is kept, and resync re-activates the plan so the next pass checks
+      // the tier again. The reason is recorded once, not on every pass.
+      setJobStatus(db, job.id, 'unavailable');
+      if (job.lastError !== AUTOINVEST_PERK) recordJobRun(db, job.id, { nextRunAt: job.nextRunAt, error: AUTOINVEST_PERK });
+      results.push({ jobId: job.id, vaultId: job.vaultId, status: 'paused', error: AUTOINVEST_PERK });
+      continue;
+    }
     results.push(await runJob(ctx, db, job, nowSeconds, sinceMs, budget));
   }
   return results;

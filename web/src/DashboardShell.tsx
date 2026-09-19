@@ -25,6 +25,7 @@ import { BloomGarden } from './garden/BloomGarden';
 import { HolderMenuRow, PerksSideLink } from './perks/DashboardBits';
 import { kidViewPath } from './KidView';
 import { t, tj, dateLocale } from './i18n';
+import { autoInvestPerkText, useAutoInvestLock } from './perks/autoInvest';
 import { displayName } from './stocks';
 
 export type ViewId = 'overview' | 'portfolio' | 'invest' | 'chores' | 'gifts' | 'graduation';
@@ -400,6 +401,11 @@ export function DashboardShell(props: DashboardShellProps) {
   const chartNow = nowMs ?? Date.now();
   const [period, setPeriod] = useState('3M');
   const [toggledChores, setToggledChores] = useState<Record<string, boolean>>({});
+  // Automatic weekly investing can be a SPROUT holder perk; say so to a parent who doesn't hold the tier.
+  const perkTier = useAutoInvestLock(health?.automation, isParent && !isSample ? selected?.parent : null);
+  const perkNotice = perkTier ? (
+    <p className="garden-notice" data-testid="autoinvest-perk">{autoInvestPerkText(perkTier)} <a href="/perks">{t('See SPROUT perks')}</a></p>
+  ) : null;
 
   const settlementToken = chain?.contracts.settlementToken;
   const settlementDecimals = chain?.contracts.settlementDecimals ?? 6;
@@ -801,6 +807,7 @@ export function DashboardShell(props: DashboardShellProps) {
       {scheduled && automation?.enabled === false ? (
         <p className="garden-notice" data-testid="automation-unavailable">{t('Automatic investments are temporarily unavailable. Your schedule is unchanged.')}</p>
       ) : null}
+      {scheduled ? perkNotice : null}
       <div className="garden-weekly-foot">
         <div className="garden-weekly-next">
           <small>{t('Next contribution')}</small>
@@ -1014,6 +1021,7 @@ export function DashboardShell(props: DashboardShellProps) {
                 : t('At most one installment runs each period. If a run is missed, the next one catches up with a single purchase — never more.')}
             </p>
             {!automation?.enabled ? <p className="garden-notice" data-testid="automation-unavailable">{t('Automatic investments are temporarily unavailable. Your schedule is unchanged.')}</p> : null}
+            {activeJobs.length ? perkNotice : null}
             <details className="garden-how">
               <summary>{t('How it works')}</summary>
               <p>{t('Your plan is a recurring instruction on the vault. The service checks it each period and places one purchase; if it was offline, the next check places a single catch-up purchase. Quotes, funding and eligibility depend on the market feed connected to the vault.')}</p>

@@ -2,7 +2,8 @@ import { ExternalLink } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAutomationEnabled } from '../automationStatus';
 import { betaPoints } from '../components/BetaNotice';
-import { t } from '../i18n';
+import { tierName, useAutoInvestTier } from '../perks/autoInvest';
+import { t, tj } from '../i18n';
 import { displayName } from '../stocks';
 
 /*
@@ -32,7 +33,9 @@ export function RiskList() {
 /** Reports the server's actual automation status instead of a fixed claim. */
 export function AutomationStatus() {
   const enabled = useAutomationEnabled();
+  const perkTier = useAutoInvestTier();
   if (enabled === null) return <p>{t('A weekly plan buys automatically when the service is running automatic purchases; otherwise, run each week’s purchase with Invest now.')}</p>;
+  if (enabled && perkTier) return <p>{t('Weekly plans run automatically for SPROUT holders ({tier} and up): once a week the service buys the mix for you, as long as prices are fresh and the sprout has the money. Anyone can keep a weekly plan and run each week’s purchase with Invest now.', { tier: tierName(perkTier) })} <a href="/perks">{t('See SPROUT perks')}</a></p>;
   return enabled
     ? <p>{t('Weekly plans run automatically: once a week the service buys the mix for you, as long as prices are fresh and the sprout has the money. You can still use Invest now at any time.')}</p>
     : <p>{t('Automatic weekly investing is switched off right now. You can still keep a weekly plan and run each week’s purchase with Invest now.')}</p>;

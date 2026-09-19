@@ -38,6 +38,7 @@ import { MAX_STOCKS, StockMixEditor, initialPicks, pickedTokens } from './compon
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
 import { InvestNowForm } from './components/InvestNow';
+import { useAutoInvestLock } from './perks/autoInvest';
 import { GiftPage } from './GiftPage';
 import { GiftQrCard } from './components/GiftQr';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
@@ -525,6 +526,8 @@ export function App() {
   const isParent = selectedRole?.has('parent') ?? false;
   const isBeneficiary = selectedRole?.has('beneficiary') ?? false;
   const isGraduated = selected ? (selected.graduated ?? false) || clock / 1000 >= selected.graduationTimestamp : false;
+  // A parent without the SPROUT tier automatic investing needs: their plan runs only with Invest now.
+  const autoInvestLocked = useAutoInvestLock(health?.automation, isParent ? selected?.parent : null) !== null;
 
   // The stocks the selected sprout may hold: those its own factory admitted
   // (older sprouts: the original four), plus whatever it holds now. Without
@@ -1097,7 +1100,7 @@ export function App() {
             chain={chain}
             settlementBalance={holdings?.holdings.find((h) => h.kind === 'settlement')?.rawBalance ?? null}
             runTxn={withTxn}
-            automationEnabled={health?.automation.enabled ?? null}
+            automationEnabled={autoInvestLocked ? false : health?.automation.enabled ?? null}
             onDone={() => loadDetailSynced(selected.id)}
             onClose={() => setShowInvestNow(false)}
           />

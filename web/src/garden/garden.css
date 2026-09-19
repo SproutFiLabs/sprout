@@ -391,6 +391,7 @@ html[data-appearance="dark"] .garden-legend-swatch--worth { border-top-color: #a
 .garden-weekly-next small { display: block; font-size: 12px; color: var(--garden-soft); }
 .garden-weekly-next b { font-size: 14px; font-weight: 400; }
 .garden-notice { margin: 8px 0 0; background: #fff4e8; border: 1px solid #f6d9bd; color: #8a4b12; border-radius: 10px; padding: 7px 10px; font-size: 11px; line-height: 1.4; }
+.garden-notice a { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 
 .garden-pill {
   display: inline-flex;
