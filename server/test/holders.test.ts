@@ -8,7 +8,7 @@ const E18 = 10n ** 18n;
 
 describe('perks config', () => {
   test('defaults: four tiers, a 7-day hold, nothing in early access, auto-invest for everyone', () => {
-    const c = loadPerksConfig({}, TOKEN);
+    const c = loadPerksConfig({ SPROUT_HOLDER_TOKEN: TOKEN });
     expect(c.token?.toLowerCase()).toBe(TOKEN);
     expect(c.tiers.map((t) => `${t.id}:${t.min}`)).toEqual(['seedling:100000', 'sapling:1000000', 'bloom:5000000', 'grove:10000000']);
     expect(c.holdDays).toBe(7);
@@ -16,27 +16,27 @@ describe('perks config', () => {
     expect(c.autoInvestTier).toBeNull();
   });
 
-  test('perks are off without a 0x token (a base58 CA does not count)', () => {
-    expect(loadPerksConfig({}, undefined).token).toBeNull();
-    expect(loadPerksConfig({}, '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU').token).toBeNull();
+  test('perks are off until SPROUT_HOLDER_TOKEN is set (the site\'s public CA is not assumed)', () => {
+    expect(loadPerksConfig({}).token).toBeNull();
+    expect(loadPerksConfig({ SPROUT_PUBLIC_CA: TOKEN }).token).toBeNull();
   });
 
   test('bad settings fail loudly', () => {
-    expect(() => loadPerksConfig({ SPROUT_HOLDER_TIERS: 'seedling:5,sapling:1' }, TOKEN)).toThrow();
-    expect(() => loadPerksConfig({ SPROUT_HOLDER_TIERS: 'oak:5' }, TOKEN)).toThrow();
-    expect(() => loadPerksConfig({ SPROUT_EARLY_ACCESS_SYMBOLS: 'COIN' }, TOKEN)).toThrow();
-    expect(() => loadPerksConfig({ SPROUT_AUTOINVEST_TIER: 'gold' }, TOKEN)).toThrow();
-    expect(() => loadPerksConfig({ SPROUT_HOLDER_TOKEN: 'nope' }, TOKEN)).toThrow();
+    expect(() => loadPerksConfig({ SPROUT_HOLDER_TOKEN: TOKEN, SPROUT_HOLDER_TIERS: 'seedling:5,sapling:1' })).toThrow();
+    expect(() => loadPerksConfig({ SPROUT_HOLDER_TOKEN: TOKEN, SPROUT_HOLDER_TIERS: 'oak:5' })).toThrow();
+    expect(() => loadPerksConfig({ SPROUT_HOLDER_TOKEN: TOKEN, SPROUT_EARLY_ACCESS_SYMBOLS: 'COIN' })).toThrow();
+    expect(() => loadPerksConfig({ SPROUT_HOLDER_TOKEN: TOKEN, SPROUT_AUTOINVEST_TIER: 'gold' })).toThrow();
+    expect(() => loadPerksConfig({ SPROUT_HOLDER_TOKEN: 'nope' })).toThrow();
   });
 
   test('early access reads symbols and a date', () => {
-    const c = loadPerksConfig({ SPROUT_EARLY_ACCESS_SYMBOLS: 'coin, orcl', SPROUT_EARLY_ACCESS_UNTIL: '2026-10-01T00:00:00Z', SPROUT_EARLY_ACCESS_TIER: 'bloom' }, TOKEN);
+    const c = loadPerksConfig({ SPROUT_HOLDER_TOKEN: TOKEN, SPROUT_EARLY_ACCESS_SYMBOLS: 'coin, orcl', SPROUT_EARLY_ACCESS_UNTIL: '2026-10-01T00:00:00Z', SPROUT_EARLY_ACCESS_TIER: 'bloom' });
     expect(c.earlyAccess).toEqual({ symbols: ['COIN', 'ORCL'], until: Math.floor(Date.parse('2026-10-01T00:00:00Z') / 1000), tier: 'bloom' });
   });
 });
 
 describe('tiers', () => {
-  const tiers = loadPerksConfig({}, TOKEN).tiers;
+  const tiers = loadPerksConfig({ SPROUT_HOLDER_TOKEN: TOKEN }).tiers;
   test('the highest tier the amount reaches', () => {
     expect(tierFor(99_999n * E18, 18, tiers)).toBeNull();
     expect(tierFor(100_000n * E18, 18, tiers)).toBe('seedling');
@@ -74,7 +74,7 @@ function fakeClient(balanceAt: (block: bigint) => bigint, calls: { n: number } =
 }
 
 describe('holder checker', () => {
-  const config: PerksConfig = loadPerksConfig({}, TOKEN);
+  const config: PerksConfig = loadPerksConfig({ SPROUT_HOLDER_TOKEN: TOKEN });
 
   test('a balance held all week earns its tier', async () => {
     const s = await createHolderChecker(fakeClient(() => 2_000_000n * E18), config).status(WALLET);
@@ -128,7 +128,7 @@ describe('holder checker', () => {
   });
 
   test('off without a token', async () => {
-    const s = await createHolderChecker(null, loadPerksConfig({}, undefined)).status(WALLET);
+    const s = await createHolderChecker(null, loadPerksConfig({})).status(WALLET);
     expect(s.enabled).toBe(false);
     expect(s.tier).toBeNull();
   });

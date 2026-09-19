@@ -39,8 +39,9 @@ function tierId(value: string | undefined, name: string): TierId {
 }
 
 /** Reads the perks settings; a bad value fails the deploy instead of silently unlocking or locking things. */
-export function loadPerksConfig(env: EnvLike, publicCa?: string): PerksConfig {
-  const tokenRaw = env.SPROUT_HOLDER_TOKEN?.trim() || (publicCa && isAddress(publicCa) ? publicCa : '');
+export function loadPerksConfig(env: EnvLike): PerksConfig {
+  // Deliberately its own setting: the public CA shown on the site is not assumed to be SPROUT.
+  const tokenRaw = env.SPROUT_HOLDER_TOKEN?.trim() || '';
   if (tokenRaw && !isAddress(tokenRaw)) throw new Error('SPROUT_HOLDER_TOKEN must be a 0x token address');
   const token = tokenRaw ? getAddress(tokenRaw) : null;
 

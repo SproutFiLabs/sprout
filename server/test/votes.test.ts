@@ -26,7 +26,7 @@ function fakeHolders() {
   const tiers = new Map<string, TierId | null>();
   const checks = { n: 0 };
   const checker: HolderChecker = {
-    config: loadPerksConfig({}, TOKEN),
+    config: loadPerksConfig({ SPROUT_HOLDER_TOKEN: TOKEN }),
     async status() {
       throw new Error('not used by votes');
     },

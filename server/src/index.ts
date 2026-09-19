@@ -22,7 +22,7 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
   const chain = createChainContext(config);
   const serialize = createMutex();
   // Shared by the API and the keeper loop, so both see the same tiers (and cache).
-  const holders = createHolderChecker(chain.publicClient, loadPerksConfig(process.env, config.publicCa));
+  const holders = createHolderChecker(chain.publicClient, loadPerksConfig(process.env));
   const app = createApp({
     db,
     chain,

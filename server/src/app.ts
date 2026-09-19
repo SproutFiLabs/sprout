@@ -161,7 +161,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     localDemo: inputDeps.localDemo && process.env.NODE_ENV !== 'production',
   };
   const app = new Hono();
-  const holders = deps.holders ?? createHolderChecker(deps.chain.publicClient, loadPerksConfig(process.env, deps.chain.config.publicCa));
+  const holders = deps.holders ?? createHolderChecker(deps.chain.publicClient, loadPerksConfig(process.env));
   const serialize = deps.runExclusive ?? createMutex();
 
   const nowSeconds = () => Math.floor((deps.now ? deps.now() : Date.now()) / 1000);

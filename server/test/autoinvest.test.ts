@@ -120,7 +120,7 @@ function familyDb(chainId: number) {
 
 /** Tiers by wallet; like the real checker, no tier at all when perks are off. */
 function holders(tiers: Record<string, TierId | null>, env: Record<string, string> = { SPROUT_AUTOINVEST_TIER: 'sapling' }, token: string | null = TOKEN): HolderChecker {
-  const config = loadPerksConfig(env, token ?? undefined);
+  const config = loadPerksConfig(token ? { ...env, SPROUT_HOLDER_TOKEN: token } : env);
   return {
     config,
     status: async () => {
@@ -198,7 +198,7 @@ describe('auto-invest as a holder perk', () => {
   test('with perks off (no holder token) every plan runs, even with a tier set', async () => {
     const { ctx, sent } = keeperChain();
     const db = familyDb(ctx.config.chain.chainId);
-    const checker = createHolderChecker(null, loadPerksConfig({ SPROUT_AUTOINVEST_TIER: 'grove' }, undefined));
+    const checker = createHolderChecker(null, loadPerksConfig({ SPROUT_AUTOINVEST_TIER: 'grove' }));
     expect(holderAutoInvestGate(db, checker)).toBeUndefined();
     const results = await run(ctx, db, checker);
     expect(results.map((r) => r.status)).toEqual(['executed', 'executed']);
