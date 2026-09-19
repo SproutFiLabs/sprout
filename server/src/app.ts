@@ -36,6 +36,7 @@ import {
   localWalletStatus,
 } from './localWallet';
 import { createMutex } from './lock';
+import { createHolderChecker, loadPerksConfig, publicPerks, type HolderChecker } from './holders';
 import { DEFAULT_PUBLIC_ORIGIN, giftPreviewHtml } from './sharePreview';
 import {
   CAMPAIGN_MAX_DAYS,
@@ -80,6 +81,8 @@ export interface AppDeps {
   localDemo: boolean;
   adminToken?: string;
   now?: () => number;
+  /** SPROUT holder tiers; built from the environment when not given. */
+  holders?: HolderChecker;
   runExclusive?: <T>(fn: () => Promise<T>) => Promise<T>;
   serveWeb?: boolean;
   webDistPath?: string;
@@ -158,6 +161,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     localDemo: inputDeps.localDemo && process.env.NODE_ENV !== 'production',
   };
   const app = new Hono();
+  const holders = deps.holders ?? createHolderChecker(deps.chain.publicClient, loadPerksConfig(process.env, deps.chain.config.publicCa));
   const serialize = deps.runExclusive ?? createMutex();
 
   const nowSeconds = () => Math.floor((deps.now ? deps.now() : Date.now()) / 1000);
@@ -232,6 +236,19 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
         },
       },
     });
+  });
+
+  // SPROUT holder perks: the tier ladder, what is in early access, and one wallet's tier.
+  app.get('/api/perks', (c) => c.json(publicPerks(holders.config)));
+  app.get('/api/holders/:address', async (c) => {
+    const address = c.req.param('address');
+    if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new HttpError(400, 'invalid address');
+    try {
+      return c.json(await holders.status(address));
+    } catch (error) {
+      logger.error?.('holder check failed', error);
+      throw new HttpError(503, 'holder check unavailable, try again shortly');
+    }
   });
 
   if (deps.localDemo) {
