@@ -45,10 +45,12 @@ export const zh: Record<string, string> = {
     '每周自动定投目前已关闭。你仍然可以保留定投计划，并每周用“立即买入”完成当周的买入。',
 
   // ExitTokens (docs "exit" and guide "without-sprout")
-  '{symbol} {address}, {decimals} decimals ({example})': '{symbol} {address}，{decimals} 位小数（{example}）',
-  '{symbol} {address}, {decimals} decimals': '{symbol} {address}，{decimals} 位小数',
-  '$5 is 5000000': '$5 即 5000000',
-  '0.5 is 500000000000000000': '0.5 即 500000000000000000',
+  Token: '代币',
+  Address: '地址',
+  Decimals: '小数位数',
+  'Dollar stablecoin': '美元稳定币',
+  'For example, $5 of USDG is 5000000, and 0.5 of a stock token is 500000000000000000.':
+    '例如，$5 的 USDG 写作 5000000，0.5 个股票代币写作 500000000000000000。',
 
   // RiskList (FAQ "What are the risks?"): betaPoints() from components/BetaNotice.tsx
   'Transactions settle on Robinhood Chain mainnet with real funds and cannot be reversed.': '交易在 Robinhood Chain 主网上使用真实资金结算，无法撤销。',

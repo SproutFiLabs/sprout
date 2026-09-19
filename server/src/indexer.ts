@@ -3,19 +3,25 @@ import { sproutFactoryAbi, sproutVaultAbi } from '@sprout/shared';
 import type { SproutDb } from './db';
 import type { ChainClock, ChainContext } from './chain';
 import { chainCache, getVaultState, invalidateChainReads, primeHoldings, readHoldings } from './chain';
-import { keeperBudget } from './config';
+import { keeperBudget, listDeployments, type Deployment } from './config';
 import {
-  getCursor,
+  getCursorRow,
+  getFactoryCursor,
   getGift,
+  hasIndexedFactory,
   insertChainEvent,
   insertGiftPayment,
   insertSnapshot,
   listJobsByVault,
   listResyncableJobs,
+  listVaultsByFactory,
   setCursor,
+  setFactoryCursor,
   setJobNextRun,
   setJobStatus,
   setMilestoneStatus,
+  setSproutAllocation,
+  setSproutFactory,
   upsertJob,
   upsertMilestone,
   upsertSprout,
@@ -38,6 +44,11 @@ export interface ReconcileResult {
   eventsNew: number;
   /** Vaults that emitted at least one newly indexed event in this pass. */
   vaultsTouched: string[];
+  /**
+   * Factories read on their own up to the shared cursor before the shared
+   * pass: a deployment newly added to the configuration, from its start block.
+   */
+  backfilled: Array<{ factory: string; fromBlock: number; toBlock: number }>;
 }
 
 /** Smallest log range tried before a pass gives up (Alchemy's free tier allows 10 blocks). */
@@ -63,12 +74,19 @@ interface EventContext {
 }
 
 /**
- * Pull logs for the factory and every known vault, persist unique
- * (chainId, txHash, logIndex) events and derive sprout/job/milestone state.
+ * Pull logs for every configured factory (the current one and each legacy
+ * deployment) and every known vault, persist unique (chainId, txHash, logIndex)
+ * events and derive sprout/job/milestone state.
  *
  * Re-running the same range is idempotent. Each event insert and its derived
  * state change commit in one transaction, and the cursor only advances after
  * the whole pass succeeds, so a failure is retried rather than skipped.
+ *
+ * indexer_cursor is the shared pass over every factory and vault, as before.
+ * Each factory also has its own cursor: a factory that is behind the shared
+ * cursor (one just added to the configuration) is first read on its own, from
+ * its deployment block, together with the vaults it created, and joins the
+ * shared pass once it has caught up. Nothing already indexed is read again.
  */
 export async function reconcile(
   ctx: ChainContext,
@@ -78,62 +96,83 @@ export async function reconcile(
   if (!ctx.publicClient) throw new Error('RPC is not configured');
   const chainId = ctx.config.chain.chainId;
   const startBlock = ctx.config.startBlock ?? 0;
+  const deployments = listDeployments(ctx.config);
   // Never scan from genesis on a public chain: a positive, validated deployment
   // start block is required there. Local Anvil keeps 0 for convenience.
   if (chainId !== 31337 && startBlock <= 0) {
     throw new Error('SPROUT_START_BLOCK must be a positive deployment block for a public chain');
   }
-  const cursor = getCursor(db, chainId);
+  if (chainId !== 31337 && deployments.some((d) => d.startBlock <= 0)) {
+    throw new Error('SPROUT_LEGACY_DEPLOYMENTS start blocks must be positive deployment blocks for a public chain');
+  }
+  const cursor = getCursorRow(db, chainId);
   const latest = Number(await ctx.publicClient.getBlockNumber());
   // A newer head than the shared clock means the clock (graduation, feed
   // staleness) is behind; drop it rather than wait out its TTL.
   const clock = chainCache(ctx).peek<ChainClock>('block');
   if (clock && clock.number < latest) invalidateChainReads(ctx, 'block');
-  // Never scan from genesis by default: honor a configured deployment start block.
-  const fromBlock = options.fromBlock !== undefined ? Number(options.fromBlock) : Math.max(cursor + 1, startBlock);
+  // Never scan from genesis by default: start at the earliest configured
+  // deployment block (the current one alone when there are no legacy ones).
+  const earliest = deployments.length > 0 ? Math.min(...deployments.map((d) => d.startBlock)) : startBlock;
+  const fromBlock = options.fromBlock !== undefined ? Number(options.fromBlock) : Math.max((cursor ?? 0) + 1, earliest);
   const toBlock = options.toBlock !== undefined ? Math.min(Number(options.toBlock), latest) : latest;
 
-  const result: ReconcileResult = { fromBlock, toBlock, sproutsIndexed: 0, eventsSeen: 0, eventsNew: 0, vaultsTouched: [] };
-  if (fromBlock > toBlock) return result;
+  const result: ReconcileResult = {
+    fromBlock,
+    toBlock,
+    sproutsIndexed: 0,
+    eventsSeen: 0,
+    eventsNew: 0,
+    vaultsTouched: [],
+    backfilled: [],
+  };
 
-  // Bounded, resumable chunks: each chunk commits its cursor, so a rate-limit or
-  // transport error on a later chunk is retried rather than losing earlier events.
-  //
-  // The free RPC tiers refuse log queries for different reasons: a block-count
-  // cap (Alchemy: 10, drpc: about 100), a slow-query timeout on older blocks, or
-  // a rate limit. No single range suits all of them, and a fixed range that is
-  // too wide fails on every pass while the backlog grows. So a refused chunk is
-  // retried from the same block with a quarter of the range, down to
-  // MIN_LOG_RANGE; the range that works is remembered for the next pass and
-  // only grows again after a run of successes.
-  const maxRange = Math.max(1, ctx.config.maxLogRange ?? 2000);
-  const floor = Math.min(MIN_LOG_RANGE, maxRange);
-  const learned = logRanges.get(ctx);
-  let span = Math.min(maxRange, learned?.span ?? maxRange);
-  let streak = learned?.streak ?? 0;
-  let start = fromBlock;
-  while (start <= toBlock) {
-    const end = Math.min(start + span - 1, toBlock);
-    try {
-      await processRange(ctx, db, chainId, start, end, result);
-    } catch (error) {
-      streak = 0;
-      if (span <= floor) {
-        logRanges.set(ctx, { span, streak });
-        throw error;
-      }
-      span = Math.max(floor, Math.floor(span / 4));
-      continue;
-    }
-    setCursor(db, chainId, end);
-    start = end + 1;
-    streak += 1;
-    if (streak >= GROW_AFTER && span < maxRange) {
-      span = Math.min(maxRange, span * 2);
-      streak = 0;
+  // Catch up any factory that is behind the shared cursor, on its own. An
+  // explicit range is an operator's replay of exactly that range, so it skips this.
+  if (options.fromBlock === undefined) {
+    for (const deployment of deployments) {
+      const factoryCursor = seedFactoryCursor(db, chainId, deployment, cursor, fromBlock);
+      const gapFrom = Math.max(factoryCursor + 1, deployment.startBlock);
+      const gapTo = Math.min(fromBlock - 1, latest);
+      if (gapFrom > gapTo) continue;
+      await scanChunks(
+        ctx,
+        gapFrom,
+        gapTo,
+        (start, end) =>
+          processRange(ctx, db, chainId, start, end, result, {
+            factories: [deployment.factory],
+            vaults: listVaultsByFactory(db, chainId, deployment.factory),
+          }),
+        (_start, end) => setFactoryCursor(db, chainId, deployment.factory, end),
+      );
+      result.backfilled.push({ factory: deployment.factory, fromBlock: gapFrom, toBlock: gapTo });
     }
   }
-  logRanges.set(ctx, { span, streak });
+
+  if (fromBlock <= toBlock) {
+    // Bounded, resumable chunks: each chunk commits its cursor, so a rate-limit
+    // or transport error on a later chunk is retried rather than losing earlier events.
+    const factories = deployments.map((d) => d.factory);
+    await scanChunks(
+      ctx,
+      fromBlock,
+      toBlock,
+      (start, end) =>
+        processRange(ctx, db, chainId, start, end, result, { factories, vaults: listAllVaults(db, chainId) }),
+      (start, end) =>
+        db.transaction(() => {
+          setCursor(db, chainId, end);
+          // A factory's cursor only moves when this chunk continues it, so an
+          // explicit replay can never make a factory skip the blocks before it.
+          for (const factory of factories) {
+            const at = getFactoryCursor(db, chainId, factory);
+            if (at !== null && at >= start - 1 && at < end) setFactoryCursor(db, chainId, factory, end);
+          }
+        })(),
+    );
+  }
+  if (fromBlock > toBlock && result.backfilled.length === 0) return result;
 
   await resyncJobs(ctx, db);
   if (result.vaultsTouched.length > 0) {
@@ -143,9 +182,88 @@ export async function reconcile(
   return result;
 }
 
+/**
+ * A factory's own cursor, recorded the first time it is seen. The shared
+ * cursor already covers a factory this database indexed before per-factory
+ * cursors existed (any factory with an indexed SproutCreated), so that one
+ * carries on from it. A factory the database never saw is read from its own
+ * deployment block. On a fresh database the shared pass starts at `mainFrom`
+ * and covers every factory. Reading a range twice is harmless; skipping one is not.
+ */
+function seedFactoryCursor(
+  db: SproutDb,
+  chainId: number,
+  deployment: Deployment,
+  sharedCursor: number | null,
+  mainFrom: number,
+): number {
+  const stored = getFactoryCursor(db, chainId, deployment.factory);
+  if (stored !== null) return stored;
+  let seeded: number;
+  if (sharedCursor === null) seeded = Math.max(deployment.startBlock, mainFrom) - 1;
+  else if (hasIndexedFactory(db, chainId, deployment.factory)) seeded = sharedCursor;
+  else seeded = deployment.startBlock - 1;
+  setFactoryCursor(db, chainId, deployment.factory, seeded);
+  return seeded;
+}
+
+/**
+ * Walk [fromBlock, toBlock] in chunks, committing after each one.
+ *
+ * The free RPC tiers refuse log queries for different reasons: a block-count
+ * cap (Alchemy: 10, drpc: about 100), a slow-query timeout on older blocks, or
+ * a rate limit. No single range suits all of them, and a fixed range that is
+ * too wide fails on every pass while the backlog grows. So a refused chunk is
+ * retried from the same block with a quarter of the range, down to
+ * MIN_LOG_RANGE; the range that works is remembered for the next pass and
+ * only grows again after a run of successes.
+ */
+async function scanChunks(
+  ctx: ChainContext,
+  fromBlock: number,
+  toBlock: number,
+  process: (start: number, end: number) => Promise<void>,
+  commit: (start: number, end: number) => void,
+): Promise<void> {
+  const maxRange = Math.max(1, ctx.config.maxLogRange ?? 2000);
+  const floor = Math.min(MIN_LOG_RANGE, maxRange);
+  const learned = logRanges.get(ctx);
+  let span = Math.min(maxRange, learned?.span ?? maxRange);
+  let streak = learned?.streak ?? 0;
+  let start = fromBlock;
+  while (start <= toBlock) {
+    const end = Math.min(start + span - 1, toBlock);
+    try {
+      await process(start, end);
+    } catch (error) {
+      streak = 0;
+      if (span <= floor) {
+        logRanges.set(ctx, { span, streak });
+        throw error;
+      }
+      span = Math.max(floor, Math.floor(span / 4));
+      continue;
+    }
+    commit(start, end);
+    start = end + 1;
+    streak += 1;
+    if (streak >= GROW_AFTER && span < maxRange) {
+      span = Math.min(maxRange, span * 2);
+      streak = 0;
+    }
+  }
+  logRanges.set(ctx, { span, streak });
+}
+
 function markTouched(result: ReconcileResult, vault: string): void {
   const id = vault.toLowerCase();
   if (!result.vaultsTouched.includes(id)) result.vaultsTouched.push(id);
+}
+
+/** What one getLogs query covers: factories (for SproutCreated) and vaults. */
+interface RangeScope {
+  factories: Address[];
+  vaults: string[];
 }
 
 async function processRange(
@@ -155,64 +273,71 @@ async function processRange(
   fromBlock: number,
   toBlock: number,
   result: ReconcileResult,
+  scope: RangeScope,
 ): Promise<void> {
-  // One query covers the factory and every known vault; a vault the factory
+  // One query covers the factories and every known vault; a vault a factory
   // creates inside this chunk is queried separately below.
-  const factory = ctx.config.chain.contracts.factory;
-  const known = listAllVaults(db, chainId);
-  const addresses = [...(factory ? [factory] : []), ...known] as Address[];
+  const addresses = [...scope.factories, ...scope.vaults] as Address[];
   if (addresses.length === 0) return;
   const logs = await getLogsFor(ctx, addresses, fromBlock, toBlock);
-  const isFactory = (address: string) => !!factory && address.toLowerCase() === factory.toLowerCase();
+  const factorySet = new Set(scope.factories.map((f) => f.toLowerCase()));
+  const isFactory = (address: string) => factorySet.has(address.toLowerCase());
+  const scopeVaults = new Set(scope.vaults.map((v) => v.toLowerCase()));
   const discovered: Address[] = [];
 
   // 1. Factory-created sprouts (also discovers vaults not yet in the DB). A
   //    failed discovery aborts the chunk so the cursor does not move past it.
-  if (factory) {
-    for (const log of logs.filter((l) => isFactory(l.address))) {
-      let decoded;
-      try {
-        decoded = decodeEventLog({ abi: sproutFactoryAbi, data: log.data, topics: log.topics });
-      } catch {
-        continue;
-      }
-      if (decoded.eventName !== 'SproutCreated') continue;
-      const args = decoded.args as unknown as { vault: Address; parent: Address };
-      if (!vaultExists(db, args.vault)) {
-        // Throws (and therefore aborts without advancing) if discovery fails.
-        const state = await getVaultState(ctx, args.vault);
-        upsertSprout(db, {
-          id: state.vault,
-          chainId,
-          parent: state.parent,
-          beneficiary: state.beneficiary,
-          settlementToken: state.settlementToken,
-          graduationTimestamp: state.graduationTimestamp,
-          assets: state.assets,
-          weights: state.weights,
-          createdTxHash: log.transactionHash,
-          createdBlock: Number(log.blockNumber),
-        });
-        result.sproutsIndexed += 1;
-        discovered.push(state.vault);
-      }
-      if (
-        insertChainEvent(db, {
-          chainId,
-          txHash: log.transactionHash,
-          logIndex: log.logIndex,
-          blockNumber: Number(log.blockNumber),
-          address: log.address,
-          eventName: decoded.eventName,
-          vaultId: args.vault,
-          payload: jsonable(decoded.args),
-        })
-      ) {
-        result.eventsNew += 1;
-        markTouched(result, args.vault);
-      }
-      result.eventsSeen += 1;
+  for (const log of logs.filter((l) => isFactory(l.address))) {
+    let decoded;
+    try {
+      decoded = decodeEventLog({ abi: sproutFactoryAbi, data: log.data, topics: log.topics });
+    } catch {
+      continue;
     }
+    if (decoded.eventName !== 'SproutCreated') continue;
+    const args = decoded.args as unknown as { vault: Address; parent: Address };
+    if (!vaultExists(db, args.vault)) {
+      // Throws (and therefore aborts without advancing) if discovery fails.
+      const state = await getVaultState(ctx, args.vault);
+      upsertSprout(db, {
+        id: state.vault,
+        chainId,
+        parent: state.parent,
+        beneficiary: state.beneficiary,
+        settlementToken: state.settlementToken,
+        graduationTimestamp: state.graduationTimestamp,
+        assets: state.assets,
+        weights: state.weights,
+        createdTxHash: log.transactionHash,
+        createdBlock: Number(log.blockNumber),
+        // The emitting factory created the vault, and only configured
+        // factories are queried, so this is the vault's factory().
+        factory: log.address,
+      });
+      result.sproutsIndexed += 1;
+      discovered.push(state.vault);
+    } else {
+      setSproutFactory(db, args.vault, log.address);
+      // Known, but not part of this query (a factory being caught up on its
+      // own): its logs in this range still need reading.
+      if (!scopeVaults.has(args.vault.toLowerCase())) discovered.push(args.vault);
+    }
+    if (
+      insertChainEvent(db, {
+        chainId,
+        txHash: log.transactionHash,
+        logIndex: log.logIndex,
+        blockNumber: Number(log.blockNumber),
+        address: log.address,
+        eventName: decoded.eventName,
+        vaultId: args.vault,
+        payload: jsonable(decoded.args),
+      })
+    ) {
+      result.eventsNew += 1;
+      markTouched(result, args.vault);
+    }
+    result.eventsSeen += 1;
   }
 
   // 2. Vault events for every known sprout, applied in chain order.
@@ -305,6 +430,13 @@ function applyDerived(db: SproutDb, e: EventContext): void {
     }
     case 'MilestoneCancelled': {
       setMilestoneStatus(db, { chainId: e.chainId, vaultId: e.vaultId, id: String(e.args.id) }, 'cancelled');
+      break;
+    }
+    case 'AllocationUpdated': {
+      // A parent can move a sprout to another subset of its factory's assets.
+      const assets = ((e.args.assets as readonly unknown[] | undefined) ?? []).map(String);
+      const weights = ((e.args.weights as readonly unknown[] | undefined) ?? []).map((w) => Number(w));
+      if (assets.length > 0 && assets.length === weights.length) setSproutAllocation(db, e.vaultId, assets, weights);
       break;
     }
     case 'InvestmentScheduled': {
@@ -442,7 +574,9 @@ export async function snapshotAll(ctx: ChainContext, db: SproutDb, vaults?: stri
         blockNumber: holdings.blockNumber,
         valueUsd: holdings.totalValueUsd,
         feedDecimals: holdings.feedDecimals,
-        holdings: holdings.holdings,
+        // A sprout holds a few of the configured stocks; storing a zero row for
+        // every other one would multiply each snapshot's size for nothing.
+        holdings: holdings.holdings.filter((h) => h.kind === 'settlement' || h.rawBalance !== '0'),
         source: 'chain',
         note: holdings.settlementAssumption,
       });

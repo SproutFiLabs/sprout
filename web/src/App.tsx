@@ -34,7 +34,7 @@ import { formatUtcDate, formatZonedDateTime, parseDateOnlyToUtcTs, viewerTimeZon
 import { GrowthRing } from './components/GrowthRing';
 import { DemoBanner } from './components/DemoBanner';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
-import { StarterMixPicker } from './components/StarterMixes';
+import { MAX_STOCKS, StockMixEditor, initialPicks, pickedTokens } from './components/StockPicker';
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
 import { InvestNowForm } from './components/InvestNow';
@@ -49,6 +49,8 @@ import {
 
 interface Detail {
   sprout: Sprout;
+  /** Stock tokens this sprout's factory admitted; null when the server does not say. */
+  admittedAssets: Address[] | null;
   automation: AutomationCapability;
   milestones: Milestone[];
   jobs: Job[];
@@ -143,13 +145,15 @@ export function App() {
     beneficiary: '',
     graduation: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10),
     percents: {} as Record<string, string>,
+    /** Picked stock addresses; null until the parent picks, meaning the default picks. */
+    selected: null as string[] | null,
   });
   const [fundForm, setFundForm] = useState({ token: '', amount: '10' });
   const [scheduleForm, setScheduleForm] = useState({ amount: '25', periodDays: '7' });
   const [giftForm, setGiftForm] = useState(GIFT_FORM_DEFAULTS);
   const [allGiftNotes, setAllGiftNotes] = useState<Record<string, GiftNote[]>>({});
   const [milestoneForm, setMilestoneForm] = useState({ token: '', amount: '10', unlock: '', title: '' });
-  const [allocationForm, setAllocationForm] = useState({ percents: {} as Record<string, string> });
+  const [allocationForm, setAllocationForm] = useState({ percents: {} as Record<string, string>, selected: [] as string[] });
   const [payGiftForm, setPayGiftForm] = useState({ token: '', amount: '25' });
 
   useEffect(() => {
@@ -255,8 +259,10 @@ export function App() {
           api.growth(id),
           api.events(id).catch(() => ({ events: [] })),
         ]);
+        const admitted = sproutDto.sprout.admittedAssets ?? sproutDto.admittedAssets;
         setDetail({
           sprout: sproutDto.sprout,
+          admittedAssets: Array.isArray(admitted) && admitted.length > 0 ? admitted : null,
           automation: sproutDto.automation,
           milestones: sproutDto.milestones,
           jobs: sproutDto.jobs,
@@ -509,7 +515,9 @@ export function App() {
   const stockTokens = chain?.contracts.stockTokens ?? [];
   const settlementToken = chain?.contracts.settlementToken;
   const plantGraduationTs = plantForm.graduation ? parseDateOnlyToUtcTs(plantForm.graduation) : null;
-  const plantAllocationEntered = Object.values(plantForm.percents).reduce((n, v) => n + (Number(v) || 0), 0);
+  // A new sprout comes from the configured factory, which admits every configured stock token.
+  const plantPicked = pickedTokens(stockTokens, plantForm.selected ?? initialPicks(stockTokens));
+  const plantAllocationEntered = plantPicked.reduce((n, token) => n + (Number(plantForm.percents[token.address]) || 0), 0);
   const milestoneUnlockTs = milestoneForm.unlock ? parseDateOnlyToUtcTs(milestoneForm.unlock) : null;
 
   const selected = detail?.sprout ?? sprouts.find((s) => s.id.toLowerCase() === selectedId?.toLowerCase()) ?? null;
@@ -517,6 +525,23 @@ export function App() {
   const isParent = selectedRole?.has('parent') ?? false;
   const isBeneficiary = selectedRole?.has('beneficiary') ?? false;
   const isGraduated = selected ? (selected.graduated ?? false) || clock / 1000 >= selected.graduationTimestamp : false;
+
+  // The stocks the selected sprout may hold: those its own factory admitted
+  // (older sprouts: the original four), plus whatever it holds now. Without
+  // word from the server, every configured stock token.
+  const admittedTokens = useMemo(() => {
+    const fromDetail = detail && selected && detail.sprout.id.toLowerCase() === selected.id.toLowerCase() ? detail.admittedAssets : null;
+    const admitted = fromDetail ?? (selected?.admittedAssets?.length ? selected.admittedAssets : null);
+    if (!admitted) return stockTokens;
+    const allowed = new Set([...admitted, ...(selected?.assets ?? [])].map((a) => a.toLowerCase()));
+    return stockTokens.filter((token) => allowed.has(token.address.toLowerCase()));
+  }, [detail, selected, stockTokens]);
+  // The stocks in the selected sprout's mix now: the only ones it accepts as
+  // deposits, gifts or chore rewards (SproutVault.isAllowedAsset).
+  const sproutStockTokens = useMemo(() => {
+    const held = stockTokens.filter((token) => selected?.assets.some((a) => a.toLowerCase() === token.address.toLowerCase()));
+    return held.length > 0 ? held : stockTokens;
+  }, [selected, stockTokens]);
 
   const graduationProgress = useMemo(() => {
     if (!selected) return 0;
@@ -543,9 +568,11 @@ export function App() {
     const venue = chain?.contracts.venue;
     if (!wallet || !chain || !factory || !settlementToken) return;
     await withTxn(t('Plant sprout'), async () => {
-      const tokenAddrs = stockTokens.map((t) => t.address);
+      // Only the picked stocks, in pick order, each with its percentage in basis points.
+      const tokenAddrs = plantPicked.map((t) => t.address);
       const weights = tokenAddrs.map((addr) => percentToBps(plantForm.percents[addr] ?? '0'));
       const sum = weights.reduce((a, b) => a + b, 0);
+      if (tokenAddrs.length > MAX_STOCKS) throw new Error(t('A sprout can hold up to 5 stocks.'));
       if (sum !== 10000) throw new Error(t('Allocation percentages must total 100%'));
       if (!/^0x[0-9a-fA-F]{40}$/.test(plantForm.beneficiary)) throw new Error(t('Enter a valid beneficiary address'));
       const graduation = parseDateOnlyToUtcTs(plantForm.graduation);
@@ -622,7 +649,8 @@ export function App() {
   const submitGift = async () => {
     if (!wallet || !selected || !settlementToken) return;
     await withTxn(giftForm.campaign ? t('Start campaign') : t('Create gift link'), async () => {
-      const accepted = [settlementToken, ...stockTokens.map((t) => t.address)];
+      // The vault takes gifts only in cash and the stocks in its mix now.
+      const accepted = [settlementToken, ...sproutStockTokens.map((t) => t.address)];
       let campaign: { title: string; goalDollars: number; endsAt: number } | undefined;
       if (giftForm.campaign) {
         const title = giftForm.title.trim();
@@ -774,11 +802,13 @@ export function App() {
   const submitAllocation = async () => {
     if (!wallet || !selected) return;
     await withTxn(t('Update allocation'), async () => {
-      const entries = stockTokens
+      // Only picked stocks this sprout's factory admitted; a zero share drops the stock.
+      const entries = pickedTokens(admittedTokens, allocationForm.selected)
         .map((t) => ({ asset: t.address, bps: percentToBps(allocationForm.percents[t.address] ?? '0') }))
         .filter((e) => e.bps > 0);
       const sum = entries.reduce((acc, e) => acc + e.bps, 0);
       if (entries.length === 0) throw new Error(t('Allocate at least one asset'));
+      if (entries.length > MAX_STOCKS) throw new Error(t('A sprout can hold up to 5 stocks.'));
       if (sum !== 10000) throw new Error(t('Allocation percentages must total 100%'));
       const write = contractWriter(wallet);
       const hash = await write({
@@ -896,11 +926,12 @@ export function App() {
     onOpenGift: () => setShowGift(true),
     onOpenAllocation: () => {
       const percents: Record<string, string> = {};
-      for (const t of stockTokens) {
+      for (const t of admittedTokens) {
         const idx = selected?.assets.findIndex((a) => a.toLowerCase() === t.address.toLowerCase()) ?? -1;
         percents[t.address] = idx >= 0 ? String((selected?.weights[idx] ?? 0) / 100) : '0';
       }
-      setAllocationForm({ percents });
+      const current = (selected?.assets ?? []).filter((_, i) => (selected?.weights[i] ?? 0) > 0);
+      setAllocationForm({ percents, selected: initialPicks(admittedTokens, current) });
       setShowAllocation(true);
     },
     onOpenWithdraw: () => setShowWithdraw(true),
@@ -973,21 +1004,12 @@ export function App() {
           {plantStep === 2 ? (
             <fieldset>
               <legend>{t('Allocation (percent, must total 100%)')}</legend>
-              <StarterMixPicker tokens={stockTokens} percents={plantForm.percents} onPick={(percents) => setPlantForm({ ...plantForm, percents })} />
-              {stockTokens.map((t) => (
-                <label key={t.address} className="inline">
-                  {t.symbol}
-                  <input
-                    data-testid={`plant-weight-${t.symbol}`}
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="1"
-                    value={plantForm.percents[t.address] ?? '0'}
-                    onChange={(e) => setPlantForm({ ...plantForm, percents: { ...plantForm.percents, [t.address]: e.target.value } })}
-                  />
-                </label>
-              ))}
+              <StockMixEditor
+                candidates={stockTokens}
+                value={{ selected: plantPicked.map((token) => token.address), percents: plantForm.percents }}
+                onChange={(mix) => setPlantForm({ ...plantForm, selected: mix.selected, percents: mix.percents })}
+                weightTestId={(symbol) => `plant-weight-${symbol}`}
+              />
               <p className="fine-print">{t('Only factory-admitted stock tokens can be selected. Weights must total exactly 100%.')}</p>
             </fieldset>
           ) : null}
@@ -1006,7 +1028,7 @@ export function App() {
               <div className="review-card">
                 <b>{plantForm.nickname.trim() || t('A new sprout')}</b>
                 <p>{t('Beneficiary {address}', { address: plantForm.beneficiary || '—' })}</p>
-                <p>{t('Allocation {mix}', { mix: stockTokens.map((token) => `${token.symbol} ${plantForm.percents[token.address] ?? '0'}%`).join(' · ') })}</p>
+                <p>{t('Allocation {mix}', { mix: plantPicked.map((token) => `${token.symbol} ${plantForm.percents[token.address] ?? '0'}%`).join(' · ') })}</p>
               </div>
               <p className="warning">{t('Graduation is irreversible. After the timestamp, the beneficiary has full control.')}</p>
             </>
@@ -1032,7 +1054,7 @@ export function App() {
             {t('Asset')}
             <select data-testid="fund-token" value={fundForm.token} onChange={(e) => setFundForm({ ...fundForm, token: e.target.value })}>
               {settlementToken ? <option value={settlementToken}>{chain?.contracts.settlementSymbol ? t('{symbol} (settlement)', { symbol: chain.contracts.settlementSymbol }) : t('Settlement')}</option> : null}
-              {stockTokens.map((t) => (
+              {sproutStockTokens.map((t) => (
                 <option key={t.address} value={t.address}>
                   {t.symbol}
                 </option>
@@ -1174,7 +1196,7 @@ export function App() {
             {t('Asset')}
             <select data-testid="milestone-token" value={milestoneForm.token} onChange={(e) => setMilestoneForm({ ...milestoneForm, token: e.target.value })}>
               {settlementToken ? <option value={settlementToken}>{chain?.contracts.settlementSymbol ? t('{symbol} (settlement)', { symbol: chain.contracts.settlementSymbol }) : t('Settlement')}</option> : null}
-              {stockTokens.map((t) => (
+              {sproutStockTokens.map((t) => (
                 <option key={t.address} value={t.address}>
                   {t.symbol}
                 </option>
@@ -1204,21 +1226,12 @@ export function App() {
         <Modal title={t('Edit allocation')} onClose={() => setShowAllocation(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <fieldset>
             <legend>{t('Percent (must total 100%; zero removes an asset)')}</legend>
-            <StarterMixPicker tokens={stockTokens} percents={allocationForm.percents} onPick={(percents) => setAllocationForm({ ...allocationForm, percents })} />
-            {stockTokens.map((t) => (
-              <label key={t.address} className="inline">
-                {t.symbol}
-                <input
-                  data-testid={`allocation-${t.symbol}`}
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="1"
-                  value={allocationForm.percents[t.address] ?? '0'}
-                  onChange={(e) => setAllocationForm({ ...allocationForm, percents: { ...allocationForm.percents, [t.address]: e.target.value } })}
-                />
-              </label>
-            ))}
+            <StockMixEditor
+              candidates={admittedTokens}
+              value={allocationForm}
+              onChange={(mix) => setAllocationForm(mix)}
+              weightTestId={(symbol) => `allocation-${symbol}`}
+            />
           </fieldset>
           <p className="muted">{t('Only factory-admitted assets can be selected.')}</p>
           <button data-testid="allocation-submit" className="btn btn--primary" onClick={() => void submitAllocation()}>

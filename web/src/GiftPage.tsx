@@ -8,6 +8,7 @@ import { TxnStatusLine, type TxnState } from './components/TxnStatus';
 import { CampaignProgress, GiftNotesList, NAME_MAX, NOTE_MAX, giftAmountLabel, textProblem } from './components/Campaign';
 import { t, tj } from './i18n';
 import { LanguageToggle } from './i18n/LanguageToggle';
+import { displayLabel } from './stocks';
 
 interface GiftPageProps {
   giftId: string;
@@ -59,9 +60,11 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
     if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementDecimals;
     return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.decimals ?? 18;
   };
+  // "Tesla (TSLA)" for a stock the catalogue knows, so family see a company rather than a ticker.
   const labelFor = (asset: string): string => {
     if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementSymbol ?? t('Settlement');
-    return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.symbol ?? short(asset);
+    const symbol = chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.symbol;
+    return symbol ? displayLabel(symbol) : short(asset);
   };
 
   const pay = async () => {

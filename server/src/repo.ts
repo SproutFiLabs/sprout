@@ -12,6 +12,8 @@ export interface SproutRecord {
   createdTxHash: string | null;
   createdBlock: number | null;
   createdAt: number;
+  /** The factory that created the vault; null until it is known. */
+  factory: string | null;
 }
 
 export interface GiftRecord {
@@ -116,11 +118,14 @@ export function milestoneUid(chainId: number, vaultId: string, milestoneId: stri
 
 // ---- sprouts --------------------------------------------------------------
 
-export function upsertSprout(db: SproutDb, s: Omit<SproutRecord, 'createdAt'> & { createdAt?: number }): void {
+export function upsertSprout(
+  db: SproutDb,
+  s: Omit<SproutRecord, 'createdAt' | 'factory'> & { createdAt?: number; factory?: string | null },
+): void {
   db.prepare(
     `INSERT INTO sprouts
-      (id, chain_id, parent, beneficiary, settlement_token, graduation_timestamp, assets_json, weights_json, created_tx_hash, created_block, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, chain_id, parent, beneficiary, settlement_token, graduation_timestamp, assets_json, weights_json, created_tx_hash, created_block, created_at, factory)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        parent=excluded.parent,
        beneficiary=excluded.beneficiary,
@@ -129,7 +134,8 @@ export function upsertSprout(db: SproutDb, s: Omit<SproutRecord, 'createdAt'> & 
        assets_json=excluded.assets_json,
        weights_json=excluded.weights_json,
        created_tx_hash=excluded.created_tx_hash,
-       created_block=excluded.created_block`,
+       created_block=excluded.created_block,
+       factory=COALESCE(excluded.factory, sprouts.factory)`,
   ).run(
     s.id,
     s.chainId,
@@ -142,7 +148,30 @@ export function upsertSprout(db: SproutDb, s: Omit<SproutRecord, 'createdAt'> & 
     s.createdTxHash,
     s.createdBlock,
     s.createdAt ?? now(),
+    s.factory ?? null,
   );
+}
+
+/** Record the factory that created a vault (read from vault.factory() or its SproutCreated log). */
+export function setSproutFactory(db: SproutDb, vaultId: string, factory: string): void {
+  db.prepare('UPDATE sprouts SET factory = ? WHERE lower(id) = lower(?)').run(factory, vaultId);
+}
+
+/** A vault's allocation after AllocationUpdated: the parent may pick a new subset of admitted assets. */
+export function setSproutAllocation(db: SproutDb, vaultId: string, assets: string[], weights: number[]): void {
+  db.prepare('UPDATE sprouts SET assets_json = ?, weights_json = ? WHERE lower(id) = lower(?)').run(
+    JSON.stringify(assets),
+    JSON.stringify(weights),
+    vaultId,
+  );
+}
+
+/** Vaults a given factory created, as far as the index knows. */
+export function listVaultsByFactory(db: SproutDb, chainId: number, factory: string): string[] {
+  const rows = db
+    .prepare('SELECT id FROM sprouts WHERE chain_id = ? AND lower(factory) = lower(?)')
+    .all(chainId, factory) as Array<{ id: string }>;
+  return rows.map((r) => r.id);
 }
 
 function mapSprout(row: Record<string, unknown>): SproutRecord {
@@ -158,6 +187,7 @@ function mapSprout(row: Record<string, unknown>): SproutRecord {
     createdTxHash: row.created_tx_hash as string | null,
     createdBlock: row.created_block as number | null,
     createdAt: row.created_at as number,
+    factory: (row.factory as string | null | undefined) ?? null,
   };
 }
 
@@ -530,11 +560,40 @@ export function getCursor(db: SproutDb, chainId: number): number {
   return row?.last_block ?? 0;
 }
 
+/** The shared indexer cursor, or null when this database has never indexed. */
+export function getCursorRow(db: SproutDb, chainId: number): number | null {
+  const row = db.prepare('SELECT last_block FROM indexer_cursor WHERE chain_id = ?').get(chainId) as { last_block: number } | null;
+  return row ? row.last_block : null;
+}
+
 export function setCursor(db: SproutDb, chainId: number, lastBlock: number): void {
   db.prepare(
     `INSERT INTO indexer_cursor (chain_id, last_block, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(chain_id) DO UPDATE SET last_block = excluded.last_block, updated_at = excluded.updated_at`,
   ).run(chainId, lastBlock, now());
+}
+
+/** The last block whose logs were read for one factory, or null when never recorded. */
+export function getFactoryCursor(db: SproutDb, chainId: number, factory: string): number | null {
+  const row = db
+    .prepare('SELECT last_block FROM indexer_factory_cursor WHERE chain_id = ? AND factory = ?')
+    .get(chainId, factory.toLowerCase()) as { last_block: number } | null;
+  return row ? row.last_block : null;
+}
+
+export function setFactoryCursor(db: SproutDb, chainId: number, factory: string, lastBlock: number): void {
+  db.prepare(
+    `INSERT INTO indexer_factory_cursor (chain_id, factory, last_block, updated_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT(chain_id, factory) DO UPDATE SET last_block = excluded.last_block, updated_at = excluded.updated_at`,
+  ).run(chainId, factory.toLowerCase(), lastBlock, now());
+}
+
+/** Whether any SproutCreated log from this factory has been indexed. */
+export function hasIndexedFactory(db: SproutDb, chainId: number, factory: string): boolean {
+  const row = db
+    .prepare("SELECT 1 AS present FROM chain_events WHERE chain_id = ? AND event_name = 'SproutCreated' AND lower(address) = lower(?) LIMIT 1")
+    .get(chainId, factory) as { present: number } | null;
+  return row !== null;
 }
 
 // ---- growth ---------------------------------------------------------------

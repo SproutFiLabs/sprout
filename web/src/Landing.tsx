@@ -10,6 +10,7 @@ import {
   ArrowUp, ArrowRight, ArrowLeft, ChevronDown, Menu, X, Play, Pause, Plus, Repeat2, Gift, Check,
   ShieldCheck, Leaf, LayoutGrid, GraduationCap,
 } from 'lucide-react';
+import './reference/hero-news.css';
 
 const DASHBOARD = '/dashboard';
 
@@ -304,6 +305,11 @@ export function Landing() {
 
       <section className="reference-hero">
         <div className="reference-hero-copy">
+          <a className="hero-news" href={`${DASHBOARD}?new=1`} data-testid="hero-news">
+            <b>{t('New')}</b>
+            <span>{t('21 stocks now, including Tesla and SpaceX')}</span>
+            <ArrowRight aria-hidden />
+          </a>
           <h1>{tj('A little portfolio{br}for their big future', { br: <br /> })}</h1>
           <p>{t('Weekly investing, allowances & gifts.')}<br className="hero-copy-break" />{gap()}{t('A future you can grow together.')}</p>
           <div className="reference-actions">

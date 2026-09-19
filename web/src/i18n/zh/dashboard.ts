@@ -86,6 +86,7 @@ export const zh: Record<string, string> = {
   'Change': '涨跌',
   'Cash balance': '现金余额',
   'Stock token': '股票代币',
+  '{name} · Stock token': '{name} · 股票代币',
   'n/a': '暂无',
 
   // Top row: sample badge and wallet menu

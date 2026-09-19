@@ -1,6 +1,7 @@
 import { BaseError, ContractFunctionRevertedError, type Abi, type Address } from 'viem';
 import { sproutVaultAbi, sproutVenueAbi, uniswapV3AdapterAbi } from '@sprout/shared';
-import { chainCache, chainClockAtLeast, requirePublic, type ChainClock, type ChainContext } from './chain';
+import { ChainConfigError, chainCache, chainClockAtLeast, requirePublic, type ChainClock, type ChainContext } from './chain';
+import { UnknownFactoryError, resolveVaultVenue } from './deployments';
 import { FOREVER_MS } from './readCache';
 
 /**
@@ -18,6 +19,7 @@ import { FOREVER_MS } from './readCache';
 
 export type InvestBlockerCode =
   | 'not-configured'
+  | 'unknown-factory'
   | 'graduated'
   | 'venue-not-allowed'
   | 'nothing-to-buy'
@@ -51,6 +53,10 @@ export interface InvestLeg {
 
 export interface InvestQuote {
   vault: Address;
+  /**
+   * The venue this sprout's own factory admits (legacy sprouts: the legacy
+   * venue). The purchase must be signed with exactly this address.
+   */
   venue: Address | null;
   amount: string;
   /** Settlement the vault can spend (balance less earmarked and unclaimed allowance). */
@@ -134,9 +140,28 @@ export async function investQuote(
   options: InvestQuoteOptions = {},
 ): Promise<InvestQuote> {
   const chain = ctx.config.chain;
-  const venue = chain.contracts.venue ?? null;
   const client = requirePublic(ctx);
   const cache = chainCache(ctx);
+  // Each sprout trades only through the venue its own factory admits, so the
+  // venue comes from vault.factory(), never from the server's current venue.
+  let venue: Address | null = null;
+  let venueBlocker: InvestBlocker | null = null;
+  if (chain.configured) {
+    try {
+      venue = (await resolveVaultVenue(ctx, vault)).venue;
+    } catch (error) {
+      if (error instanceof UnknownFactoryError) {
+        venueBlocker = {
+          code: 'unknown-factory',
+          message: 'This sprout was planted by a Sprout factory this server does not recognize, so it cannot buy stocks here.',
+        };
+      } else if (error instanceof ChainConfigError) {
+        venueBlocker = { code: 'not-configured', message: 'Buying is not configured on this server.' };
+      } else {
+        throw error;
+      }
+    }
+  }
   const clock = await clockAtLeast(ctx, options.minBlock);
 
   const settlementRead = cache.get(`vault:${vault.toLowerCase()}:settlement`, FOREVER_MS, () =>
@@ -180,6 +205,7 @@ export async function investQuote(
   };
   const block = (blocker: InvestBlocker): InvestQuote => ({ ...quote, blocker, minOuts: null });
 
+  if (venueBlocker) return block(venueBlocker);
   if (!chain.configured || !venue) {
     return block({ code: 'not-configured', message: 'Buying is not configured on this server.' });
   }

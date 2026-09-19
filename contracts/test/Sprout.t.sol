@@ -578,6 +578,197 @@ contract SproutTest is Test {
     }
 
     // ------------------------------------------------------------------
+    // Wide admission: a factory menu larger than one sprout's mix
+    // ------------------------------------------------------------------
+
+    /// @dev `n` fresh stock tokens, each priced by the mock venue and stocked
+    ///      with inventory, at distinct prices ($10, $17, $24, ...).
+    function _stocks(uint256 n) internal returns (address[] memory tokens) {
+        tokens = new address[](n);
+        for (uint256 i = 0; i < n; i++) {
+            MockERC20 t = new MockERC20("Stock", "STK", 18);
+            MockPriceFeed f = new MockPriceFeed(8, int256(10e8 + i * 7e8), block.timestamp);
+            venue.setFeed(address(t), f);
+            t.mint(address(venue), 1_000_000e18);
+            tokens[i] = address(t);
+        }
+    }
+
+    function _wideFactory(address[] memory admitted) internal returns (SproutFactory) {
+        return new SproutFactory(address(impl), address(settlement), admitted, venues);
+    }
+
+    function _pick(address[] memory from, uint256[5] memory idx) internal pure returns (address[] memory out) {
+        out = new address[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            out[i] = from[idx[i]];
+        }
+    }
+
+    function _weights5() internal pure returns (uint16[] memory w) {
+        w = new uint16[](5);
+        w[0] = 3000;
+        w[1] = 2500;
+        w[2] = 2000;
+        w[3] = 1500;
+        w[4] = 1000;
+    }
+
+    function _plantWide(SproutFactory f, address[] memory mix) internal returns (SproutVault vault) {
+        vm.prank(parent);
+        vault = SproutVault(f.createSprout(beneficiary, address(settlement), mix, _weights5(), grad, venues));
+    }
+
+    function testAdmissionAndPerSproutCapsAreDistinct() public view {
+        assertEq(factory.MAX_ADMITTED_ASSETS(), 32);
+        assertEq(factory.MAX_ASSETS(), 5);
+        assertEq(factory.MAX_ASSETS(), impl.MAX_ASSETS());
+    }
+
+    function testFactoryAdmitsTwentyOneAssets() public {
+        address[] memory admitted = _stocks(21);
+        SproutFactory f = _wideFactory(admitted);
+        address[] memory published = f.admittedAssets();
+        assertEq(published.length, 21);
+        for (uint256 i = 0; i < 21; i++) {
+            assertEq(published[i], admitted[i]);
+            assertTrue(f.isAdmittedAsset(admitted[i]));
+        }
+        assertFalse(f.isAdmittedAsset(address(other)));
+        assertFalse(f.isAdmittedAsset(address(settlement)));
+    }
+
+    function testFactoryAdmitsThirtyTwoAssets() public {
+        SproutFactory f = _wideFactory(_stocks(32));
+        assertEq(f.admittedAssets().length, 32);
+    }
+
+    function testFactoryRejectsThirtyThreeAssets() public {
+        address[] memory admitted = _stocks(33);
+        vm.expectRevert(SproutFactory.BadArguments.selector);
+        new SproutFactory(address(impl), address(settlement), admitted, venues);
+    }
+
+    function testFactoryStillRejectsDuplicateOrSettlementAmongManyAssets() public {
+        address[] memory admitted = _stocks(21);
+        admitted[20] = admitted[3];
+        vm.expectRevert(SproutFactory.BadArguments.selector);
+        new SproutFactory(address(impl), address(settlement), admitted, venues);
+        admitted[20] = address(settlement);
+        vm.expectRevert(SproutFactory.BadArguments.selector);
+        new SproutFactory(address(impl), address(settlement), admitted, venues);
+    }
+
+    function testWideFactorySproutOfFiveInvestsEndToEnd() public {
+        address[] memory admitted = _stocks(21);
+        SproutFactory f = _wideFactory(admitted);
+        address[] memory mix = _pick(admitted, [uint256(4), 5, 6, 8, 9]);
+        SproutVault vault = _plantWide(f, mix);
+        assertEq(vault.factory(), address(f));
+        assertEq(vault.assets().length, 5);
+
+        _fund(vault, address(settlement), 1000e6);
+        vm.prank(parent);
+        vault.scheduleInvestment(100e6, 1 days, 0);
+        uint256[] memory mins = _mins(vault, 100e6);
+        vault.executeInvestment(address(venue), mins);
+
+        uint16[] memory w = _weights5();
+        for (uint256 i = 0; i < 5; i++) {
+            assertGt(mins[i], 0);
+            assertEq(IERC20(mix[i]).balanceOf(address(vault)), mins[i]);
+            assertEq(mins[i], venue.quote(address(settlement), mix[i], (100e6 * uint256(w[i])) / 10_000));
+        }
+        // Tokens outside the mix were not touched.
+        assertEq(IERC20(admitted[0]).balanceOf(address(vault)), 0);
+        assertEq(settlement.balanceOf(address(vault)), 900e6);
+        assertEq(settlement.allowance(address(vault), address(venue)), 0);
+    }
+
+    function testWideFactoryRejectsSixAssetSprout() public {
+        address[] memory admitted = _stocks(21);
+        SproutFactory f = _wideFactory(admitted);
+        address[] memory six = new address[](6);
+        uint16[] memory w = new uint16[](6);
+        for (uint256 i = 0; i < 6; i++) {
+            six[i] = admitted[i];
+            w[i] = i == 0 ? 5000 : 1000;
+        }
+        vm.prank(parent);
+        vm.expectRevert(SproutVault.BadArguments.selector);
+        f.createSprout(beneficiary, address(settlement), six, w, grad, venues);
+        assertEq(f.totalSprouts(), 0);
+    }
+
+    function testWideFactoryAllocationMovesToAnotherAdmittedSubset() public {
+        address[] memory admitted = _stocks(21);
+        SproutFactory f = _wideFactory(admitted);
+        SproutVault vault = _plantWide(f, _pick(admitted, [uint256(0), 1, 2, 3, 4]));
+        _fund(vault, address(settlement), 1000e6);
+
+        // Keep two, swap three for stocks from the far end of the menu.
+        address[] memory next = _pick(admitted, [uint256(20), 1, 17, 3, 11]);
+        vm.prank(parent);
+        vault.updateAllocation(next, _weights5());
+        address[] memory held = vault.assets();
+        for (uint256 i = 0; i < 5; i++) {
+            assertEq(held[i], next[i]);
+            assertTrue(vault.isAllowedAsset(next[i]));
+        }
+        assertFalse(vault.isAllowedAsset(admitted[0]));
+        assertFalse(vault.isAllowedAsset(admitted[2]));
+        assertFalse(vault.isAllowedAsset(admitted[4]));
+
+        vm.prank(parent);
+        vault.scheduleInvestment(50e6, 1 days, 0);
+        uint256[] memory mins = _mins(vault, 50e6);
+        vault.executeInvestment(address(venue), mins);
+        for (uint256 i = 0; i < 5; i++) {
+            assertEq(IERC20(next[i]).balanceOf(address(vault)), mins[i]);
+        }
+        assertEq(IERC20(admitted[0]).balanceOf(address(vault)), 0);
+
+        // Six at once is still refused on an allocation change.
+        address[] memory six = new address[](6);
+        uint16[] memory w6 = new uint16[](6);
+        for (uint256 i = 0; i < 6; i++) {
+            six[i] = admitted[10 + i];
+            w6[i] = i == 0 ? 5000 : 1000;
+        }
+        vm.prank(parent);
+        vm.expectRevert(SproutVault.BadArguments.selector);
+        vault.updateAllocation(six, w6);
+    }
+
+    function testWideFactoryStillRejectsNonAdmittedAsset() public {
+        address[] memory admitted = _stocks(21);
+        SproutFactory f = _wideFactory(admitted);
+        assertFalse(f.isAdmittedAsset(address(stockA)));
+
+        address[] memory mix = _pick(admitted, [uint256(0), 1, 2, 3, 4]);
+        mix[4] = address(other);
+        vm.prank(parent);
+        vm.expectRevert(SproutFactory.UnsupportedToken.selector);
+        f.createSprout(beneficiary, address(settlement), mix, _weights5(), grad, venues);
+
+        // Admitted by a different factory is not admitted by this one.
+        mix[4] = address(stockA);
+        vm.prank(parent);
+        vm.expectRevert(SproutFactory.UnsupportedToken.selector);
+        f.createSprout(beneficiary, address(settlement), mix, _weights5(), grad, venues);
+
+        SproutVault vault = _plantWide(f, _pick(admitted, [uint256(0), 1, 2, 3, 4]));
+        address[] memory next = _pick(admitted, [uint256(5), 6, 7, 8, 9]);
+        next[2] = address(other);
+        vm.prank(parent);
+        vm.expectRevert(SproutVault.UnsupportedToken.selector);
+        vault.updateAllocation(next, _weights5());
+        vm.prank(parent);
+        vm.expectRevert(SproutVault.UnsupportedToken.selector);
+        vault.fund(address(other), 1);
+    }
+
+    // ------------------------------------------------------------------
     // Gifts
     // ------------------------------------------------------------------
 

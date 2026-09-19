@@ -10,6 +10,7 @@ import { LanguageToggle } from './i18n/LanguageToggle';
 import { dateLocale, t, tc } from './i18n';
 import { KidLearn } from './kid/KidLearn';
 import { findLesson, lessonForSymbol } from './kid/lessons';
+import { isKnownStock, stockInfo } from './stocks';
 
 /**
  * A read-only page a parent can open on their child's tablet: how big the
@@ -18,12 +19,12 @@ import { findLesson, lessonForSymbol } from './kid/lessons';
  * shown is already public on the chain for anyone who knows the vault.
  */
 
-const COMPANY: Record<string, string> = {
-  AAPL: 'Apple',
-  NVDA: 'NVIDIA',
-  MSFT: 'Microsoft',
-  SPY: '500 big US companies',
-};
+/** What "a little piece of …" names for a ticker (English source text), or null for an unknown one. */
+export function kidCompany(symbol: string): string | null {
+  if (!isKnownStock(symbol)) return null;
+  const info = stockInfo(symbol);
+  return info.kidName ?? info.name;
+}
 
 interface KidData {
   chain: ChainPublic;
@@ -222,8 +223,8 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
                   <li key={s.address}>
                     <b>{holdingSharesText({ shareEquivalent: s.shareEquivalent, rawBalance: s.rawBalance, decimals: s.decimals })} {s.symbol}</b>
                     <span>
-                      {COMPANY[s.symbol]
-                        ? t('a little piece of {company}', { company: tc('holding', COMPANY[s.symbol]!) })
+                      {kidCompany(s.symbol)
+                        ? t('a little piece of {company}', { company: tc('holding', kidCompany(s.symbol)!) })
                         : t('a little piece of {ticker}', { ticker: s.symbol })}
                     </span>
                     {lesson ? (

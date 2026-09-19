@@ -24,6 +24,8 @@ import { historyCsv, historyFilename } from './history';
 import { reconcile, snapshotAll } from './indexer';
 import { automationCapability, runDueJobs } from './jobs';
 import { investQuote } from './invest';
+import { factoryAdmitsVenue, sproutDeploymentView } from './deployments';
+import { listDeployments } from './config';
 import { localFixtures } from './fixtures';
 import {
   LocalWalletError,
@@ -237,22 +239,27 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   }
 
   // Public, aggregate-only numbers for the landing page. The sprout count is
-  // read from the factory, so it includes sprouts this server never indexed.
+  // read from every configured factory (current and legacy), so it includes
+  // sprouts this server never indexed.
   app.get('/api/stats', async (c) => {
     const chain = deps.chain;
     const stats = await chainCache(chain).get('stats', READ_TTL.stats, async () => {
       const totals = activityTotals(deps.db, chain.config.chain.chainId);
       let planted = totals.sprouts;
       let source: 'chain' | 'index' = 'index';
-      const factory = chain.config.chain.contracts.factory;
-      if (chain.publicClient && chain.config.chain.configured && factory) {
+      const factories = listDeployments(chain.config).map((d) => d.factory);
+      const client = chain.publicClient;
+      if (client && chain.config.chain.configured && factories.length > 0) {
         try {
-          planted = Number(
-            await chain.publicClient.readContract({ address: factory, abi: sproutFactoryAbi, functionName: 'totalSprouts' }),
+          const counts = await Promise.all(
+            factories.map((factory) =>
+              client.readContract({ address: factory, abi: sproutFactoryAbi, functionName: 'totalSprouts' }),
+            ),
           );
+          planted = counts.reduce((sum, n) => sum + Number(n), 0);
           source = 'chain';
         } catch {
-          // fall back to the indexed count
+          // fall back to the indexed count, which spans every factory too
         }
       }
       return {
@@ -290,6 +297,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const sprouts = await Promise.all(
       records.map(async (s) => ({
         ...s,
+        // factory + admittedAssets: which stocks this sprout may ever hold.
+        ...(await sproutDeploymentView(deps.chain, deps.db, s)),
         graduated: await isGraduated(deps.chain, s.graduationTimestamp, nowMs),
         role: parent ? 'parent' : 'beneficiary',
       })),
@@ -302,8 +311,11 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     if (!sprout) throw new HttpError(404, 'sprout not found');
     const graduated = await isGraduated(deps.chain, sprout.graduationTimestamp, deps.now ? deps.now() : Date.now());
     const settlementDecimals = await settlementDecimalsFor();
+    // The sprout's own factory decides which stocks it may hold (a legacy
+    // sprout: only the legacy factory's four), whatever /api/config lists.
+    const deployment = await sproutDeploymentView(deps.chain, deps.db, sprout);
     return c.json({
-      sprout: { ...sprout, graduated },
+      sprout: { ...sprout, ...deployment, graduated },
       automation: automationCapability(deps.chain),
       milestones: listMilestonesByVault(deps.db, sprout.chainId, sprout.id),
       jobs: listJobsByVault(deps.db, sprout.id),
@@ -359,6 +371,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
         weights: state.weights,
         createdTxHash: body.txHash,
         createdBlock: null,
+        factory: created.factory,
       });
     }
     return c.json({ sprout: getSprout(deps.db, created.vault) }, 201);
@@ -498,7 +511,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       z.object({
         vaultId: addressSchema,
         label: z.string().min(1).max(60).optional(),
-        acceptedAssets: z.array(addressSchema).min(1).max(5),
+        // The settlement token plus at most five stocks (SproutVault.MAX_ASSETS).
+        acceptedAssets: z.array(addressSchema).min(1).max(6),
         campaign: z
           .object({
             title: z.string(),
@@ -769,8 +783,33 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     }
     checks.rpcReachable = rpcReachable;
     checks.chainIdMatch = chainIdMatch;
+    // Every factory must admit the venue configured for it (SPROUT_VENUE_ADDRESS
+    // for the current one, SPROUT_LEGACY_DEPLOYMENTS for each legacy one), or
+    // its sprouts' purchases would revert. A wrong pairing fails readiness, so
+    // a deploy with it never replaces the running version.
+    let venuesAdmitted = false;
+    if (rpcReachable && chainIdMatch && checks.configured === true) {
+      const deployments = listDeployments(deps.chain.config).filter((d) => d.venue);
+      try {
+        const admitted = await Promise.all(deployments.map((d) => factoryAdmitsVenue(deps.chain, d.factory, d.venue!)));
+        checks.deployments = deployments.map((d, i) => ({
+          factory: d.factory,
+          venue: d.venue,
+          current: d.current,
+          venueAdmitted: admitted[i],
+        }));
+        venuesAdmitted = admitted.every(Boolean);
+      } catch {
+        venuesAdmitted = false;
+      }
+    }
+    checks.venuesAdmitted = venuesAdmitted;
     const ready =
-      checks.configured === true && rpcReachable && chainIdMatch && checks.startBlockConfigured === true;
+      checks.configured === true &&
+      rpcReachable &&
+      chainIdMatch &&
+      checks.startBlockConfigured === true &&
+      venuesAdmitted;
     return c.json({ ready, checks }, ready ? 200 : 503);
   });
 

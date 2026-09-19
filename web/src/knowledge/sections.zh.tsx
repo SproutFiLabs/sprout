@@ -2,7 +2,8 @@ import { ExternalLink } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAutomationEnabled } from '../automationStatus';
 import { betaPoints } from '../components/BetaNotice';
-import { t, tj } from '../i18n';
+import { t } from '../i18n';
+import { displayName } from '../stocks';
 
 /*
  * The Simplified Chinese knowledge pages, plus the small building blocks both
@@ -37,21 +38,60 @@ export function AutomationStatus() {
     : <p>{t('Automatic weekly investing is switched off right now. You can still keep a weekly plan and run each week’s purchase with Invest now.')}</p>;
 }
 
-/** What a family needs to reach a sprout without this website (docs/EXIT-WITHOUT-SPROUT.md). */
-const EXIT_TOKENS: Array<{ symbol: string; address: string; decimals: number; example: string }> = [
-  { symbol: 'USDG', address: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', decimals: 6, example: '$5 is 5000000' },
-  { symbol: 'AAPL', address: '0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9', decimals: 18, example: '0.5 is 500000000000000000' },
-  { symbol: 'NVDA', address: '0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC', decimals: 18, example: '' },
-  { symbol: 'MSFT', address: '0xe93237C50D904957Cf27E7B1133b510C669c2e74', decimals: 18, example: '' },
-  { symbol: 'SPY', address: '0x117cc2133c37B721F49dE2A7a74833232B3B4C0C', decimals: 18, example: '' },
+/**
+ * What a family needs to reach a sprout without this website
+ * (docs/EXIT-WITHOUT-SPROUT.md): the cash token and every stock token a sprout
+ * can hold, from config/stocks.json (web/test/stocks.test.ts keeps them in step).
+ * Sprouts planted before the list grew hold only USDG, AAPL, NVDA, MSFT and SPY.
+ */
+export const EXIT_TOKENS: ReadonlyArray<{ symbol: string; address: string; decimals: number }> = [
+  { symbol: 'USDG', address: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', decimals: 6 },
+  { symbol: 'AAPL', address: '0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9', decimals: 18 },
+  { symbol: 'NVDA', address: '0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC', decimals: 18 },
+  { symbol: 'MSFT', address: '0xe93237C50D904957Cf27E7B1133b510C669c2e74', decimals: 18 },
+  { symbol: 'SPY', address: '0x117cc2133c37B721F49dE2A7a74833232B3B4C0C', decimals: 18 },
+  { symbol: 'TSLA', address: '0x322F0929c4625eD5bAd873c95208D54E1c003b2d', decimals: 18 },
+  { symbol: 'SPCX', address: '0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa', decimals: 18 },
+  { symbol: 'AMZN', address: '0x12f190a9F9d7D37a250758b26824B97CE941bF54', decimals: 18 },
+  { symbol: 'GOOGL', address: '0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3', decimals: 18 },
+  { symbol: 'META', address: '0xc0D6457C16Cc70d6790Dd43521C899C87ce02f35', decimals: 18 },
+  { symbol: 'PLTR', address: '0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A', decimals: 18 },
+  { symbol: 'AMD', address: '0x86923f96303D656E4aa86D9d42D1e57ad2023fdC', decimals: 18 },
+  { symbol: 'TSM', address: '0x58FfE4a942d3885bAa22D7520691F611EF09e7AA', decimals: 18 },
+  { symbol: 'MU', address: '0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD', decimals: 18 },
+  { symbol: 'ASML', address: '0x47F93d52cBeC7C6D2CfC080e154002370a60dAEA', decimals: 18 },
+  { symbol: 'INTC', address: '0xc72b96e0E48ecd4DC75E1e45396e26300BC39681', decimals: 18 },
+  { symbol: 'SNDK', address: '0xB90A19fF0Af67f7779afF50A882A9CfF42446400', decimals: 18 },
+  { symbol: 'BABA', address: '0xad25Ac6C84D497db898fa1E8387bf6Af3532a1c4', decimals: 18 },
+  { symbol: 'QQQ', address: '0xD5f3879160bc7c32ebb4dC785F8a4F505888de68', decimals: 18 },
+  { symbol: 'GME', address: '0x1b0E319c6A659F002271B69dB8A7df2F911c153E', decimals: 18 },
+  { symbol: 'SLV', address: '0x411eFb0E7f985935DAec3D4C3ebaEa0d0AD7D89f', decimals: 18 },
+  { symbol: 'USO', address: '0xa30FA36Db767ad9eD3f7a60fC79526fB4d56D344', decimals: 18 },
 ];
+
+/** A compact table (symbol and name, address, decimals) that fits a phone without sideways scrolling. */
 export function ExitTokens() {
-  return <ul>{EXIT_TOKENS.map((token) => {
-    const parts = { symbol: <b>{token.symbol}</b>, address: <Code>{token.address}</Code>, decimals: token.decimals };
-    return <li key={token.symbol}>{token.example
-      ? tj('{symbol} {address}, {decimals} decimals ({example})', { ...parts, example: t(token.example) })
-      : tj('{symbol} {address}, {decimals} decimals', parts)}</li>;
-  })}</ul>;
+  return (
+    <>
+      <table className="knowledge-token-table">
+        <colgroup><col className="knowledge-token-symbol" /><col /><col className="knowledge-token-decimals" /></colgroup>
+        <thead><tr><th scope="col">{t('Token')}</th><th scope="col">{t('Address')}</th><th scope="col">{t('Decimals')}</th></tr></thead>
+        <tbody>
+          {EXIT_TOKENS.map((token) => {
+            const name = token.symbol === 'USDG' ? t('Dollar stablecoin') : displayName(token.symbol);
+            return (
+              <tr key={token.symbol}>
+                <td><b>{token.symbol}</b>{name ? <small>{name}</small> : null}</td>
+                <td><Code>{token.address}</Code></td>
+                <td>{token.decimals}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p>{t('For example, $5 of USDG is 5000000, and 0.5 of a stock token is 500000000000000000.')}</p>
+    </>
+  );
 }
 
 export const docsSections: Section[] = [
@@ -85,7 +125,7 @@ export const guideSections: Section[] = [
 ];
 
 export const faqSections: Section[] = [
-  { id: 'what', eyebrow: '基础知识', title: '什么是小芽？', body: <><p>小芽是为孩子准备的储蓄金库。它是 Robinhood Chain 上一个独立的智能合约，按你种下它时选择的配比，持有追踪苹果、英伟达、微软和标普 500 的代币。亲友可以通过礼物链接往里存钱；到了你选定的交接日，它就归孩子所有。</p></> },
+  { id: 'what', eyebrow: '基础知识', title: '什么是小芽？', body: <><p>小芽是为孩子准备的储蓄金库。它是 Robinhood Chain 上一个独立的智能合约，按你选择的配比，持有追踪苹果、特斯拉、SpaceX、英伟达等公司，以及标普 500 等基金的代币。新种下的小芽可以从 21 只股票中最多选 5 只；在股票名单扩充之前种下的小芽，只能在最初的四个选项中选择：苹果、英伟达、微软和标普 500。亲友可以通过礼物链接往里存钱；到了你选定的交接日，它就归孩子所有。</p></> },
   { id: 'custody', eyebrow: '安全', title: '钱由谁保管？', body: <><p>由小芽自己的合约保管。Sprout 网站从不托管资金，也无法转移资金：服务器只读取链上数据，用来显示余额和历史记录。对小芽的每一次改动，都是一笔在你钱包里签名的交易。</p><Callout tone="orange"><b>Sprout 目前是测试版。</b>合约尚未经过独立审计。主网交易使用真实资金且无法撤销，所以请只投入你能承受损失的钱。</Callout></> },
   { id: 'risks', eyebrow: '安全', title: '有哪些风险？', body: <><p><b>Sprout 目前还是测试版，涉及的是真实资金。</b>请只投入你能承受损失的钱。</p><RiskList /></> },
   { id: 'withdraw', eyebrow: '取出资金', title: '我可以提前取钱吗？', body: <><p>不可以。在交接日之前，任何人都不能从小芽中提取，包括种下它的家长。这正是它的意义所在：它更像一份信托，而不是一个活期账户。</p><p>资金提前流出的唯一途径是家务奖励：你预留一笔金额，在家务完成后批准发放，孩子再把它领取到自己的钱包。到了交接日，孩子的钱包可以提取全部资金。</p></> },

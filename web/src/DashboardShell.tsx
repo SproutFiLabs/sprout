@@ -24,6 +24,7 @@ import { ResourcesMenu } from './components/ResourcesMenu';
 import { BloomGarden } from './garden/BloomGarden';
 import { kidViewPath } from './KidView';
 import { t, tj, dateLocale } from './i18n';
+import { displayName } from './stocks';
 
 export type ViewId = 'overview' | 'portfolio' | 'invest' | 'chores' | 'gifts' | 'graduation';
 
@@ -575,7 +576,13 @@ export function DashboardShell(props: DashboardShellProps) {
         </tr>
       </thead>
       <tbody>
-        {holdings.holdings.slice(0, 4).map((h) => {
+        {/* Top holdings shows four; the portfolio view (its See all) shows every one, up to five stocks and cash.
+            The server returns a row per configured stock (21), so keep only cash, anything held,
+            and the stocks in this sprout's current mix. */}
+        {holdings.holdings
+          .filter((h) => isSample || h.kind === 'settlement' || h.rawBalance !== '0' || !selected || selected.assets.some((a) => a.toLowerCase() === h.address.toLowerCase()))
+          .slice(0, view === 'portfolio' ? undefined : 4)
+          .map((h) => {
           const shares = holdingSharesText({ shareEquivalent: h.shareEquivalent, rawBalance: h.rawBalance, decimals: h.decimals });
           const change = assetChange(h.symbol);
           // The server labels the settlement row "SETTLEMENT", which reads as
@@ -583,6 +590,7 @@ export function DashboardShell(props: DashboardShellProps) {
           // configured. data-testid keeps the server's symbol: the browser and
           // hosted suites select on holding-SETTLEMENT.
           const label = h.kind === 'settlement' ? (chain?.contracts.settlementSymbol ?? h.symbol) : h.symbol;
+          const company = h.kind === 'stock' ? displayName(h.symbol) : null;
           return (
             <tr key={h.address + h.kind} data-testid={`holding-${h.symbol}`}>
               <td>
@@ -590,7 +598,7 @@ export function DashboardShell(props: DashboardShellProps) {
                   <AssetGlyph symbol={label} />
                   <span className="garden-asset-name">
                     <b>{label}</b>
-                    <small>{assetName(h.symbol) ?? (h.kind === 'settlement' ? t('Cash balance') : t('Stock token'))}</small>
+                    <small>{assetName(h.symbol) ?? (h.kind === 'settlement' ? t('Cash balance') : company ? t('{name} · Stock token', { name: company }) : t('Stock token'))}</small>
                   </span>
                 </button>
               </td>
@@ -937,7 +945,7 @@ export function DashboardShell(props: DashboardShellProps) {
             <p className="garden-empty-note">{t('Your allocation determines how investments are divided.')}</p>
             {(selected.assets ?? []).map((a, i) => (
               <div className="garden-mix-row" key={a}>
-                <b>{symbolFor(a)}</b>
+                <b>{symbolFor(a)}{displayName(symbolFor(a)) ? <small>{displayName(symbolFor(a))}</small> : null}</b>
                 <div className="garden-progress"><span style={{ width: `${(selected.weights[i] ?? 0) / 100}%` }} /></div>
                 <span>{(selected.weights[i] ?? 0) / 100}%</span>
               </div>
@@ -1035,7 +1043,7 @@ export function DashboardShell(props: DashboardShellProps) {
               {(selected.assets ?? []).map((a) => (
                 <div className="garden-mix-stock" key={a}>
                   <span className="garden-mix-icon">{symbolFor(a)[0]?.toLowerCase()}</span>
-                  <div><b>{symbolFor(a)}</b><small>{t('Stock token')}</small></div>
+                  <div><b>{symbolFor(a)}</b><small>{displayName(symbolFor(a)) ? t('{name} · Stock token', { name: displayName(symbolFor(a))! }) : t('Stock token')}</small></div>
                   <b className="garden-mix-weight">{(selected.weights[(selected.assets ?? []).indexOf(a)] ?? 0) / 100}%</b>
                 </div>
               ))}

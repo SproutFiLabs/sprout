@@ -4,6 +4,7 @@ import type { SproutDb } from './db';
 import type { ChainContext } from './chain';
 import { ChainConfigError, invalidateChainReads } from './chain';
 import { keeperBudget, type KeeperBudgetConfig } from './config';
+import { resolveVaultVenue } from './deployments';
 import { dueJobs, recordJobRun, setJobStatus, getJob, type JobRecord } from './repo';
 import {
   keeperChain,
@@ -31,10 +32,13 @@ export async function chainNowSeconds(ctx: ChainContext): Promise<number> {
   }
 }
 
-export async function computeMinOuts(ctx: ChainContext, vault: Address, spend: bigint): Promise<bigint[]> {
+/**
+ * Oracle-floor minimums for a purchase of `spend` through `venue`, which must
+ * be the vault's own venue (see resolveVaultVenue); resolved when omitted.
+ */
+export async function computeMinOuts(ctx: ChainContext, vault: Address, spend: bigint, venueOverride?: Address): Promise<bigint[]> {
   if (!ctx.publicClient) throw new ChainConfigError('RPC is not configured');
-  const venue = ctx.config.chain.contracts.venue;
-  if (!venue) throw new ChainConfigError('SPROUT_VENUE_ADDRESS is not configured');
+  const venue = venueOverride ?? (await resolveVaultVenue(ctx, vault)).venue;
   const [assets, weights, schedule] = await Promise.all([
     ctx.publicClient.readContract({ address: vault, abi: sproutVaultAbi, functionName: 'assets' }) as Promise<readonly Address[]>,
     ctx.publicClient.readContract({ address: vault, abi: sproutVaultAbi, functionName: 'weights' }) as Promise<readonly number[]>,
@@ -140,9 +144,10 @@ async function runJob(
     if (BigInt(nowSeconds) < schedule[3]) {
       return { jobId: job.id, vaultId: job.vaultId, status: 'skipped', error: 'not due' };
     }
-    const venue = ctx.config.chain.contracts.venue;
-    if (!venue) throw new ChainConfigError('SPROUT_VENUE_ADDRESS is not configured');
-    const mins = await computeMinOuts(ctx, job.vaultId as Address, schedule[1]);
+    // The vault's own factory decides the venue: a legacy sprout can only buy
+    // through the legacy venue. An unknown factory throws, and the job fails closed.
+    const { venue } = await resolveVaultVenue(ctx, job.vaultId as Address);
+    const mins = await computeMinOuts(ctx, job.vaultId as Address, schedule[1], venue);
     const data = encodeFunctionData({ abi: sproutVaultAbi, functionName: 'executeInvestment', args: [venue, mins] });
     const signer = keeperSigner(ctx)!;
 

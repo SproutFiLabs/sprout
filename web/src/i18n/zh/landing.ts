@@ -1,5 +1,7 @@
 /** Simplified Chinese for the landing strings, keyed by the English source text. */
 export const zh: Record<string, string> = {
+  'New': '新',
+  '21 stocks now, including Tesla and SpaceX': '现在有 21 只股票，包括特斯拉和 SpaceX',
   // Landing: navigation, header and shared links
   'SPROUT home': 'SPROUT 首页',
   'Explore': '探索',

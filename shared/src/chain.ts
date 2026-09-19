@@ -33,6 +33,20 @@ export interface StockTokenConfig {
   multiplier: bigint;
   feedAddress?: Address;
   heartbeatSeconds?: number;
+  /** Display name ("Apple"), from SPROUT_STOCK_NAMES when set. */
+  name?: string;
+}
+
+/**
+ * An earlier factory whose sprouts are still served. Contracts cannot change
+ * after deployment, so each factory admits a fixed menu of assets and venues:
+ * a sprout it created can only ever trade through that deployment's venue.
+ */
+export interface LegacyDeployment {
+  factory: Address;
+  venue: Address;
+  /** Block the factory was deployed in; its sprouts are indexed from here. */
+  startBlock: number;
 }
 
 export interface ContractAddresses {
@@ -46,6 +60,11 @@ export interface ContractAddresses {
   settlementSymbol?: string;
   venue?: Address;
   stockTokens: StockTokenConfig[];
+  /**
+   * Earlier deployments (SPROUT_LEGACY_DEPLOYMENTS). `factory`/`venue` above are
+   * the current deployment, the one new sprouts are planted with.
+   */
+  legacyDeployments: LegacyDeployment[];
 }
 
 export interface ChainConfig {
@@ -71,6 +90,44 @@ export type EnvLike = Record<string, string | undefined>;
 
 function isAddress(value: string | undefined): value is Address {
   return typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value);
+}
+
+/**
+ * Parse SPROUT_LEGACY_DEPLOYMENTS: `factory:venue:startBlock`, comma separated.
+ * Throws on anything malformed rather than dropping it: a silently skipped
+ * entry would leave every sprout of that factory unindexed and unable to buy.
+ */
+export function parseLegacyDeployments(raw: string | undefined): LegacyDeployment[] {
+  const deployments: LegacyDeployment[] = [];
+  for (const entry of (raw ?? '').split(',')) {
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split(':').map((part) => part.trim());
+    const [factory, venue, startBlock] = parts;
+    if (parts.length !== 3 || !isAddress(factory) || !isAddress(venue) || !/^\d+$/.test(startBlock ?? '')) {
+      throw new Error(
+        `SPROUT_LEGACY_DEPLOYMENTS entry "${trimmed}" must be factory:venue:startBlock (two 0x addresses and a block number)`,
+      );
+    }
+    if (deployments.some((d) => d.factory.toLowerCase() === factory.toLowerCase())) {
+      throw new Error(`SPROUT_LEGACY_DEPLOYMENTS lists factory ${factory} more than once`);
+    }
+    deployments.push({ factory, venue, startBlock: Number(startBlock) });
+  }
+  return deployments;
+}
+
+/** SPROUT_STOCK_NAMES: `SYM:Name`, comma separated. Names may contain spaces. */
+function parseStockNames(raw: string | undefined): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const entry of (raw ?? '').split(',')) {
+    const at = entry.indexOf(':');
+    if (at <= 0) continue;
+    const symbol = entry.slice(0, at).trim();
+    const name = entry.slice(at + 1).trim();
+    if (symbol && name) names.set(symbol, name);
+  }
+  return names;
 }
 
 function parseStockTokens(raw: string | undefined): StockTokenConfig[] {
@@ -116,7 +173,23 @@ export function loadChainConfig(env: EnvLike): ChainConfig {
   const settlementToken = env.SPROUT_SETTLEMENT_TOKEN;
   const settlementSymbol = env.SPROUT_SETTLEMENT_SYMBOL?.trim() || undefined;
   const venue = env.SPROUT_VENUE_ADDRESS;
-  const stockTokens = parseStockTokens(env.SPROUT_STOCK_TOKENS);
+  const names = parseStockNames(env.SPROUT_STOCK_NAMES);
+  const stockTokens = parseStockTokens(env.SPROUT_STOCK_TOKENS).map((token) => {
+    const name = names.get(token.symbol);
+    return name ? { ...token, name } : token;
+  });
+  let legacyDeployments: LegacyDeployment[] = [];
+  let legacyValid = true;
+  try {
+    legacyDeployments = parseLegacyDeployments(env.SPROUT_LEGACY_DEPLOYMENTS);
+  } catch {
+    legacyValid = false;
+  }
+  // A legacy entry naming the current factory would give one factory two venues.
+  if (isAddress(factory) && legacyDeployments.some((d) => d.factory.toLowerCase() === factory.toLowerCase())) {
+    legacyValid = false;
+    legacyDeployments = [];
+  }
   // SPROUT_MULTICALL3_ADDRESS overrides the known deployment; "off" disables
   // batching entirely, e.g. to rule it out while debugging an RPC provider.
   const multicallEnv = env.SPROUT_MULTICALL3_ADDRESS?.trim();
@@ -129,6 +202,7 @@ export function loadChainConfig(env: EnvLike): ChainConfig {
   if (!isAddress(settlementToken)) missing.push('SPROUT_SETTLEMENT_TOKEN');
   if (stockTokens.length === 0) missing.push('SPROUT_STOCK_TOKENS');
   if (!isAddress(venue) && !isLocal) missing.push('SPROUT_VENUE_ADDRESS');
+  if (!legacyValid) missing.push('SPROUT_LEGACY_DEPLOYMENTS');
 
   const configured = missing.length === 0;
 
@@ -147,6 +221,7 @@ export function loadChainConfig(env: EnvLike): ChainConfig {
       settlementSymbol,
       venue: isAddress(venue) ? venue : undefined,
       stockTokens,
+      legacyDeployments,
     },
     configured,
     missing,
