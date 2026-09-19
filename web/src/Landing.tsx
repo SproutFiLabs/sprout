@@ -1,3 +1,4 @@
+import './intelligence/intelligence.css';
 import { useEffect, useRef, useState } from 'react';
 import { ThemeToggle } from './theme/ThemeSettings';
 import { api } from './api';
@@ -276,6 +277,7 @@ export function Landing() {
             <button aria-expanded={resources} onClick={() => setResources(!resources)}>Explore <ChevronDown size={15} /></button>
             {resources ? (
               <nav className="resource-menu" aria-label="Explore SPROUT">
+                <a href="/intelligence">SPROUT Intelligence</a>
                 <a href="/guardian">Guardian wallets</a>
                 <a href="#how-it-works" onClick={() => { setResources(false); setMenu(false); }}>How it works</a>
                 <a href="#family" onClick={() => { setResources(false); setMenu(false); }}>For your family</a>
@@ -327,6 +329,7 @@ export function Landing() {
           </div>
         </section>
 
+        <section className="si-landing-invite"><div><small>MEET SPROUT INTELLIGENCE</small><h2>A little clarity for their big future.</h2><p>A thoughtful AI companion for parents. Explore ideas, understand trade-offs and ask better questions. Free for verified holders of 1 million SPROUT. Not financial advice.</p></div><a href="/intelligence">Explore Intelligence <ArrowRight size={16}/></a></section>
         <section className="reference-demo" id="take-a-look">
           <div className="demo-botanical" />
           <div className="demo-emblem"><img src="/brand/sprout-logo.png" alt="SPROUT botanical emblem" /></div>
@@ -477,7 +480,7 @@ export function Landing() {
               <p>© {new Date().getFullYear()} SPROUT. A little, together.</p>
             </div>
             <div className="reference-footer-links">
-              <div><span>SPROUT</span><a href={DASHBOARD}>Dashboard</a><a href={`${DASHBOARD}?new=1`}>Plant a sprout</a><a href="/gift">Gift preview</a></div>
+              <div><span>SPROUT</span><a href={DASHBOARD}>Dashboard</a><a href={`${DASHBOARD}?new=1`}>Plant a sprout</a><a href="/gift">Gift preview</a><a href="/intelligence">Intelligence</a></div>
               <div><span>Learn</span><a href="/faq">Questions</a><a href="/guide">Getting started</a><a href="/docs">Documentation</a><a href="/whitepaper">Whitepaper</a><a href="/settings">Appearance</a></div>
             </div>
           </footer>

@@ -1,3 +1,4 @@
+import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
 import { registerZkRoutes } from './zk';
 import { randomBytes, createPublicKey } from 'node:crypto';
 import { join } from 'node:path';
@@ -75,6 +76,7 @@ import {
 } from './repo';
 
 export interface AppDeps {
+  intelligence?: IntelligenceRuntime;
   db: SproutDb;
   chain: ChainContext;
   localDemo: boolean;
@@ -227,6 +229,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   });
 
   registerZkRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
+  registerIntelligenceRoutes(app, { db: deps.db, now: deps.now, runtime: deps.intelligence ?? createIntelligenceRuntime(deps.chain.config.intelligence ?? loadIntelligenceConfig({})) }, (c, purpose) => requireAuth(c, deps, purpose));
 
   app.post('/api/family/gift-key', async (c) => {
     const signer = (await requireAuth(c, deps, 'family-gift-key')).toLowerCase();

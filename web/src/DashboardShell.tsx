@@ -1263,6 +1263,7 @@ export function DashboardShell(props: DashboardShellProps) {
             <button className="garden-side-link" data-testid="plant-open" onClick={() => { setDrawerOpen(false); onOpenPlant(); }} disabled={!chainReady}><Plus size={22} />Plant a sprout</button>
           ) : null}
           {onOpenOnboarding ? <button className="garden-side-link" data-testid="onboarding-open" onClick={onOpenOnboarding}><SproutIcon size={22} />How SPROUT works</button> : null}
+          <a className="garden-side-link" href="/intelligence"><Leaf size={22} />Intelligence</a>
           <ResourcesMenu />
           <button className="garden-side-link" data-testid="settings-open" onClick={() => { setDrawerOpen(false); onOpenSettings(); }}><Settings size={22} />Family settings</button>
           <button className="garden-side-link" data-testid="help-open" onClick={() => { setDrawerOpen(false); (onOpenHelp ?? onOpenNotifications)(); }}><HelpCircle size={22} />Help</button>

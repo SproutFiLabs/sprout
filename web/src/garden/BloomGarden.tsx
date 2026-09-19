@@ -4,7 +4,7 @@ import { sectionGarden, type GardenTheme } from './sectionBotanical';
 import { loadBotanicalAtlas } from './botanicalAtlas';
 
 /** Decorative only: native document scrolling, keyboard and touch remain intact. */
-export function BloomGarden({ variant = 'dashboard', theme = 'overview', paused = false, scrollMarker = true, compact = false }: { variant?: 'dashboard' | 'landing'; theme?: GardenTheme; paused?: boolean; scrollMarker?: boolean; compact?: boolean }) {
+export function BloomGarden({ variant = 'dashboard', theme = 'overview', paused = false, scrollMarker = true, compact = false, fullyBloomed = false }: { variant?: 'dashboard' | 'landing'; theme?: GardenTheme; paused?: boolean; scrollMarker?: boolean; compact?: boolean; fullyBloomed?: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const marker = useRef<HTMLDivElement>(null);
   const fallback = useRef<HTMLImageElement>(null);
@@ -15,7 +15,7 @@ export function BloomGarden({ variant = 'dashboard', theme = 'overview', paused 
     if (!el) return;
     const context = el.getContext('2d');
     if (!context) return;
-    let disposed = false, frame = 0, target = .28, current = .28, last = 0, paints = 0;
+    let disposed = false, frame = 0, target = fullyBloomed ? 1 : .28, current = fullyBloomed ? 1 : .28, last = 0, paints = 0;
     let visible = true, ready = false, art: Art = {};
     const section = variant === 'dashboard' && theme !== 'overview';
     el.style.opacity = '0';
@@ -61,6 +61,7 @@ export function BloomGarden({ variant = 'dashboard', theme = 'overview', paused 
         const start = Math.max(0, top - innerHeight * .65);
         target = .28 + .72 * clamp((scrollY - start) / Math.max(120, el.clientHeight * .9));
       }
+      if (fullyBloomed) target = 1;
       if (marker.current) {
         marker.current.hidden = max < 2;
         marker.current.style.top = `${75 + fraction * Math.max(0, innerHeight - 150)}px`;
@@ -99,7 +100,7 @@ export function BloomGarden({ variant = 'dashboard', theme = 'overview', paused 
       window.removeEventListener('scroll', update); window.removeEventListener('resize', update);
       media.removeEventListener('change', update); document.removeEventListener('visibilitychange', visibility);
     };
-  }, [variant, theme, scrollMarker, compact]);
+  }, [variant, theme, scrollMarker, compact, fullyBloomed]);
   return <>
     <div className={`${variant === 'landing' ? 'landing-living-garden' : `garden-bouquet garden-bouquet--living garden-bouquet--scene-${theme}`}${compact ? ' garden-bouquet--compact' : ''}`} data-botanical-theme={theme} aria-hidden="true">
       <img ref={fallback} className="garden-bouquet-fallback" src={theme === 'overview' || variant === 'landing' ? '/art/dashboard/hero-bouquet.png' : '/art/dashboard/motion/leaf-green.png'} alt="" />

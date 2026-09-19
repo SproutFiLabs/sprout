@@ -9,6 +9,7 @@ export function ResourcesMenu() {
   }}>
     <summary className="garden-side-link" data-testid="resources-menu"><BookOpen size={22} /><span>{t('Guide & docs')}</span><ChevronUp size={14} /></summary>
     <nav className="garden-resources-panel" aria-label={t('Sprout resources')}>
+      <a href="/intelligence"><Compass size={17} /><span>Intelligence<small>Thoughtful AI for parents</small></span></a>
       <a href="/faq"><HelpCircle size={17} /><span>{t('Questions')}<small>{t('Money, withdrawals, costs, beta')}</small></span></a>
       <a href="/guide"><Compass size={17} /><span>{t('Getting started')}<small>{t('A practical family guide')}</small></span></a>
       <a href="/docs"><BookOpen size={17} /><span>{t('Documentation')}<small>{t('Features and how they work')}</small></span></a>

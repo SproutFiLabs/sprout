@@ -1,7 +1,9 @@
+import { loadIntelligenceConfig, type IntelligenceConfig } from './intelligence';
 import { join } from 'node:path';
 import { assertRuntimeChainGuard, loadChainConfig, type ChainConfig, type EnvLike } from '@sprout/shared';
 
 export interface ServerConfig {
+  intelligence?: IntelligenceConfig;
   chain: ChainConfig;
   dbPath: string;
   port: number;
@@ -117,6 +119,7 @@ export function loadServerConfig(env: EnvLike = process.env): ServerConfig {
 
   return {
     chain,
+    intelligence: loadIntelligenceConfig(env),
     dbPath,
     port: Number(env.PORT ?? env.SPROUT_PORT ?? 4317),
     bind: env.SPROUT_BIND ?? env.HOST ?? '127.0.0.1',

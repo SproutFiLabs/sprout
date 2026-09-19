@@ -3,3 +3,4 @@ export * from './units';
 export * from './schemas';
 export * from './venue';
 export * from './abis';
+export * from './intelligence';

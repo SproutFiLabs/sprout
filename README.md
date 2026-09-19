@@ -24,6 +24,7 @@ Plant a vault for a child, add to it over time, and grow toward a future they ca
 - Create a child-focused vault and fund it with supported assets.
 - Schedule recurring contributions and invite family to send gifts.
 - Follow progress toward a milestone, with a named beneficiary and a planned graduation.
+- Explore **[SPROUT Intelligence](docs/intelligence.md)**: an AI learning companion for parents, with free access for verified wallets holding at least **1,000,000 SPROUT on Robinhood Chain**. General education and information only; not financial advice. Live answers require a server-side AI key.
 
 Sprout is in **beta**. The local development flow and contract tests are available; some live operations remain unverified. Production unattended investing is disabled, graduation withdrawals have not been verified live, and production backup restoration has not been verified. This project is not audited or presented as launch-ready.
 
