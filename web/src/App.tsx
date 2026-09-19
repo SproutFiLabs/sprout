@@ -39,6 +39,8 @@ import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
 import { InvestNowForm } from './components/InvestNow';
 import { useAutoInvestLock } from './perks/autoInvest';
+import { useHolder } from './perks/holder';
+import { holderBouquets, stockLockFor } from './perks/locks';
 import { GiftPage } from './GiftPage';
 import { GiftQrCard } from './components/GiftQr';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
@@ -528,6 +530,9 @@ export function App() {
   const isGraduated = selected ? (selected.graduated ?? false) || clock / 1000 >= selected.graduationTimestamp : false;
   // A parent without the SPROUT tier automatic investing needs: their plan runs only with Invest now.
   const autoInvestLocked = useAutoInvestLock(health?.automation, isParent ? selected?.parent : null) !== null;
+  // SPROUT holder perks in the stock picker: first dibs on newly added stocks, and holder-only bouquets.
+  const holder = useHolder(wallet?.address);
+  const stockLock = stockLockFor(holder);
 
   // The stocks the selected sprout may hold: those its own factory admitted
   // (older sprouts: the original four), plus whatever it holds now. Without
@@ -1012,6 +1017,8 @@ export function App() {
                 value={{ selected: plantPicked.map((token) => token.address), percents: plantForm.percents }}
                 onChange={(mix) => setPlantForm({ ...plantForm, selected: mix.selected, percents: mix.percents })}
                 weightTestId={(symbol) => `plant-weight-${symbol}`}
+                stockLock={stockLock}
+                extraMixes={holderBouquets(holder, stockTokens.map((token) => token.symbol))}
               />
               <p className="fine-print">{t('Only factory-admitted stock tokens can be selected. Weights must total exactly 100%.')}</p>
             </fieldset>
@@ -1234,6 +1241,8 @@ export function App() {
               value={allocationForm}
               onChange={(mix) => setAllocationForm(mix)}
               weightTestId={(symbol) => `allocation-${symbol}`}
+              stockLock={stockLock}
+              extraMixes={holderBouquets(holder, admittedTokens.map((token) => token.symbol))}
             />
           </fieldset>
           <p className="muted">{t('Only factory-admitted assets can be selected.')}</p>

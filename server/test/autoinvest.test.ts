@@ -55,6 +55,11 @@ function keeperChain() {
           return SETTLEMENT;
         case 'quote':
           return 10n ** 18n;
+        // Every test sprout comes from the configured factory, which admits the configured venue.
+        case 'factory':
+          return '0x00000000000000000000000000000000000000aa';
+        case 'isAdmittedVenue':
+          return true;
         default:
           throw new Error(`unexpected readContract ${functionName}`);
       }
