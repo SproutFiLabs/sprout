@@ -1,4 +1,4 @@
 import{bundle}from'@remotion/bundler';import{selectComposition,renderMedia,renderStill}from'@remotion/renderer';import fs from'node:fs';
 const url=await bundle({entryPoint:new URL('./src/index.ts',import.meta.url).pathname});const c=await selectComposition({serveUrl:url,id:'SproutFamily'});fs.mkdirSync('out/qa',{recursive:true});
-if(process.argv.includes('--stills')){for(const frame of[30,90,165,260,345,465,540,660,780,855,975,1050,1155])await renderStill({composition:c,serveUrl:url,output:`out/qa/${frame}.png`,frame});console.log('Stills ready.');}
+if(process.argv.includes('--stills')){for(const frame of[30,75,150,240,330,420,555,660,780,870,960,1035,1155])await renderStill({composition:c,serveUrl:url,output:`out/qa/${frame}.png`,frame});console.log('Stills ready.');}
 else{let last=-1;await renderMedia({composition:c,serveUrl:url,codec:'h264',crf:18,outputLocation:'out/SPROUT-Family-Toolkit.mp4',concurrency:4,onProgress:({progress})=>{const p=Math.floor(progress*20);if(p!==last){last=p;console.log(`${p*5}%`);}}});}

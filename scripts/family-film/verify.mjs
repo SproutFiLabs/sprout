@@ -16,7 +16,7 @@ const run = (exe, args) => execFileSync(exe, args, { env, encoding: 'utf8' });
 const meta = JSON.parse(run(path.join(lib, 'ffprobe'), ['-v', 'error', '-show_entries', 'format=duration,size:stream=codec_name,width,height,r_frame_rate,sample_rate,channels', '-of', 'json', movie]));
 fs.writeFileSync(path.join(qa, 'metadata.json'), JSON.stringify(meta, null, 2));
 run(ffmpeg, ['-v', 'error', '-y', '-i', movie, '-vf', 'fps=1,scale=320:180,tile=8x5', '-frames:v', '1', path.join(qa, 'overview.jpg')]);
-for (const cut of [4, 10, 17, 24, 30, 36]) {
+for (const cut of [3, 9, 17, 27, 33, 36]) {
   run(ffmpeg, ['-v', 'error', '-y', '-ss', String(cut - .25), '-i', movie, '-t', '0.5', '-vf', 'fps=12,scale=480:270,tile=6x1', '-frames:v', '1', path.join(qa, `transition-${cut}.jpg`)]);
 }
 const pcm = path.join(qa, 'audio.pcm');

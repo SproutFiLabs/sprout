@@ -1,20 +1,20 @@
 # SPROUT family toolkit film
 
-40 seconds, 1920×1080, 30 fps, H.264/AAC. Directed with the user's Brand Motion Film skill. Actual ToolsView component and CSS are copied at preparation time. Financial offers, reward states and ledger records are explicitly illustrative. The Intelligence paragraph is an actual gpt-4.1-mini response to an illustrative record, checked September 19, 2026. No real purchase or payout is claimed. Brokerage execution is shown as unavailable.
+40-second, 1080p/30fps walkthrough of the redesigned functional workspaces. Uses actual browser recordings, original SPROUT assets, Satoshi/Georgia, and an original stereo score with synchronized UI sounds. The direction and shot list are in `direction.md`.
 
-Story: know the asset → review an offer → organize the record → save a family goal → understand it → return to the SPROUT garden. Real logo, Satoshi/Georgia type and the existing floral artwork. Original synthesized stereo music with matching sound-effect cues, written by `score.py`.
+Recordings use the isolated local QA API on 4331 and frontend on 5197 with the public server test wallet. Start `output/sprout-family-update/preview.ts` first. The capture expects an ETH ledger entry from the workspace QA fixture. Reward API responses are browser fixtures; no live purchase or payout occurs. Brokerage remains unavailable. The Intelligence shot shows a context handoff, not a generated answer.
 
-From the repository root:
-
-```
+```sh
+bun run scripts/family-film/capture.ts
+FFMPEG_PATH=/path/to/ffmpeg python3 scripts/family-film/trim-recordings.py
 node scripts/family-film/prepare.mjs
-npm install --prefix output/sprout-family-film
 python3 scripts/family-film/score.py
 cd output/sprout-family-film
+npm install
 node render-family.mjs --stills
 node render-family.mjs
 ```
 
-Python requires numpy. Node requires Remotion's supported runtime/browser. Run `node scripts/family-film/verify.mjs` from the repo root with a full ffmpeg on PATH, or set `FFMPEG_PATH` to its executable. Metadata uses the bundled Remotion ffprobe (macOS ARM build); adjust the compositor package name for other platforms. Verification writes MP4 metadata, a one-frame-per-second overview, transition strips and decoded-audio level checks. The brand font comes from `web/public/fonts/satoshi`; its Fontshare license remains there.
+Python score generation requires numpy. From the repo root, run `FFMPEG_PATH=/path/to/full/ffmpeg node scripts/family-film/verify.mjs` for metadata, audio checks, overview and transition strips. Inspect those and listen to the audio before delivery.
 
-Output: `output/sprout-family-film/out/SPROUT-Family-Toolkit.mp4`. Inspect full-resolution stills, the final overview, transitions and audio before sharing. The editable film source is in this directory; all financial fixtures remain outside the production app bundle.
+Output: `output/sprout-family-film/out/SPROUT-Family-Toolkit.mp4`. Capture sources and generated media stay outside the production app. No live deployment is performed by these scripts.

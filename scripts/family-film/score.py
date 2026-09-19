@@ -27,8 +27,8 @@ for bar in range(20):
    t=np.arange(int(sr*.08))/sr; noise=rng.normal(size=len(t));put(np.diff(noise,prepend=0)*np.exp(-t*85),at+tick*.25+.015,.009 if tick%2 else .006,(-1)**tick*.5)
 for at,notes in [(0,[76,74,69]),(4,[76,79,77]),(10,[74,76,81]),(13,[81,79,76]),(18,[77,76,72]),(24,[74,76,81,86]),(27,[81,76,74])]:
  for i,note in enumerate(notes):put(key(note,1.9),at+i*.5,.065,(-1)**i*.25)
-cuts=[4,10,17,24,30,36]
-events=[(t,'whoosh') for t in cuts]+[(.4,'bloom'),(7.1,'tap'),(13.15,'confirm'),(19.8,'tap'),(20.1,'confirm'),(22.5,'tap'),(27,'confirm'),(31,'bloom'),(36.3,'resolve')]
+cuts=[3,9,17,27,33,36]
+events=[(t,'whoosh') for t in cuts]+[(.4,'bloom'),(5.1,'tap'),(13.4,'confirm'),(19.2,'tap'),(21.6,'tap'),(24.2,'confirm'),(30.7,'confirm'),(33.2,'bloom'),(36.3,'resolve')]
 for at,kind in events:
  if kind=='whoosh':
   d=.35;t=np.arange(int(sr*d))/sr;noise=np.convolve(rng.normal(size=len(t)),np.ones(24)/24,mode='same');put(noise*np.sin(np.pi*t/d)**2,max(0,at-.18),.11,-.25)
