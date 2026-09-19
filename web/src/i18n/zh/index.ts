@@ -13,8 +13,9 @@ import { zh as guardianView } from './guardian-view';
 import { zh as privacy } from './privacy';
 import { zh as intelligence } from './intelligence';
 import { zh as harvest } from './harvest';
+import { zh as root } from './root';
 import { zh as stocksGuide } from './stocks-guide';
 import { zh as privacyPack } from './privacy-pack';
 
 /** Every Simplified Chinese string, keyed by its English source text. */
-export const ZH: Record<string, string> = { ...core, ...app, ...dashboard, ...landing, ...kid, ...knowledge, ...components, ...perks, ...votes, ...autoinvest, ...guardian, ...guardianView, ...privacy, ...intelligence, ...harvest, ...stocksGuide, ...privacyPack };
+export const ZH: Record<string, string> = { ...core, ...app, ...dashboard, ...landing, ...kid, ...knowledge, ...components, ...perks, ...votes, ...autoinvest, ...guardian, ...guardianView, ...privacy, ...intelligence, ...harvest, ...root, ...stocksGuide, ...privacyPack };

@@ -1,6 +1,7 @@
 import { Gem } from 'lucide-react';
 import { t } from '../i18n';
 import { tierLabel, useHolder } from './holder';
+import { RootedBadge } from './RootBits';
 
 /** Wallet menu row: this wallet's SPROUT tier, linking to the perks page. Hidden when perks are off. */
 export function HolderMenuRow({ address }: { address: string | null | undefined }) {
@@ -9,7 +10,10 @@ export function HolderMenuRow({ address }: { address: string | null | undefined 
   return (
     <div className="garden-menu-row" data-testid="holder-tier-row">
       <span>{t('SPROUT tier')}</span>
-      <b><a href="/perks">{status?.tier ? tierLabel(status.tier) : status ? t('See holder perks') : t('Checking…')}</a></b>
+      <b>
+        <a href="/perks">{status?.tier ? tierLabel(status.tier) : status ? t('See holder perks') : t('Checking…')}</a>
+        {status?.rooted ? <> <RootedBadge /></> : null}
+      </b>
     </div>
   );
 }

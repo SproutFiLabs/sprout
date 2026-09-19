@@ -17,6 +17,30 @@ export interface PerksInfo {
   holdDays: number;
   earlyAccess: { symbols: string[]; until: number | null; tier: TierId };
   autoInvestTier: TierId | null;
+  /** Rooting (root.ts); absent when the server has no lock contract configured. */
+  root?: RootInfo;
+}
+
+/** The public side of "Root your SPROUT", from /api/perks. */
+export interface RootInfo {
+  contract: string;
+  durations: Array<{ days: number; multiplierBps: number }>;
+  /** Base units locked right now, and that as a fraction (0..1) of the supply; null if unreadable. */
+  rootedTotal: string | null;
+  rootedShare: number | null;
+  supply: string | null;
+  decimals: number | null;
+}
+
+/** One of a wallet's locks that has not been withdrawn yet. */
+export interface RootLock {
+  id: string;
+  amount: string;
+  days: number;
+  unlockAt: number;
+  due: boolean;
+  multiplierBps: number;
+  counts: string;
 }
 
 export interface HolderStatus {
@@ -32,6 +56,14 @@ export interface HolderStatus {
   holdSeconds: number;
   windowStart: number;
   checkedAt: number;
+  /** Present when rooting is on: `tier` then comes from heldBalance + lockCredit. */
+  rooted?: boolean;
+  locks?: RootLock[];
+  lockedBalance?: string;
+  lockCredit?: string;
+  effectiveBalance?: string;
+  heldTier?: TierId | null;
+  chainTime?: number;
 }
 
 export interface Holder {
@@ -77,17 +109,18 @@ export function loadPerks(): Promise<PerksInfo | null> {
   return perksPromise;
 }
 
-export async function loadHolderStatus(address: string): Promise<HolderStatus | null> {
+/** `after`: a block the wallet's own transaction confirmed in, so the answer is at least that fresh. */
+export async function loadHolderStatus(address: string, after = 0): Promise<HolderStatus | null> {
   try {
-    const r = await fetch(`/api/holders/${address}`);
+    const r = await fetch(`/api/holders/${address}${after > 0 ? `?after=${after}` : ''}`);
     return r.ok ? ((await r.json()) as HolderStatus) : null;
   } catch {
     return null;
   }
 }
 
-/** The perks ladder, plus this wallet's tier once it is known. */
-export function useHolder(address: string | null | undefined): Holder {
+/** The perks ladder, plus this wallet's tier once it is known. A new `after` block re-reads the tier. */
+export function useHolder(address: string | null | undefined, after = 0): Holder {
   const [perks, setPerks] = useState<PerksInfo | null>(null);
   const [status, setStatus] = useState<HolderStatus | null>(null);
   useEffect(() => {
@@ -99,11 +132,11 @@ export function useHolder(address: string | null | undefined): Holder {
   }, []);
   useEffect(() => {
     let live = true;
-    setStatus(null);
-    if (address && perks?.enabled) void loadHolderStatus(address).then((s) => live && setStatus(s));
+    if (!after) setStatus(null);
+    if (address && perks?.enabled) void loadHolderStatus(address, after).then((s) => live && (s || !after) && setStatus(s));
     return () => {
       live = false;
     };
-  }, [address, perks?.enabled]);
+  }, [address, perks?.enabled, after]);
   return { perks, status };
 }

@@ -9,6 +9,8 @@ import { PublicCa } from '../components/PublicCa';
 import { holdPeriod, tierAtLeast, tierLabel, useHolder, wholeTokens, TIER_ORDER, type TierId } from './holder';
 import { bouquetCount, bouquetsByTier } from './locks';
 import { HolderVotes } from './Votes';
+import { RootPanel } from './RootPanel';
+import { RootedBadge } from './RootBits';
 import './perks.css';
 
 /** Vote weight per tier; the server uses the same table. */
@@ -44,7 +46,9 @@ function useVisitorWallet(): { address: string | null; wallet: WalletState | nul
 
 export function PerksPage() {
   const { address, wallet, connect, error: connectError } = useVisitorWallet();
-  const holder = useHolder(address);
+  // The block this page's own lock or withdrawal confirmed in; a new one re-reads the tier.
+  const [rootAfter, setRootAfter] = useState(0);
+  const holder = useHolder(address, rootAfter);
   const automation = useAutomationEnabled();
   const { perks, status } = holder;
   const tiers = perks?.tiers ?? [];
@@ -80,7 +84,10 @@ export function PerksPage() {
   else
     statusBody = (
       <div data-testid="perks-status">
-        <p className="perks-tier">{status.tier ? tierLabel(status.tier) : t('Not a holder tier yet')}</p>
+        <p className="perks-tier">
+          {status.tier ? tierLabel(status.tier) : t('Not a holder tier yet')}
+          {status.rooted ? <> <RootedBadge /></> : null}
+        </p>
         <p className="perks-muted">
           {t('Held for the last {period}: {held} SPROUT · now: {now} SPROUT', {
             period: holdPeriod(status.holdSeconds),
@@ -88,6 +95,15 @@ export function PerksPage() {
             now: wholeTokens(status.balance, status.decimals),
           })}
         </p>
+        {status.locks?.length ? (
+          <p className="perks-muted" data-testid="perks-rooted-line">
+            {t('Rooted: {locked} SPROUT, counting as {credit} · your tier counts {total} SPROUT', {
+              locked: wholeTokens(status.lockedBalance ?? '0', status.decimals),
+              credit: wholeTokens(status.lockCredit ?? '0', status.decimals),
+              total: wholeTokens(status.effectiveBalance ?? status.heldBalance, status.decimals),
+            })}
+          </p>
+        ) : null}
         {status.currentTier && status.currentTier !== status.tier ? (
           <p className="perks-next">{t('Keep holding: {tier} unlocks once you’ve held it for {period}.', { tier: tierLabel(status.currentTier), period: holdPeriod(status.holdSeconds) })}</p>
         ) : null}
@@ -118,6 +134,10 @@ export function PerksPage() {
           <h2 id="perks-you"><Leaf size={18} aria-hidden /> {t('Your tier')}</h2>
           {statusBody}
         </section>
+
+        {perks?.enabled && perks.root ? (
+          <RootPanel perks={perks} status={status} address={address} wallet={wallet} onConnect={() => void connect()} after={rootAfter} onChanged={setRootAfter} />
+        ) : null}
 
         <section className="perks-card" aria-labelledby="perks-tiers">
           <h2 id="perks-tiers">{t('The tiers')}</h2>

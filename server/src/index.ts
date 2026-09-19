@@ -4,7 +4,7 @@ import { createChainContext, verifyRpcChain, type ChainContext } from './chain';
 import { createApp } from './app';
 import { listAllVaults, reconcile, snapshotAll } from './indexer';
 import { holderAutoInvestGate, runDueJobs } from './jobs';
-import { createHolderChecker, loadPerksConfig } from './holders';
+import { createRootedHolderChecker } from './roots';
 import { purgeExpiredNonces } from './repo';
 import { createMutex } from './lock';
 
@@ -22,7 +22,8 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
   const chain = createChainContext(config);
   const serialize = createMutex();
   // Shared by the API and the keeper loop, so both see the same tiers (and cache).
-  const holders = createHolderChecker(chain.publicClient, loadPerksConfig(process.env));
+  // Rooted (locked) SPROUT counts toward tiers when SPROUT_ROOT_LOCK_ADDRESS is set.
+  const holders = createRootedHolderChecker(chain.publicClient, process.env);
   const app = createApp({
     db,
     chain,

@@ -139,6 +139,8 @@ export interface HolderChecker {
   status(address: string): Promise<HolderStatus>;
   /** Tier for a wallet, or null when perks are off or the check fails. */
   tier(address: string): Promise<TierId | null>;
+  /** Drop a wallet's cached status, so the next read goes to the chain (roots.ts, after a lock). */
+  forget?(address: string): void;
 }
 
 export function createHolderChecker(client: PublicClient | null, config: PerksConfig, nowMs: () => number = Date.now): HolderChecker {
@@ -231,6 +233,9 @@ export function createHolderChecker(client: PublicClient | null, config: PerksCo
       } catch {
         return null;
       }
+    },
+    forget(address) {
+      if (isAddress(address)) cache.delete(getAddress(address));
     },
   };
 }

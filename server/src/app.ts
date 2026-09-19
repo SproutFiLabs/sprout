@@ -42,7 +42,8 @@ import {
   localWalletStatus,
 } from './localWallet';
 import { createMutex } from './lock';
-import { createHolderChecker, loadPerksConfig, publicPerks, type HolderChecker } from './holders';
+import { publicPerks, type HolderChecker } from './holders';
+import { createRootedHolderChecker, publicRoot, type RootedHolderChecker } from './roots';
 import { DEFAULT_PUBLIC_ORIGIN, giftPreviewHtml } from './sharePreview';
 import {
   CAMPAIGN_MAX_DAYS,
@@ -169,7 +170,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     localDemo: inputDeps.localDemo && process.env.NODE_ENV !== 'production',
   };
   const app = new Hono();
-  const holders = deps.holders ?? createHolderChecker(deps.chain.publicClient, loadPerksConfig(process.env));
+  const holders = deps.holders ?? createRootedHolderChecker(deps.chain.publicClient, process.env);
   const serialize = deps.runExclusive ?? createMutex();
 
   const nowSeconds = () => Math.floor((deps.now ? deps.now() : Date.now()) / 1000);
@@ -362,14 +363,23 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   });
 
   // SPROUT holder perks: the tier ladder, what is in early access, and one wallet's tier.
-  app.get('/api/perks', (c) => c.json(publicPerks(holders.config)));
+  // With a root lock configured (roots.ts), `root` carries the public rooted counter and a
+  // wallet's status its locks; `after` is the block a client's own lock/withdraw confirmed in.
+  const afterBlockOf = (c: Context) => {
+    const raw = c.req.query('after');
+    return raw && /^\d{1,12}$/.test(raw) ? Number(raw) : undefined;
+  };
+  app.get('/api/perks', async (c) => {
+    const root = await publicRoot(holders, { afterBlock: afterBlockOf(c) });
+    return c.json({ ...publicPerks(holders.config), ...(root ? { root } : {}) });
+  });
   // Stock guide price history, from the stocks' own price feeds (see stockPrices.ts).
   registerStockPriceRoutes(app, deps, logger);
   app.get('/api/holders/:address', async (c) => {
     const address = c.req.param('address');
     if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new HttpError(400, 'invalid address');
     try {
-      return c.json(await holders.status(address));
+      return c.json(await (holders as RootedHolderChecker).status(address, { afterBlock: afterBlockOf(c) }));
     } catch (error) {
       logger.error?.('holder check failed', error);
       throw new HttpError(503, 'holder check unavailable, try again shortly');
@@ -1059,6 +1069,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       const body = await readJson(c, z.object({ seconds: z.number().int().positive() }));
       const result = await serialize(() => advanceLocalTime(deps.chain, deps.db, body.seconds));
       invalidateChainReads(deps.chain);
+      (holders as Partial<RootedHolderChecker>).invalidate?.(); // lock dates and hold windows moved too
       return c.json(result);
     });
   }

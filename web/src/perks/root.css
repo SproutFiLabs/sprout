@@ -1,0 +1,55 @@
+/* "Root your SPROUT" panel on /perks (perks/RootPanel.tsx). */
+.root-card { gap: 14px; }
+.root-paths { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.root-path { padding: 14px 16px; border-radius: 16px; border: 1px solid var(--garden-line, #ece7dc); background: var(--garden-side, #faf8f2); display: grid; gap: 6px; align-content: start; }
+.root-path h3 { margin: 0; font-size: 16px; }
+.root-path p { font-size: 14px; }
+.root-path--root { border-color: #cfdcc4; background: #f3f7ee; }
+
+.root-warning { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background: #fff4e5; border: 1px solid #f0c98f; color: #6b3f06; font-weight: 600; font-size: 14.5px; }
+.root-warning svg { flex: none; margin-top: 2px; }
+
+.root-connect { display: grid; gap: 10px; }
+.root-form { display: grid; gap: 14px; padding-top: 4px; }
+.root-field { display: grid; gap: 6px; font-weight: 600; font-size: 14px; color: var(--garden-ink, #1d1d1b); }
+.root-amount { display: flex; gap: 8px; align-items: stretch; max-width: 420px; }
+.root-amount input { flex: 1 1 auto; min-width: 0; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--garden-line, #d9d3c5); background: #fff; color: var(--garden-ink, #1d1d1b); font: inherit; font-size: 16px; font-weight: 500; }
+.root-amount input[aria-invalid="true"] { border-color: #c2410c; }
+.root-max { flex: none; padding: 0 14px; border-radius: 12px; border: 1px solid var(--garden-line, #d9d3c5); background: transparent; color: var(--garden-ink, #1d1d1b); font: inherit; font-size: 14px; cursor: pointer; }
+.root-field small { font-weight: 400; }
+.root-invalid { color: #b3400b; font-size: 14px; }
+
+.root-days { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; border-radius: 0; min-width: 0; }
+.root-days legend { padding: 0; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+.root-day { position: relative; display: grid; gap: 1px; flex: 0 1 auto; min-width: 128px; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--garden-line, #d9d3c5); color: var(--garden-ink, #1d1d1b); font-weight: 400; cursor: pointer; }
+.root-day input { position: absolute; opacity: 0; pointer-events: none; }
+.root-day b { font-size: 15px; }
+.root-day span { color: var(--garden-soft, #5f5c54); font-size: 13px; }
+.root-day.is-on { border-color: var(--garden-green, #3f7a3a); box-shadow: 0 0 0 2px rgba(63, 122, 58, .18); background: #f3f7ee; }
+.root-day:focus-within { outline: 2px solid var(--garden-green, #3f7a3a); outline-offset: 2px; }
+
+.root-preview { display: grid; gap: 4px; padding: 12px 14px; border-radius: 14px; background: var(--garden-side, #faf8f2); border: 1px dashed var(--garden-line, #d9d3c5); }
+.root-preview-tier b { font-size: 16px; }
+
+.root-understand { display: flex; flex-direction: row; gap: 10px; align-items: flex-start; font-size: 14px; font-weight: 500; line-height: 1.45; color: var(--garden-ink, #1d1d1b); cursor: pointer; }
+.root-understand input { margin: 2px 0 0; padding: 0; width: 18px; height: 18px; flex: none; accent-color: var(--garden-green, #3f7a3a); }
+
+.perks-button:disabled { opacity: .45; cursor: not-allowed; }
+.root-step { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+.root-step--done { color: var(--garden-green, #3f7a3a); font-weight: 600; }
+.root-step--error { color: #b3400b; }
+.root-spin { animation: root-spin 1s linear infinite; }
+@keyframes root-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .root-spin { animation: none; } }
+
+.root-locks { display: grid; gap: 10px; }
+.root-locks h3 { margin: 6px 0 0; font-size: 16px; }
+.root-locks ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.root-locks li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--garden-line, #ece7dc); }
+.root-locks li > div { display: grid; gap: 2px; min-width: 0; }
+.root-locked-chip { display: inline-flex; align-items: center; gap: 5px; color: var(--garden-soft, #5f5c54); font-size: 13px; }
+
+@media (max-width: 760px) {
+  .root-paths { grid-template-columns: 1fr; }
+  .root-day { flex: 1 1 96px; min-width: 0; }
+}

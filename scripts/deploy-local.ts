@@ -28,7 +28,19 @@ export interface LocalDeployment {
   venue: Address;
   vaultImplementation: Address;
   factory: Address;
+  /** A mock SPROUT (18 decimals, 1B supply) and a SproutRootLock for it: holder perks and "Root your SPROUT". */
+  sproutToken: Address;
+  rootLock: Address;
 }
+
+/** Mock SPROUT handed out on a local chain: the parent can root some, the gifter just holds. */
+export const LOCAL_SPROUT = {
+  supply: 1_000_000_000n * 10n ** 18n,
+  parent: 3_000_000n * 10n ** 18n,
+  gifter: 500_000n * 10n ** 18n,
+  /** The rest of the supply sits here, so shares of the supply read like mainnet. */
+  rest: '0x000000000000000000000000000000000000dEaD' as Address,
+} as const;
 
 async function send(
   publicClient: PublicClient,
@@ -83,6 +95,18 @@ export async function deployLocal(
   await send(publicClient, walletClient, { address: settlement, abi: mockErc20Abi, functionName: 'mint', args: [parentAccount.address, 1_000_000n * 10n ** 6n] });
   await send(publicClient, walletClient, { address: settlement, abi: mockErc20Abi, functionName: 'mint', args: [gifterAccount.address, 100_000n * 10n ** 6n] });
 
+  // Deployed last, so every address above stays where the harnesses expect it.
+  const sproutToken = await deploy(publicClient, walletClient, 'MockERC20.sol', 'MockERC20', ['Sprout', 'SPROUT', 18]);
+  const rootLock = await deploy(publicClient, walletClient, 'SproutRootLock.sol', 'SproutRootLock', [sproutToken]);
+  await send(publicClient, walletClient, { address: sproutToken, abi: mockErc20Abi, functionName: 'mint', args: [parentAccount.address, LOCAL_SPROUT.parent] });
+  await send(publicClient, walletClient, { address: sproutToken, abi: mockErc20Abi, functionName: 'mint', args: [gifterAccount.address, LOCAL_SPROUT.gifter] });
+  await send(publicClient, walletClient, {
+    address: sproutToken,
+    abi: mockErc20Abi,
+    functionName: 'mint',
+    args: [LOCAL_SPROUT.rest, LOCAL_SPROUT.supply - LOCAL_SPROUT.parent - LOCAL_SPROUT.gifter],
+  });
+
   return {
     chainId: anvilChain.id,
     rpcUrl,
@@ -95,6 +119,8 @@ export async function deployLocal(
     venue,
     vaultImplementation,
     factory,
+    sproutToken,
+    rootLock,
   };
 }
 
@@ -111,7 +137,7 @@ if (import.meta.main) {
   // well-known Anvil development key and is only ever exported to the server.
   const deploymentId = newDeploymentId();
   const envLines = [
-    'SPROUT_DEPLOYMENT_VERSION=3',
+    'SPROUT_DEPLOYMENT_VERSION=4',
     `SPROUT_DEPLOYMENT_ID=${deploymentId}`,
     'SPROUT_CHAIN_ID=31337',
     `SPROUT_RPC_URL=${rpcUrl}`,
@@ -130,6 +156,9 @@ if (import.meta.main) {
     'SPROUT_KEEPER_GAS_LIMIT_CAP=6000000',
     'SPROUT_KEEPER_DAILY_FEE_BUDGET_WEI=100000000000000000',
     `SPROUT_PUBLIC_WALLET_RPC_URL=${rpcUrl}`,
+    // Holder perks against the mock SPROUT, with "Root your SPROUT" on.
+    `SPROUT_HOLDER_TOKEN=${deployment.sproutToken}`,
+    `SPROUT_ROOT_LOCK_ADDRESS=${deployment.rootLock}`,
     `SPROUT_DB_PATH=${deploymentDbPath(ROOT, deploymentId)}`,
     'SPROUT_PORT=4317',
     '',

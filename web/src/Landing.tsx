@@ -7,6 +7,7 @@ import { api } from './api';
 import { useAutomationEnabled } from './automationStatus';
 import { BloomGarden } from './garden/BloomGarden';
 import { PublicCa } from './components/PublicCa';
+import { LandingRootedCounter } from './perks/RootBits';
 import {
   ArrowUp, ArrowRight, ArrowLeft, ChevronDown, Menu, X, Play, Pause, Plus, Repeat2, Gift, Check,
   ShieldCheck, Leaf, LayoutGrid, GraduationCap,
@@ -319,6 +320,7 @@ export function Landing() {
             <a className="btn button-secondary" href={`${DASHBOARD}?new=1`}>{t('Plant a sprout')}</a>
           </div>
           <PublicCa variant="landing" />
+          <LandingRootedCounter />
         </div>
         <div className={'reference-hero-wave ' + (paused ? 'is-paused' : '')}>
           <BloomGarden variant="landing" paused={paused} />

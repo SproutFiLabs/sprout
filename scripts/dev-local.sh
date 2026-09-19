@@ -66,7 +66,7 @@ REUSE=0
 if [ -f tmp/local.env ]; then
   # shellcheck disable=SC1091
   source tmp/local.env
-  if [ "${SPROUT_DEPLOYMENT_VERSION:-}" != "3" ]; then
+  if [ "${SPROUT_DEPLOYMENT_VERSION:-}" != "4" ]; then
     echo "existing deployment predates the current contract layout; redeploying"
   elif [ -n "${SPROUT_FACTORY_ADDRESS:-}" ]; then
     CODE="$(cast code "$SPROUT_FACTORY_ADDRESS" --rpc-url "$RPC_URL" 2>/dev/null || echo 0x)"
