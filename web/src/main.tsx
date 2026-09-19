@@ -15,7 +15,7 @@ import { AppearancePage } from './AppearancePage';
 import { PerksPage } from './perks/PerksPage';
 import { KidView, parseKidPath } from './KidView';
 import { initializeTheme } from './theme/ThemeSettings';
-import { initializeLocale, useLocale } from './i18n';
+import { initializeLocale, t, useLocale } from './i18n';
 import './app.css';
 import './reference/landing.css';
 import './reference/dashboard.css';
@@ -39,9 +39,9 @@ function Root() {
   useLocale(); // the whole tree re-renders in the new language
   const path = currentPath();
   if (path === '/' || path === '/index.html') return <Landing />;
-  if (path === '/harvest') return <Suspense fallback={<main style={{padding:'64px'}}>Opening Harvest…</main>}><HarvestPage /></Suspense>;
-  if (path === '/intelligence') return <Suspense fallback={<main style={{padding:'64px'}}>Opening Intelligence…</main>}><IntelligencePage /></Suspense>;
-  if (path === '/guardian') return <Suspense fallback={<main style={{padding:'64px',fontFamily:'sans-serif'}}>Opening Guardian…</main>}><GuardianPage /></Suspense>;
+  if (path === '/harvest') return <Suspense fallback={<main style={{padding:'64px'}}>{t('Opening Harvest…')}</main>}><HarvestPage /></Suspense>;
+  if (path === '/intelligence') return <Suspense fallback={<main style={{padding:'64px'}}>{t('Opening Intelligence…')}</main>}><IntelligencePage /></Suspense>;
+  if (path === '/guardian') return <Suspense fallback={<main style={{padding:'64px',fontFamily:'sans-serif'}}>{t('Opening Guardian…')}</main>}><GuardianPage /></Suspense>;
   if (path === '/verify') return <ProofVerifier />;
   if (path === '/gift') return <GiftLanding />;
   if (path === '/dashboard/preview') return <Preview />;

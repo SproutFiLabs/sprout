@@ -47,6 +47,25 @@ import {
 } from "./model";
 import { registerPasskey, signWithPasskey } from "./passkey";
 import artifact from "./contract.json";
+import { dateLocale, t } from "../i18n";
+
+/**
+ * A status or error line, kept as a function so it is translated when shown
+ * and follows an EN / 中文 switch instead of staying in the old language.
+ */
+type Status = { show: () => string };
+const QUIET: Status = { show: () => "" };
+/** An error written for the family; `show` re-reads the language each render. */
+class Notice extends Error {
+  readonly show: () => string;
+  constructor(show: () => string) {
+    super(show());
+    this.show = show;
+  }
+}
+/** Our own notices re-translate; wallet and chain errors are shown as they came. */
+const failure = (e: unknown, text: string): Status =>
+  e instanceof Notice ? { show: e.show } : { show: () => text };
 
 export function GuardianPage() {
   const [chain, setChain] = useState<ChainPublic | null>(null),
@@ -58,8 +77,8 @@ export function GuardianPage() {
       () => new URLSearchParams(location.search).get("account") ?? "",
     ),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [message, setMessage] = useState("");
+    [error, setError] = useState<Status>(QUIET),
+    [message, setMessage] = useState<Status>(QUIET);
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
   const [ownerInput, setOwnerInput] = useState(""),
     [guardianInputs, setGuardianInputs] = useState(["", "", ""]),
@@ -98,7 +117,7 @@ export function GuardianPage() {
     : [];
   const selectedAsset =
     tokenOptions.find(
-      (t) => t.address.toLowerCase() === selectedToken.toLowerCase(),
+      (a) => a.address.toLowerCase() === selectedToken.toLowerCase(),
     ) ?? tokenOptions[0];
   const token = selectedAsset?.address ?? ZERO,
     decimals = selectedAsset?.decimals ?? 6,
@@ -111,7 +130,7 @@ export function GuardianPage() {
         if (!mounted.current) return;
         setChain(c);
         if (!c.walletRpcUrl)
-          throw new Error("Public chain connection is not configured.");
+          throw new Notice(() => t("Public chain connection is not configured."));
         setClient(
           createPublicClient({
             chain: toChain({
@@ -123,7 +142,7 @@ export function GuardianPage() {
           }) as PublicClient,
         );
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(failure(e, e.message)));
     return () => {
       mounted.current = false;
       walletRef.current = null;
@@ -140,9 +159,10 @@ export function GuardianPage() {
       generation.current++;
       walletRef.current = null;
       setWallet(null);
-      setError(
-        "Wallet or network changed. Reconnect before approving a transaction.",
-      );
+      setError({
+        show: () =>
+          t("Wallet or network changed. Reconnect before approving a transaction."),
+      });
     };
     wallet.provider.on?.("accountsChanged", changed);
     wallet.provider.on?.("chainChanged", changed);
@@ -176,7 +196,7 @@ export function GuardianPage() {
     if (client && account)
       void Promise.resolve()
         .then(() => refresh(walletAddress(account)))
-        .catch((e) => setError(e.message));
+        .catch((e) => setError(failure(e, e.message)));
   }, [client, token, queueEnd]);
   useEffect(() => {
     if (!snapshot || !client) return;
@@ -197,21 +217,24 @@ export function GuardianPage() {
       clearInterval(timer);
     };
   }, [client, snapshot?.address, token, queueEnd]);
-  const run = async (fn: () => Promise<string | void>) => {
+  const run = async (fn: () => Promise<(() => string) | void>) => {
     if (operation.current) return;
     operation.current = true;
     setBusy(true);
-    setError("");
-    setMessage("");
+    setError(QUIET);
+    setMessage(QUIET);
     try {
-      const text = await fn();
-      if (mounted.current && text) setMessage(text);
+      const show = await fn();
+      if (mounted.current && show) setMessage({ show });
     } catch (e) {
       if (mounted.current)
         setError(
           e instanceof Error
-            ? ((e as { shortMessage?: string }).shortMessage ?? e.message)
-            : "Please try again.",
+            ? failure(
+                e,
+                (e as { shortMessage?: string }).shortMessage ?? e.message,
+              )
+            : { show: () => t("Please try again.") },
         );
     } finally {
       operation.current = false;
@@ -220,7 +243,7 @@ export function GuardianPage() {
   };
   const connect = () =>
     void run(async () => {
-      if (!chain) throw new Error("Chain configuration is loading.");
+      if (!chain) throw new Notice(() => t("Chain configuration is loading."));
       const w = await connectWallet({
         chainId: chain.chainId,
         name: chain.name,
@@ -230,21 +253,25 @@ export function GuardianPage() {
       walletRef.current = w;
       setWallet(w);
       setOwnerInput((v) => v || w.address);
-      return "Wallet connected. Check the account and action before signing.";
+      return () =>
+        t("Wallet connected. Check the account and action before signing.");
     });
   const currentWallet = async () => {
     const w = walletRef.current;
-    if (!w) throw new Error("Connect a wallet to approve and pay network gas.");
+    if (!w)
+      throw new Notice(() =>
+        t("Connect a wallet to approve and pay network gas."),
+      );
     await assertWalletReady(w);
     if (!mounted.current || walletRef.current !== w)
-      throw new Error("Wallet changed. Reconnect before signing.");
+      throw new Notice(() => t("Wallet changed. Reconnect before signing."));
     return w;
   };
   const write = async (name: string, args: unknown[] = []) => {
     const w = await currentWallet();
     const target = snapshot?.address;
     if (!target || accountRef.current !== target)
-      throw new Error("Open a Guardian wallet first.");
+      throw new Notice(() => t("Open a Guardian wallet first."));
     const hash = await contractWriter(w)({
       address: target,
       abi: guardianAbi,
@@ -253,8 +280,8 @@ export function GuardianPage() {
     });
     await waitForSuccess(w.publicClient, hash);
     if (walletRef.current !== w)
-      throw new Error(
-        "Transaction submitted; reconnect to refresh this wallet.",
+      throw new Notice(() =>
+        t("Transaction submitted; reconnect to refresh this wallet."),
       );
     await refresh(target);
     return hash;
@@ -270,10 +297,10 @@ export function GuardianPage() {
     canManage = isOwner || isGuardian;
   const load = () =>
     void run(async () => {
-      if (!client) throw new Error("Chain connection is loading.");
+      if (!client) throw new Notice(() => t("Chain connection is loading."));
       setSnapshot(null);
       await refresh(walletAddress(account));
-      return "Guardian bytecode and on-chain state verified.";
+      return () => t("Guardian bytecode and on-chain state verified.");
     });
   const deploy = () =>
     void run(async () => {
@@ -297,27 +324,39 @@ export function GuardianPage() {
       });
       const receipt = await w.publicClient.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success" || !receipt.contractAddress)
-        throw new Error("Guardian deployment did not succeed.");
-      if (walletRef.current !== w)
-        throw new Error(
-          `Guardian created at ${receipt.contractAddress}. Reconnect to open it.`,
+        throw new Notice(() => t("Guardian deployment did not succeed."));
+      if (walletRef.current !== w) {
+        const address = receipt.contractAddress;
+        throw new Notice(() =>
+          t("Guardian created at {address}. Reconnect to open it.", {
+            address,
+          }),
         );
+      }
       await refresh(receipt.contractAddress);
-      return "Guardian wallet created. Save its address, enroll a passkey, then choose it as the beneficiary of a new sprout.";
+      return () =>
+        t(
+          "Guardian wallet created. Save its address, enroll a passkey, then choose it as the beneficiary of a new sprout.",
+        );
     });
   const act = async (action: number, target: Address) => {
     const w = await currentWallet();
-    if (!snapshot) throw new Error("Open a Guardian wallet.");
+    if (!snapshot) throw new Notice(() => t("Open a Guardian wallet."));
     const address = snapshot.address;
     const units = amountUnits(amount, decimals);
     if (!usePasskey) {
       await write("act", [action, target, token, units]);
       return;
     }
-    if (snapshot.origin !== location.origin)
-      throw new Error(
-        `This wallet’s passkeys were enrolled at ${snapshot.origin}. Use that origin or approve with the owner wallet.`,
+    if (snapshot.origin !== location.origin) {
+      const origin = snapshot.origin;
+      throw new Notice(() =>
+        t(
+          "This wallet’s passkeys were enrolled at {origin}. Use that origin or approve with the owner wallet.",
+          { origin },
+        ),
       );
+    }
     const block = await w.publicClient.getBlock();
     const deadline = block.timestamp + 300n;
     const challenge = (await w.publicClient.readContract({
@@ -328,7 +367,7 @@ export function GuardianPage() {
     })) as Hex;
     const auth = await signWithPasskey(challenge);
     if (walletRef.current !== w)
-      throw new Error("Wallet changed during passkey approval.");
+      throw new Notice(() => t("Wallet changed during passkey approval."));
     await write("actWithPasskey", [
       action,
       target,
@@ -341,7 +380,8 @@ export function GuardianPage() {
   };
   const checkVault = () =>
     void run(async () => {
-      if (!client || !snapshot) throw new Error("Open your wallet first.");
+      if (!client || !snapshot)
+        throw new Notice(() => t("Open your wallet first."));
       const address = walletAddress(vault);
       const [beneficiary, date] = await Promise.all([
         client.readContract({
@@ -360,8 +400,11 @@ export function GuardianPage() {
         linked: beneficiary.toLowerCase() === snapshot.address.toLowerCase(),
       });
       return beneficiary.toLowerCase() === snapshot.address.toLowerCase()
-        ? "This sprout pays into your Guardian wallet."
-        : "This sprout has a different, fixed beneficiary. It cannot be reassigned.";
+        ? () => t("This sprout pays into your Guardian wallet.")
+        : () =>
+            t(
+              "This sprout has a different, fixed beneficiary. It cannot be reassigned.",
+            );
     });
   const recoveryActive =
     !!snapshot &&
@@ -371,13 +414,15 @@ export function GuardianPage() {
     void run(async () => {
       const w = await currentWallet();
       if (!snapshot || !isOwner)
-        throw new Error("Only the current owner can enroll a passkey.");
+        throw new Notice(() => t("Only the current owner can enroll a passkey."));
       if (snapshot.origin !== location.origin)
-        throw new Error("Open the original enrollment domain to add passkeys.");
+        throw new Notice(() =>
+          t("Open the original enrollment domain to add passkeys."),
+        );
       const target = snapshot.address;
       const key = await registerPasskey();
       if (walletRef.current !== w || target !== snapshot.address)
-        throw new Error("Wallet changed. Enroll again.");
+        throw new Notice(() => t("Wallet changed. Enroll again."));
       const block = await w.publicClient.getBlock();
       await write("addDevice", [
         key.id,
@@ -385,15 +430,18 @@ export function GuardianPage() {
         key.y,
         block.timestamp + 365n * 86400n,
       ]);
-      return "Passkey enrolled for one year. The wallet enforces the same transfer rules for this credential.";
+      return () =>
+        t(
+          "Passkey enrolled for one year. The wallet enforces the same transfer rules for this credential.",
+        );
     });
-  const simple = (name: string, args: unknown[], text: string) => () =>
+  const simple = (name: string, args: unknown[], show: () => string) => () =>
     void run(async () => {
       await write(name, args);
-      return text;
+      return show;
     });
   const policy = () => {
-    if (!snapshot) throw new Error("Open a wallet.");
+    if (!snapshot) throw new Notice(() => t("Open a wallet."));
     return [
       token,
       amountUnits(policyLimit, decimals),
@@ -405,7 +453,7 @@ export function GuardianPage() {
     <div className="guardian-form-row three">
       {values.map((g, i) => (
         <label key={i}>
-          Guardian {i + 1}
+          {t("Guardian {n}", { n: i + 1 })}
           <input
             value={g}
             onChange={(e) =>
@@ -427,8 +475,8 @@ export function GuardianPage() {
       onConnect={connect}
       connected={wallet?.address ?? ""}
       busy={busy}
-      error={error}
-      message={message}
+      error={error.show()}
+      message={message.show()}
       now={now}
       tokenSymbol={symbol}
       decimals={decimals}
@@ -436,7 +484,7 @@ export function GuardianPage() {
       {snapshot &&
       (tab === "Protection" || tab === "Transfers" || tab === "Settings") ? (
         <label className="guardian-asset-picker">
-          Asset{" "}
+          {t("Asset")}{" "}
           <select
             value={token}
             disabled={busy}
@@ -446,9 +494,9 @@ export function GuardianPage() {
               setAmount("1");
             }}
           >
-            {tokenOptions.map((t) => (
-              <option value={t.address} key={t.address}>
-                {t.symbol}
+            {tokenOptions.map((option) => (
+              <option value={option.address} key={option.address}>
+                {option.symbol}
               </option>
             ))}
           </select>
@@ -457,10 +505,9 @@ export function GuardianPage() {
       {!snapshot ? (
         <>
           <p className="guardian-setup-note">
-            Create a separate beneficiary wallet with three trusted guardians.
-            The owner should be the person who will control the savings. The
-            connected wallet pays deployment gas; Sprout never holds the signing
-            keys.
+            {t(
+              "Create a separate beneficiary wallet with three trusted guardians. The owner should be the person who will control the savings. The connected wallet pays deployment gas; Sprout never holds the signing keys.",
+            )}
           </p>
           <form
             className="guardian-form"
@@ -471,7 +518,7 @@ export function GuardianPage() {
           >
             <div className="guardian-form-row">
               <label>
-                Owner wallet
+                {t("Owner wallet")}
                 <input
                   value={ownerInput}
                   onChange={(e) => setOwnerInput(e.target.value)}
@@ -479,12 +526,13 @@ export function GuardianPage() {
                   required
                 />
                 <small>
-                  Use the child’s wallet when they are the beneficiary. Guardian
-                  addresses must be different.
+                  {t(
+                    "Use the child’s wallet when they are the beneficiary. Guardian addresses must be different.",
+                  )}
                 </small>
               </label>
               <label>
-                Instant transfer budget ({symbol} / 24 hours)
+                {t("Instant transfer budget ({symbol} / 24 hours)", { symbol })}
                 <input
                   inputMode="decimal"
                   value={limit}
@@ -492,17 +540,17 @@ export function GuardianPage() {
                   required
                 />
                 <small>
-                  Initially only the owner’s address is trusted. Other transfers
-                  wait 24 hours.
+                  {t(
+                    "Initially only the owner’s address is trusted. Other transfers wait 24 hours.",
+                  )}
                 </small>
               </label>
             </div>
             {addressFields(guardianInputs, setGuardianInputs)}
             <p className="guardian-tiny">
-              The recovery quorum is two of three. Changes to guardians, budgets
-              or trusted destinations take 48 hours. The current owner can
-              cancel a recovery request. Enrolling guardians publishes their
-              wallet relationships on-chain.
+              {t(
+                "The recovery quorum is two of three. Changes to guardians, budgets or trusted destinations take 48 hours. The current owner can cancel a recovery request. Enrolling guardians publishes their wallet relationships on-chain.",
+              )}
             </p>
             <div className="guardian-actions">
               <button
@@ -510,7 +558,7 @@ export function GuardianPage() {
                 disabled={busy || !wallet || !chain?.configured}
                 type="submit"
               >
-                Create Guardian wallet <ShieldCheck size={17} />
+                {t("Create Guardian wallet")} <ShieldCheck size={17} />
               </button>
               {!wallet ? (
                 <button
@@ -519,13 +567,13 @@ export function GuardianPage() {
                   onClick={connect}
                   disabled={busy}
                 >
-                  Connect wallet
+                  {t("Connect wallet")}
                 </button>
               ) : null}
             </div>
           </form>
           <div className="guardian-details">
-            <h3>Already have a Guardian?</h3>
+            <h3>{t("Already have a Guardian?")}</h3>
             <form
               className="guardian-form"
               onSubmit={(e) => {
@@ -534,7 +582,7 @@ export function GuardianPage() {
               }}
             >
               <label>
-                Guardian wallet address
+                {t("Guardian wallet address")}
                 <input
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
@@ -543,7 +591,7 @@ export function GuardianPage() {
               </label>
               <div>
                 <button className="guardian-button secondary" disabled={busy}>
-                  Open wallet <ArrowUpRight size={15} />
+                  {t("Open wallet")} <ArrowUpRight size={15} />
                 </button>
               </div>
             </form>
@@ -560,22 +608,25 @@ export function GuardianPage() {
                   await navigator.clipboard.writeText(
                     `${location.origin}/guardian?account=${snapshot.address}`,
                   );
-                  return "Wallet link copied. The link reveals the public wallet address; it grants no signing access.";
+                  return () =>
+                    t(
+                      "Wallet link copied. The link reveals the public wallet address; it grants no signing access.",
+                    );
                 })
               }
             >
-              <Copy size={15} /> Copy wallet link
+              <Copy size={15} /> {t("Copy wallet link")}
             </button>
             <button
               className="guardian-button secondary"
               onClick={() =>
                 void run(async () => {
                   await refresh(snapshot.address);
-                  return "On-chain state refreshed.";
+                  return () => t("On-chain state refreshed.");
                 })
               }
             >
-              Refresh status
+              {t("Refresh status")}
             </button>
             <button
               className="guardian-button secondary"
@@ -589,13 +640,13 @@ export function GuardianPage() {
                 history.replaceState(null, "", "/guardian");
               }}
             >
-              Open another wallet
+              {t("Open another wallet")}
             </button>
           </div>
           <p className="guardian-tiny">
-            Save this wallet address and share it with your guardians. Account
-            access uses the connected owner wallet; guardian approvals use each
-            guardian’s own wallet.
+            {t(
+              "Save this wallet address and share it with your guardians. Account access uses the connected owner wallet; guardian approvals use each guardian’s own wallet.",
+            )}
           </p>
         </>
       ) : null}
@@ -609,17 +660,20 @@ export function GuardianPage() {
           onApprove={simple(
             "approveRecovery",
             [snapshot.recoveryId],
-            "Guardian approval confirmed on-chain.",
+            () => t("Guardian approval confirmed on-chain."),
           )}
           onExecute={simple(
             "executeRecovery",
             [snapshot.recoveryId],
-            "Recovery complete. Old credentials and pending transfers are invalid. Connect the replacement owner wallet.",
+            () =>
+              t(
+                "Recovery complete. Old credentials and pending transfers are invalid. Connect the replacement owner wallet.",
+              ),
           )}
           onCancel={simple(
             "cancelRecovery",
             [],
-            "Recovery cancelled by the current owner.",
+            () => t("Recovery cancelled by the current owner."),
           )}
         >
           <form
@@ -628,20 +682,24 @@ export function GuardianPage() {
               e.preventDefault();
               void run(async () => {
                 await write("startRecovery", [walletAddress(newOwner)]);
-                return "Recovery requested. A second independent guardian must approve before the 48-hour delay begins.";
+                return () =>
+                  t(
+                    "Recovery requested. A second independent guardian must approve before the 48-hour delay begins.",
+                  );
               });
             }}
           >
             <label>
-              Replacement owner wallet
+              {t("Replacement owner wallet")}
               <input
                 value={newOwner}
                 onChange={(e) => setNewOwner(e.target.value)}
                 placeholder="0x…"
               />
               <small>
-                Verify the new address with the owner through a separate,
-                trusted channel.
+                {t(
+                  "Verify the new address with the owner through a separate, trusted channel.",
+                )}
               </small>
             </label>
             <div>
@@ -649,12 +707,12 @@ export function GuardianPage() {
                 className="guardian-button"
                 disabled={busy || !isGuardian}
               >
-                Start recovery <UsersIcon />
+                {t("Start recovery")} <UsersIcon />
               </button>
             </div>
             {!isGuardian ? (
               <small>
-                Connect one of the three guardian wallets to start recovery.
+                {t("Connect one of the three guardian wallets to start recovery.")}
               </small>
             ) : null}
           </form>
@@ -671,7 +729,8 @@ export function GuardianPage() {
           onRevoke={(id) =>
             void run(async () => {
               await write("revokeDevice", [id]);
-              return "Credential revoked on-chain. All synced copies are disabled.";
+              return () =>
+                t("Credential revoked on-chain. All synced copies are disabled.");
             })
           }
         />
@@ -681,25 +740,25 @@ export function GuardianPage() {
           <div className="guardian-section-heading">
             <div>
               <span className="guardian-eyebrow">
-                TIME TO CHECK. TIME TO CANCEL.
+                {t("TIME TO CHECK. TIME TO CANCEL.")}
               </span>
-              <h3>Move money with a safety window.</h3>
+              <h3>{t("Move money with a safety window.")}</h3>
               <p>
-                Instant sends require a trusted destination and enough budget.
-                Queued sends wait 24 hours and can be cancelled by the owner or
-                any guardian.
+                {t(
+                  "Instant sends require a trusted destination and enough budget. Queued sends wait 24 hours and can be cancelled by the owner or any guardian.",
+                )}
               </p>
             </div>
             <span className="guardian-chip">
               {recoveryActive && snapshot.recovery.approvals >= 2
-                ? "RECOVERY HOLD"
-                : "24-HOUR DELAY"}
+                ? t("RECOVERY HOLD")
+                : t("24-HOUR DELAY")}
             </span>
           </div>
           <form className="guardian-form" onSubmit={(e) => e.preventDefault()}>
             <div className="guardian-form-row">
               <label>
-                Destination wallet
+                {t("Destination wallet")}
                 <input
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
@@ -707,7 +766,7 @@ export function GuardianPage() {
                 />
               </label>
               <label>
-                Amount ({symbol})
+                {t("Amount ({symbol})", { symbol })}
                 <input
                   inputMode="decimal"
                   value={amount}
@@ -716,13 +775,15 @@ export function GuardianPage() {
               </label>
             </div>
             <label>
-              Approval method
+              {t("Approval method")}
               <select
                 value={usePasskey ? "passkey" : "owner"}
                 onChange={(e) => setUsePasskey(e.target.value === "passkey")}
               >
-                <option value="owner">Owner wallet</option>
-                <option value="passkey">Passkey + gas-paying wallet</option>
+                <option value="owner">{t("Owner wallet")}</option>
+                <option value="passkey">
+                  {t("Passkey + gas-paying wallet")}
+                </option>
               </select>
             </label>
             <div className="guardian-actions">
@@ -732,11 +793,12 @@ export function GuardianPage() {
                 onClick={() =>
                   void run(async () => {
                     await act(0, walletAddress(destination));
-                    return "Transfer confirmed within the wallet’s budget.";
+                    return () =>
+                      t("Transfer confirmed within the wallet’s budget.");
                   })
                 }
               >
-                Send within budget <ArrowUpRight size={15} />
+                {t("Send within budget")} <ArrowUpRight size={15} />
               </button>
               <button
                 className="guardian-button secondary"
@@ -744,48 +806,60 @@ export function GuardianPage() {
                 onClick={() =>
                   void run(async () => {
                     await act(1, walletAddress(destination));
-                    return "Transfer queued. The 24-hour cancellation window has started.";
+                    return () =>
+                      t(
+                        "Transfer queued. The 24-hour cancellation window has started.",
+                      );
                   })
                 }
               >
-                Queue for 24 hours <Clock3 size={15} />
+                {t("Queue for 24 hours")} <Clock3 size={15} />
               </button>
             </div>
           </form>
-          <h3>Transfer queue</h3>
+          <h3>{t("Transfer queue")}</h3>
           {snapshot.transfers.length ? (
             snapshot.transfers
               .slice()
               .reverse()
-              .map((t) => {
+              .map((transfer) => {
                 const valid =
-                  !t.closed &&
-                  t.epoch === snapshot.epoch &&
-                  now <= t.readyAt + 7 * 86400;
+                  !transfer.closed &&
+                  transfer.epoch === snapshot.epoch &&
+                  now <= transfer.readyAt + 7 * 86400;
+                const asset = tokenOptions.find(
+                  (a) =>
+                    a.address.toLowerCase() === transfer.token.toLowerCase(),
+                );
                 return (
-                  <article className="guardian-transfer" key={String(t.id)}>
+                  <article
+                    className="guardian-transfer"
+                    key={String(transfer.id)}
+                  >
                     <div>
                       <h4>
-                        Transfer #{String(t.id)} ·{" "}
-                        {formatUnits(
-                          t.amount,
-                          tokenOptions.find(
-                            (a) =>
-                              a.address.toLowerCase() === t.token.toLowerCase(),
-                          )?.decimals ?? 0,
-                        )}{" "}
-                        {tokenOptions.find(
-                          (a) =>
-                            a.address.toLowerCase() === t.token.toLowerCase(),
-                        )?.symbol ?? "raw token units"}
+                        {t("Transfer #{id} · {amount} {token}", {
+                          id: String(transfer.id),
+                          amount: formatUnits(
+                            transfer.amount,
+                            asset?.decimals ?? 0,
+                          ),
+                          token: asset?.symbol ?? t("raw token units"),
+                        })}
                       </h4>
                       <p>
-                        To {short(t.to)} ·{" "}
-                        {valid
-                          ? countdown(t.readyAt, now)
-                          : "Closed, expired or invalidated"}
+                        {t("To {address} · {status}", {
+                          address: short(transfer.to),
+                          status: valid
+                            ? countdown(transfer.readyAt, now)
+                            : t("Closed, expired or invalidated"),
+                        })}
                       </p>
-                      <p>Token {short(t.token)}</p>
+                      <p>
+                        {t("Token {address}", {
+                          address: short(transfer.token),
+                        })}
+                      </p>
                     </div>
                     <div className="guardian-actions">
                       <button
@@ -793,34 +867,30 @@ export function GuardianPage() {
                         disabled={
                           busy ||
                           !valid ||
-                          now < t.readyAt ||
+                          now < transfer.readyAt ||
                           (recoveryActive && snapshot.recovery.approvals >= 2)
                         }
-                        onClick={simple(
-                          "executeTransfer",
-                          [t.id],
-                          "Queued transfer executed.",
+                        onClick={simple("executeTransfer", [transfer.id], () =>
+                          t("Queued transfer executed."),
                         )}
                       >
-                        Execute
+                        {t("Execute")}
                       </button>
                       <button
                         className="guardian-button secondary"
                         disabled={busy || !valid || !canManage}
-                        onClick={simple(
-                          "cancelTransfer",
-                          [t.id],
-                          "Queued transfer cancelled.",
+                        onClick={simple("cancelTransfer", [transfer.id], () =>
+                          t("Queued transfer cancelled."),
                         )}
                       >
-                        Cancel
+                        {t("Cancel")}
                       </button>
                     </div>
                   </article>
                 );
               })
           ) : (
-            <p className="guardian-setup-note">No transfers queued.</p>
+            <p className="guardian-setup-note">{t("No transfers queued.")}</p>
           )}
           <div className="guardian-actions">
             <button
@@ -832,29 +902,29 @@ export function GuardianPage() {
               }
               onClick={() => setQueueEnd(snapshot.transfers[0]!.id - 1n)}
             >
-              Older requests
+              {t("Older requests")}
             </button>
             <button
               className="guardian-button secondary"
               disabled={busy || queueEnd === undefined}
               onClick={() => setQueueEnd(undefined)}
             >
-              Latest requests
+              {t("Latest requests")}
             </button>
           </div>
           <details className="guardian-details">
-            <summary>Cancel a transfer by ID</summary>
+            <summary>{t("Cancel a transfer by ID")}</summary>
             <p className="guardian-tiny">
-              Showing the latest 20 requests. Unrecognized tokens are displayed
-              in raw units. Contract requests bind the exact token, recipient
-              and amount.
+              {t(
+                "Showing the latest 20 requests. Unrecognized tokens are displayed in raw units. Contract requests bind the exact token, recipient and amount.",
+              )}
             </p>
             <form
               className="guardian-form"
               onSubmit={(e) => e.preventDefault()}
             >
               <label>
-                Transfer ID
+                {t("Transfer ID")}
                 <input
                   value={manualTransferId}
                   onChange={(e) => setManualTransferId(e.target.value)}
@@ -868,25 +938,29 @@ export function GuardianPage() {
                   onClick={() =>
                     void run(async () => {
                       if (!/^\d+$/.test(manualTransferId))
-                        throw new Error("Enter a numeric transfer ID.");
+                        throw new Notice(() =>
+                          t("Enter a numeric transfer ID."),
+                        );
                       await write("cancelTransfer", [BigInt(manualTransferId)]);
-                      return "Transfer cancelled.";
+                      return () => t("Transfer cancelled.");
                     })
                   }
                 >
-                  Cancel by ID
+                  {t("Cancel by ID")}
                 </button>
               </div>
             </form>
           </details>
           <details className="guardian-details">
-            <summary>Claim rewards or withdraw a graduated sprout</summary>
+            <summary>
+              {t("Claim rewards or withdraw a graduated sprout")}
+            </summary>
             <form
               className="guardian-form"
               onSubmit={(e) => e.preventDefault()}
             >
               <label>
-                Sprout vault address
+                {t("Sprout vault address")}
                 <input
                   value={vault}
                   onChange={(e) => {
@@ -902,20 +976,27 @@ export function GuardianPage() {
                   onClick={checkVault}
                   disabled={busy}
                 >
-                  Check beneficiary & graduation
+                  {t("Check beneficiary & graduation")}
                 </button>
               </div>
               {graduation ? (
                 <p className="guardian-setup-note">
                   {graduation.linked
-                    ? `Linked to this Guardian. Graduation: ${new Date(graduation.at * 1000).toLocaleString()}.`
-                    : "Different beneficiary: this sprout cannot be moved into Guardian automatically."}
+                    ? t("Linked to this Guardian. Graduation: {date}.", {
+                        date: new Date(graduation.at * 1000).toLocaleString(
+                          dateLocale(),
+                        ),
+                      })
+                    : t(
+                        "Different beneficiary: this sprout cannot be moved into Guardian automatically.",
+                      )}
                 </p>
               ) : null}
               <small>
-                Uses the {amount} {symbol} amount and approval method selected
-                above. Proceeds enter this Guardian wallet; outward transfers
-                still follow its policy.
+                {t(
+                  "Uses the {amount} {symbol} amount and approval method selected above. Proceeds enter this Guardian wallet; outward transfers still follow its policy.",
+                  { amount, symbol },
+                )}
               </small>
               <div className="guardian-actions">
                 <button
@@ -924,11 +1005,11 @@ export function GuardianPage() {
                   onClick={() =>
                     void run(async () => {
                       await act(2, walletAddress(vault));
-                      return "Allowance claimed into Guardian.";
+                      return () => t("Allowance claimed into Guardian.");
                     })
                   }
                 >
-                  Claim allowance
+                  {t("Claim allowance")}
                 </button>
                 <button
                   className="guardian-button"
@@ -936,11 +1017,14 @@ export function GuardianPage() {
                   onClick={() =>
                     void run(async () => {
                       await act(3, walletAddress(vault));
-                      return "Graduated savings received by Guardian. Transfer limits still apply.";
+                      return () =>
+                        t(
+                          "Graduated savings received by Guardian. Transfer limits still apply.",
+                        );
                     })
                   }
                 >
-                  Receive graduated savings
+                  {t("Receive graduated savings")}
                 </button>
               </div>
             </form>
@@ -950,18 +1034,18 @@ export function GuardianPage() {
       {snapshot && tab === "Settings" ? (
         <div>
           <span className="guardian-eyebrow">
-            YOUR CIRCLE CAN GROW WITH YOU
+            {t("YOUR CIRCLE CAN GROW WITH YOU")}
           </span>
-          <h3>Change the rules with time to review.</h3>
+          <h3>{t("Change the rules with time to review.")}</h3>
           <p className="guardian-setup-note">
-            Only the current owner can propose and execute changes. A 48-hour
-            delay gives existing guardians time to cancel. This is also how the
-            beneficiary chooses their own recovery circle at graduation.
+            {t(
+              "Only the current owner can propose and execute changes. A 48-hour delay gives existing guardians time to cancel. This is also how the beneficiary chooses their own recovery circle at graduation.",
+            )}
           </p>
           <form className="guardian-form" onSubmit={(e) => e.preventDefault()}>
             <div className="guardian-form-row">
               <label>
-                New {symbol} budget
+                {t("New {symbol} budget", { symbol })}
                 <input
                   value={policyLimit}
                   onChange={(e) => setPolicyLimit(e.target.value)}
@@ -969,7 +1053,7 @@ export function GuardianPage() {
                 />
               </label>
               <label>
-                Add trusted destination (optional)
+                {t("Add trusted destination (optional)")}
                 <input
                   value={policyDestination}
                   onChange={(e) => setPolicyDestination(e.target.value)}
@@ -986,11 +1070,14 @@ export function GuardianPage() {
                   void run(async () => {
                     const args = policy();
                     await write("queuePolicy", args);
-                    return "Policy change queued for 48 hours. Keep these values to execute the same change.";
+                    return () =>
+                      t(
+                        "Policy change queued for 48 hours. Keep these values to execute the same change.",
+                      );
                   })
                 }
               >
-                Queue policy change
+                {t("Queue policy change")}
               </button>
               <button
                 className="guardian-button secondary"
@@ -1003,38 +1090,41 @@ export function GuardianPage() {
                 onClick={() =>
                   void run(async () => {
                     await write("executePolicy", policy());
-                    return "Policy applied. New guardians and budget are active.";
+                    return () =>
+                      t("Policy applied. New guardians and budget are active.");
                   })
                 }
               >
-                Apply matching change
+                {t("Apply matching change")}
               </button>
               {snapshot.policyHash !== EMPTY ? (
                 <button
                   className="guardian-button secondary"
                   disabled={busy || !canManage}
-                  onClick={simple(
-                    "cancelPolicy",
-                    [],
-                    "Pending policy change cancelled.",
+                  onClick={simple("cancelPolicy", [], () =>
+                    t("Pending policy change cancelled."),
                   )}
                 >
-                  Cancel pending change
+                  {t("Cancel pending change")}
                 </button>
               ) : null}
             </div>
             {snapshot.policyHash !== EMPTY ? (
               <p className="guardian-notice">
-                Pending change {short(snapshot.policyHash)} ·{" "}
-                {countdown(snapshot.policyReadyAt, now)}. Execution requires the
-                exact proposed values.
+                {t(
+                  "Pending change {hash} · {countdown}. Execution requires the exact proposed values.",
+                  {
+                    hash: short(snapshot.policyHash),
+                    countdown: countdown(snapshot.policyReadyAt, now),
+                  },
+                )}
               </p>
             ) : null}
             <div className="guardian-details">
               <p className="guardian-tiny">
-                To tighten protection immediately, enter a lower budget above.
-                The optional destination will be removed from trusted
-                destinations.
+                {t(
+                  "To tighten protection immediately, enter a lower budget above. The optional destination will be removed from trusted destinations.",
+                )}
               </p>
               <button
                 className="guardian-button secondary"
@@ -1046,8 +1136,8 @@ export function GuardianPage() {
                         ? 0n
                         : amountUnits(policyLimit, decimals);
                     if (units > snapshot.limit)
-                      throw new Error(
-                        "Immediate changes can only reduce the budget.",
+                      throw new Notice(() =>
+                        t("Immediate changes can only reduce the budget."),
                       );
                     await write("tighten", [
                       token,
@@ -1056,11 +1146,12 @@ export function GuardianPage() {
                         ? walletAddress(policyDestination)
                         : ZERO,
                     ]);
-                    return "Budget reduced and selected destination untrusted.";
+                    return () =>
+                      t("Budget reduced and selected destination untrusted.");
                   })
                 }
               >
-                Tighten protection now
+                {t("Tighten protection now")}
               </button>
             </div>
           </form>

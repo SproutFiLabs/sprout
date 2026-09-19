@@ -8,6 +8,11 @@ import { zh as components } from './components';
 import { zh as perks } from './perks';
 import { zh as votes } from './votes';
 import { zh as autoinvest } from './autoinvest';
+import { zh as guardian } from './guardian';
+import { zh as guardianView } from './guardian-view';
+import { zh as privacy } from './privacy';
+import { zh as intelligence } from './intelligence';
+import { zh as harvest } from './harvest';
 
 /** Every Simplified Chinese string, keyed by its English source text. */
-export const ZH: Record<string, string> = { ...core, ...app, ...dashboard, ...landing, ...kid, ...knowledge, ...components, ...perks, ...votes, ...autoinvest };
+export const ZH: Record<string, string> = { ...core, ...app, ...dashboard, ...landing, ...kid, ...knowledge, ...components, ...perks, ...votes, ...autoinvest, ...guardian, ...guardianView, ...privacy, ...intelligence, ...harvest };

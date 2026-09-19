@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react";
 import {
@@ -28,6 +29,8 @@ import {
   type IntelligenceMessage,
 } from "@sprout/shared";
 import { ThemeToggle } from "../theme/ThemeSettings";
+import { t, tj, useLocale } from "../i18n";
+import { LanguageToggle } from "../i18n/LanguageToggle";
 import { AnswerText } from "./AnswerText";
 import {
   intelligenceChat,
@@ -38,7 +41,9 @@ import {
   IntelligenceRequestError,
 } from "./client";
 import "./intelligence.css";
+import "./intelligence-language.css";
 
+// Kept in English: t() translates each field where it is shown.
 const TOPICS = [
   {
     title: "Planning for a child",
@@ -79,7 +84,15 @@ type Verified = {
   access: IntelligenceAccess;
 };
 const short = (s: string) => `${s.slice(0, 6)}…${s.slice(-4)}`;
+// The page styles give every .theme-toggle `margin-left: auto`; this keeps the
+// appearance and language switches side by side at the end of their row.
+const TOGGLES: CSSProperties = {
+  marginLeft: "auto",
+  display: "flex",
+  alignItems: "center",
+};
 export function IntelligencePage() {
+  const locale = useLocale();
   const [config, setConfig] = useState<IntelligenceConfigPublic | null>(null);
   const [verified, setVerified] = useState<Verified | null>(null);
   const [connecting, setConnecting] = useState(false),
@@ -115,7 +128,6 @@ export function IntelligencePage() {
   }, []);
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = "SPROUT Intelligence | Family money, explained";
     let active = true;
     intelligenceConfig()
       .then((c) => {
@@ -135,6 +147,9 @@ export function IntelligencePage() {
       cleanupProvider.current?.();
     };
   }, []);
+  useEffect(() => {
+    document.title = t("SPROUT Intelligence | Family money, explained");
+  }, [locale]);
   useEffect(() => {
     if (!verified) return;
     const timer = setTimeout(
@@ -283,7 +298,8 @@ export function IntelligencePage() {
   function choose(index: number) {
     setTopic(index);
     setShowExample(false);
-    setDraft(TOPICS[index]!.question);
+    // Send the question as shown, so a Chinese visitor gets a Chinese answer.
+    setDraft(t(TOPICS[index]!.question));
     setError("");
     focusQuestion();
   }
@@ -311,25 +327,25 @@ export function IntelligencePage() {
   return (
     <main className="si-page">
       <a className="si-skip" href="#intelligence">
-        Skip to your question
+        {t("Skip to your question")}
       </a>
-      <aside className="si-sidebar" aria-label="Intelligence navigation">
-        <a className="si-brand" href="/" aria-label="SPROUT home">
+      <aside className="si-sidebar" aria-label={t("Intelligence navigation")}>
+        <a className="si-brand" href="/" aria-label={t("SPROUT home")}>
           <SproutMark />
           SPROUT<span>Intelligence</span>
         </a>
         <button className="si-new" onClick={newConversation} disabled={busy}>
           <Plus size={17} />
-          New conversation
+          {t("New conversation")}
         </button>
-        <nav className="si-navigation" aria-label="Workspace">
+        <nav className="si-navigation" aria-label={t("Workspace")}>
           <button
             className={!showExample ? "is-active" : ""}
             aria-pressed={!showExample}
             onClick={() => setShowExample(false)}
           >
             <MessageCircle size={17} />
-            Your conversation
+            {t("Your conversation")}
             <span className="si-nav-dot" />
           </button>
           <button
@@ -339,35 +355,40 @@ export function IntelligencePage() {
             disabled={busy}
           >
             <BookOpen size={17} />
-            Explore examples
+            {t("Explore examples")}
           </button>
           <a href="/dashboard">
             <SproutMark />
-            Your garden
+            {t("Your garden")}
             <ArrowUpRight size={14} />
           </a>
         </nav>
         <div className="si-sidebar-note">
-          <span>A little knowledge.</span>
-          <span>A lot to grow.</span>
+          <span>{t("A little knowledge.")}</span>
+          <span>{t("A lot to grow.")}</span>
         </div>
         <div className="si-membership">
           <div className="si-membership-art" aria-hidden="true">
             <img src="/art/dashboard/sidebar-branch.png" alt="" />
           </div>
-          <p className="si-eyebrow">Made for your family</p>
-          <h2>Room to grow.</h2>
-          <p>Intelligence is included when you hold 1M+ SPROUT.</p>
+          <p className="si-eyebrow">{t("Made for your family")}</p>
+          <h2>{t("Room to grow.")}</h2>
+          <p>{t("Intelligence is included when you hold 1M+ SPROUT.")}</p>
           <button onClick={() => details.current?.showModal()}>
-            About holder access <ArrowUpRight size={15} />
+            {t("About holder access")} <ArrowUpRight size={15} />
           </button>
         </div>
         <div className="si-sidebar-footer">
           <span className={verified ? "si-status is-verified" : "si-status"} />
           <span>
-            {verified ? short(verified.access.address) : "Wallet not connected"}
+            {verified
+              ? short(verified.access.address)
+              : t("Wallet not connected")}
           </span>
-          <ThemeToggle />
+          <span style={TOGGLES}>
+            <ThemeToggle />
+            <LanguageToggle />
+          </span>
         </div>
       </aside>
 
@@ -375,36 +396,41 @@ export function IntelligencePage() {
         className="si-workspace"
         id="intelligence"
         tabIndex={-1}
-        aria-label="SPROUT Intelligence workspace"
+        aria-label={t("SPROUT Intelligence workspace")}
       >
         <header className="si-topbar">
           <div className="si-workspace-title">
-            <a className="si-mobile-home" href="/" aria-label="SPROUT home">
+            <a
+              className="si-mobile-home"
+              href="/"
+              aria-label={t("SPROUT home")}
+            >
               <SproutMark />
             </a>
             <span>Intelligence</span>
             <span className="si-title-divider">/</span>
             <span className="si-conversation-title">
               {showExample
-                ? "Explore an example"
+                ? t("Explore an example")
                 : inConversation
                   ? messages[0]!.content
-                  : "A fresh perspective"}
+                  : t("A fresh perspective")}
             </span>
           </div>
           <div className="si-topbar-actions">
+            <LanguageToggle className="si-mobile-language" />
             <button
               className="si-icon-button si-mobile-new"
               onClick={newConversation}
               disabled={busy}
-              aria-label="New conversation"
+              aria-label={t("New conversation")}
             >
               <Plus size={18} />
             </button>
             <button
               className="si-icon-button"
               onClick={() => details.current?.showModal()}
-              aria-label="About Intelligence and holder access"
+              aria-label={t("About Intelligence and holder access")}
             >
               <Info size={18} />
             </button>
@@ -423,10 +449,10 @@ export function IntelligencePage() {
               <Wallet size={15} />
               <span>
                 {connecting
-                  ? "Verifying…"
+                  ? t("Verifying…")
                   : verified
-                    ? "Disconnect"
-                    : "Connect wallet"}
+                    ? t("Disconnect")
+                    : t("Connect wallet")}
               </span>
             </button>
           </div>
@@ -439,37 +465,40 @@ export function IntelligencePage() {
           {showExample ? (
             <div className="si-example-view">
               <div className="si-example-heading">
-                <span className="si-eyebrow">A place to begin</span>
+                <span className="si-eyebrow">{t("A place to begin")}</span>
                 <h1>
-                  Good questions
-                  <br />
-                  grow understanding.
+                  {tj("Good questions{br}grow understanding.", { br: <br /> })}
                 </h1>
                 <p>
-                  Explore a written example, then make the question your own.
+                  {t(
+                    "Explore a written example, then make the question your own.",
+                  )}
                 </p>
               </div>
-              <div className="si-example-tabs" aria-label="Example topics">
+              <div className="si-example-tabs" aria-label={t("Example topics")}>
                 {TOPICS.map((item, i) => (
                   <button
                     key={item.title}
                     aria-pressed={topic === i}
                     onClick={() => setTopic(i)}
                   >
-                    {item.title}
+                    {t(item.title)}
                   </button>
                 ))}
               </div>
-              <article className="si-example" aria-label="Authored example">
+              <article
+                className="si-example"
+                aria-label={t("Authored example")}
+              >
                 <div className="si-example-label">
                   <SproutMark />
-                  <span>Written example · Not generated live</span>
+                  <span>{t("Written example · Not generated live")}</span>
                 </div>
-                <h2>{example.question}</h2>
-                <p>{example.intro}</p>
+                <h2>{t(example.question)}</h2>
+                <p>{t(example.intro)}</p>
                 <ol>
                   {example.steps.map((step) => (
-                    <li key={step}>{step}</li>
+                    <li key={step}>{t(step)}</li>
                   ))}
                 </ol>
                 <a
@@ -477,11 +506,11 @@ export function IntelligencePage() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Further reading: CFPB <ArrowUpRight size={14} />
+                  {t("Further reading: CFPB")} <ArrowUpRight size={14} />
                 </a>
               </article>
               <button className="si-use-example" onClick={() => choose(topic)}>
-                Make this my question <ArrowRight size={16} />
+                {t("Make this my question")} <ArrowRight size={16} />
               </button>
               {inConversation && (
                 <button
@@ -489,7 +518,7 @@ export function IntelligencePage() {
                   onClick={() => setShowExample(false)}
                 >
                   <ChevronLeft size={14} />
-                  Back to your conversation
+                  {t("Back to your conversation")}
                 </button>
               )}
             </div>
@@ -499,7 +528,7 @@ export function IntelligencePage() {
               role="log"
               aria-live="polite"
               aria-busy={busy}
-              aria-label="Conversation"
+              aria-label={t("Conversation")}
             >
               {messages.map((message, i) => (
                 <ChatMessage key={i} message={message} />
@@ -510,7 +539,7 @@ export function IntelligencePage() {
                     <SproutMark />
                   </span>
                   <div>
-                    <span>Thinking it through</span>
+                    <span>{t("Thinking it through")}</span>
                     <div className="si-thinking-dots" aria-hidden="true">
                       <i />
                       <i />
@@ -527,22 +556,26 @@ export function IntelligencePage() {
               </div>
               <p className="si-eyebrow">SPROUT Intelligence</p>
               <h1>
-                Big questions.
+                {t("Big questions.")}
                 <br />
-                <em>Clearer beginnings.</em>
+                <em>{t("Clearer beginnings.")}</em>
               </h1>
               <p className="si-welcome-copy">
-                Make sense of money, together.
-                <br />A thoughtful space for the questions parents ask.
+                {t("Make sense of money, together.")}
+                <br />
+                {t("A thoughtful space for the questions parents ask.")}
               </p>
-              <div className="si-starters" aria-label="Suggested questions">
+              <div
+                className="si-starters"
+                aria-label={t("Suggested questions")}
+              >
                 <span className="si-starters-label">
-                  Start with something on your mind
+                  {t("Start with something on your mind")}
                 </span>
                 {TOPICS.map((item, i) => (
                   <button key={item.title} onClick={() => choose(i)}>
                     <span className="si-starter-index">0{i + 1}</span>
-                    <span>{item.question}</span>
+                    <span>{t(item.question)}</span>
                     <ArrowUpRight size={17} />
                   </button>
                 ))}
@@ -551,7 +584,7 @@ export function IntelligencePage() {
                 className="si-preview-link"
                 onClick={() => setShowExample(true)}
               >
-                Just looking? Read an example <ArrowRight size={14} />
+                {t("Just looking? Read an example")} <ArrowRight size={14} />
               </button>
             </div>
           )}
@@ -560,10 +593,10 @@ export function IntelligencePage() {
         <div className="si-compose-dock">
           {error && (
             <div className="si-error" role="alert">
-              <p>{error}</p>
+              <p>{t(error)}</p>
               <button
                 className="si-icon-button"
-                aria-label="Dismiss message"
+                aria-label={t("Dismiss message")}
                 onClick={() => setError("")}
               >
                 <X size={16} />
@@ -572,13 +605,14 @@ export function IntelligencePage() {
           )}
           {!config && !error && (
             <p className="si-availability" role="status">
-              Checking availability…
+              {t("Checking availability…")}
             </p>
           )}
           {config && !ready && (
             <p className="si-availability" role="status">
-              Live answers are not available yet. You can explore a written
-              example.
+              {t(
+                "Live answers are not available yet. You can explore a written example.",
+              )}
             </p>
           )}
           {showExample ? (
@@ -589,7 +623,7 @@ export function IntelligencePage() {
                 focusQuestion();
               }}
             >
-              Ask your own question <ArrowUp size={18} />
+              {t("Ask your own question")} <ArrowUp size={18} />
             </button>
           ) : (
             <form
@@ -597,7 +631,7 @@ export function IntelligencePage() {
               className={`si-composer ${busy ? "is-busy" : ""}`}
             >
               <label className="si-sr-only" htmlFor="si-question">
-                Your question
+                {t("Your question")}
               </label>
               <textarea
                 id="si-question"
@@ -608,8 +642,8 @@ export function IntelligencePage() {
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={
                   inConversation
-                    ? "Keep the conversation growing…"
-                    : "What’s on your mind?"
+                    ? t("Keep the conversation growing…")
+                    : t("What’s on your mind?")
                 }
                 disabled={busy}
                 aria-describedby="si-privacy-hint"
@@ -629,12 +663,12 @@ export function IntelligencePage() {
                   {verified ? (
                     <>
                       <span className="si-status is-verified" />
-                      Wallet verified
+                      {t("Wallet verified")}
                     </>
                   ) : (
                     <>
                       <LockKeyhole size={13} />
-                      Free for 1M+ SPROUT holders
+                      {t("Free for 1M+ SPROUT holders")}
                     </>
                   )}
                 </span>
@@ -649,7 +683,9 @@ export function IntelligencePage() {
                     type="submit"
                     disabled={busy || connecting || !draft.trim() || !config}
                     aria-label={
-                      verified ? "Send question" : "Verify wallet to ask"
+                      verified
+                        ? t("Send question")
+                        : t("Verify wallet to ask")
                     }
                   >
                     {busy ? (
@@ -664,10 +700,10 @@ export function IntelligencePage() {
           )}
           <div className="si-composer-note">
             <p id="si-privacy-hint">
-              AI can make mistakes. Not financial advice.
+              {t("AI can make mistakes. Not financial advice.")}
             </p>
             <button onClick={() => details.current?.showModal()}>
-              Privacy & access <ArrowUpRight size={11} />
+              {t("Privacy & access")} <ArrowUpRight size={11} />
             </button>
           </div>
         </div>
@@ -687,65 +723,76 @@ export function IntelligencePage() {
             <button
               className="si-icon-button"
               onClick={() => details.current?.close()}
-              aria-label="Close details"
+              aria-label={t("Close details")}
             >
               <X size={20} />
             </button>
           </header>
           <h2 id="si-details-title">
-            A little clarity,
-            <br />
-            included for holders.
+            {tj("A little clarity,{br}included for holders.", { br: <br /> })}
           </h2>
           <p>
-            Hold at least <strong>1,000,000 SPROUT</strong> on Robinhood Chain
-            for free access.
+            {tj("Hold at least {amount} on Robinhood Chain for free access.", {
+              amount: <strong>1,000,000 SPROUT</strong>,
+            })}
           </p>
           <ol>
-            <li>Connect your wallet and sign a message to verify ownership.</li>
             <li>
-              We check your balance before each answer. Your tokens stay in your
-              wallet.
+              {t("Connect your wallet and sign a message to verify ownership.")}
+            </li>
+            <li>
+              {t(
+                "We check your balance before each answer. Your tokens stay in your wallet.",
+              )}
             </li>
           </ol>
           <p className="si-details-limit">
-            {config?.dailyLimit ?? 40} questions per wallet each day, subject to
-            service capacity.
+            {t(
+              "{n} questions per wallet each day, subject to service capacity.",
+              { n: config?.dailyLimit ?? 40 },
+            )}
           </p>
           <div className="si-contract">
-            <span>Token contract · Robinhood Chain</span>
+            <span>{t("Token contract · Robinhood Chain")}</span>
             <div>
               <code>{INTELLIGENCE_TOKEN}</code>
               <button
                 className="si-icon-button"
                 onClick={copy}
-                aria-label="Copy SPROUT contract address"
+                aria-label={t("Copy SPROUT contract address")}
               >
                 {copied ? <Check size={16} /> : <Copy size={16} />}
               </button>
             </div>
-            <span role="status">{copied ? "Contract address copied" : ""}</span>
+            <span role="status">
+              {copied ? t("Contract address copied") : ""}
+            </span>
           </div>
           <div className="si-details-navigation">
             <a href="/">
-              Back to SPROUT <ArrowUpRight size={13} />
+              {t("Back to SPROUT")} <ArrowUpRight size={13} />
             </a>
             <a href="/dashboard">
-              Your garden <ArrowUpRight size={13} />
+              {t("Your garden")} <ArrowUpRight size={13} />
             </a>
-            <ThemeToggle />
+            <span style={TOGGLES}>
+              <ThemeToggle />
+              <LanguageToggle />
+            </span>
           </div>
-          <h3>About your conversation</h3>
+          <h3>{t("About your conversation")}</h3>
           <p>
-            SPROUT does not save chat transcripts. Questions go to our server
-            and OpenAI, whose data policies apply. Refreshing, disconnecting or
-            starting over clears your conversation.
+            {t(
+              "SPROUT does not save chat transcripts. Questions go to our server and OpenAI, whose data policies apply. Refreshing, disconnecting or starting over clears your conversation.",
+            )}
           </p>
-          <p>Leave out names, account details and wallet secrets.</p>
-          <h3>Education, not investment advice.</h3>
+          <p>{t("Leave out names, account details and wallet secrets.")}</p>
+          <h3>{t("Education, not investment advice.")}</h3>
           <p>
-            {INTELLIGENCE_DISCLAIMER} Token ownership carries market risk.
-            Access is not a recommendation to buy SPROUT.
+            {t(
+              "{disclaimer} Token ownership carries market risk. Access is not a recommendation to buy SPROUT.",
+              { disclaimer: t(INTELLIGENCE_DISCLAIMER) },
+            )}
           </p>
         </div>
       </dialog>
@@ -803,24 +850,26 @@ function ChatMessage({ message }: { message: IntelligenceMessage }) {
             <AnswerText text={message.content} />
           </div>
           <div className="si-answer-actions">
-            <button onClick={copyAnswer} aria-label="Copy answer">
+            <button onClick={copyAnswer} aria-label={t("Copy answer")}>
               {copyState === "copied" ? (
                 <Check size={14} />
               ) : (
                 <Copy size={14} />
               )}
-              <span>{copyState === "copied" ? "Copied" : "Copy answer"}</span>
+              <span>
+                {copyState === "copied" ? t("Copied") : t("Copy answer")}
+              </span>
             </button>
             <span role="status">
               {copyState === "failed"
-                ? "Could not copy. Please select the text."
+                ? t("Could not copy. Please select the text.")
                 : ""}
             </span>
           </div>
         </>
       ) : (
         <>
-          <span className="si-sr-only">You</span>
+          <span className="si-sr-only">{t("You")}</span>
           <div>{message.content}</div>
         </>
       )}

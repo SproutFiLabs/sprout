@@ -275,4 +275,8 @@ export const zh: Record<string, string> = {
   'The connected account changed. Reconnect the wallet.': '已连接的账户发生了变化。请重新连接钱包。',
   'Wrong network: expected chain {expected}, wallet is on {actual}.': '网络不对：应连接链 {expected}，钱包当前在链 {actual} 上。',
   'Transaction reverted: {hash}': '交易执行失败（已回退）：{hash}',
+  // Resources menu: Intelligence and the Harvest preview
+  'Thoughtful AI for parents': '为家长准备的贴心 AI',
+  'Harvest preview': 'Harvest 预览',
+  'Explore the holder rewards demo': '看看持有者奖励的演示',
 };

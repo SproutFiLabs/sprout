@@ -1,0 +1,8 @@
+/* Room for the EN/中文 switch in the phone header (kept apart from harvest.css so
+   upstream edits merge cleanly). The compact wallet button was being overridden by
+   the later .harvest-button rule, which pushed the header past 375px once the
+   switch joined it. */
+@media (max-width: 700px) {
+  .harvest-header .harvest-wallet { font-size: 11px; padding: 10px 13px; gap: 6px; }
+  .harvest-header nav { gap: 8px; }
+}

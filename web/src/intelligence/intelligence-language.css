@@ -1,0 +1,16 @@
+/* The EN/中文 switch sits in the sidebar footer, which phones don't show, so on
+   phones it moves into the top bar beside "New conversation" (kept in its own
+   file so upstream edits to intelligence.css merge cleanly). */
+.si-topbar-actions .si-mobile-language {
+  display: none;
+}
+@media (max-width: 760px) {
+  .si-topbar-actions .si-mobile-language {
+    display: flex;
+    margin-left: 0;
+    background: transparent !important;
+    border: 0 !important;
+    padding: 9px !important;
+    color: var(--si-ink) !important;
+  }
+}
