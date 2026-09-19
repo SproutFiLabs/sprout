@@ -594,3 +594,7 @@
     transform: none;
   }
 }
+
+.family-safety-launches { position: fixed; right: 24px; bottom: 22px; z-index: 40; display: flex; gap: 8px; }
+.family-safety-launches .privacy-launch { position: static; text-decoration: none; }
+@media (max-width: 480px) { .family-safety-launches { right: 12px; bottom: 14px; gap: 6px; } .family-safety-launches .privacy-launch { padding: 11px 13px; font-size: 11px; } }

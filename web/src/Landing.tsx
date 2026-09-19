@@ -276,6 +276,7 @@ export function Landing() {
             <button aria-expanded={resources} onClick={() => setResources(!resources)}>Explore <ChevronDown size={15} /></button>
             {resources ? (
               <nav className="resource-menu" aria-label="Explore SPROUT">
+                <a href="/guardian">Guardian wallets</a>
                 <a href="#how-it-works" onClick={() => { setResources(false); setMenu(false); }}>How it works</a>
                 <a href="#family" onClick={() => { setResources(false); setMenu(false); }}>For your family</a>
                 <a href="#questions" onClick={() => { setResources(false); setMenu(false); }}>Good to know</a>

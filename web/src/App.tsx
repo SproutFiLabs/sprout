@@ -130,7 +130,7 @@ export function App() {
   const [fundTool, setFundTool] = useState({ token: '', amount: '1000' });
   const [advanceSeconds, setAdvanceSeconds] = useState('86400');
 
-  const [showPlant, setShowPlant] = useState(false);
+  const [showPlant, setShowPlant] = useState(new URLSearchParams(window.location.search).has('beneficiary'));
   const [showFund, setShowFund] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [showInvestNow, setShowInvestNow] = useState(false);
@@ -155,7 +155,7 @@ export function App() {
 
   const [plantForm, setPlantForm] = useState({
     nickname: '',
-    beneficiary: '',
+    beneficiary: new URLSearchParams(window.location.search).get('beneficiary') ?? '',
     graduation: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10),
     percents: {} as Record<string, string>,
   });
@@ -979,7 +979,7 @@ export function App() {
   return (
     <main className="garden-root">
       <div ref={el => { if (el) el.inert = showPrivacy; }} aria-hidden={showPrivacy || undefined}><DashboardShell {...shell} />
-      <button className="privacy-launch" onClick={() => setShowPrivacy(true)} data-testid="privacy-open">◈ Family privacy</button></div>
+      <nav className="family-safety-launches" aria-label="Family safety"><a className="privacy-launch" href="/guardian">◈ Guardian wallets</a><button className="privacy-launch" onClick={() => setShowPrivacy(true)} data-testid="privacy-open">◈ Family privacy</button></nav></div>
       {showPrivacy ? <PrivacyCenter wallet={wallet} sprouts={parentSprouts} onClose={closePrivacy} onConnect={() => void connect()} onLocked={() => { setWallet(null); setDetail(null); setParentSprouts([]); setBeneficiarySprouts([]); setSelectedId(null); setHoldings(null); setGrowth(null); setEvents([]); setShowPrivacy(false); }} /> : null}
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}
@@ -1005,7 +1005,7 @@ export function App() {
                 Beneficiary wallet
                 <input data-testid="plant-beneficiary" value={plantForm.beneficiary} onChange={(e) => setPlantForm({ ...plantForm, beneficiary: e.target.value })} placeholder="0x..." />
               </label>
-              <p className="fine-print" data-testid="plant-beneficiary-note"><b>Money in this sprout can only ever be paid to this wallet</b>: rewards you approve before graduation, and everything at graduation. It can’t be changed later, so use a wallet your family can open. The nickname stays on this device.</p>
+              <p className="fine-print"><a href="/guardian">Create a recoverable Guardian beneficiary wallet ↗</a></p><p className="fine-print" data-testid="plant-beneficiary-note"><b>Money in this sprout can only ever be paid to this wallet</b>: rewards you approve before graduation, and everything at graduation. It can’t be changed later, so use a wallet your family can open. The nickname stays on this device.</p>
             </>
           ) : null}
 

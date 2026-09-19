@@ -5,6 +5,7 @@ cd "$(dirname "$0")/.."
 
 forge build --root contracts
 bun run scripts/gen-abis.ts
+bun run scripts/gen-guardian.ts
 bunx tsc -p shared/tsconfig.json --noEmit
 bunx tsc -p server/tsconfig.json --noEmit
 bunx tsc -p web/tsconfig.json --noEmit

@@ -167,6 +167,7 @@ export function PrivacyCenter({
             <X size={22} />
           </button>
         </header>
+        <a className="privacy-pill" href="/guardian" style={{display:"inline-flex",margin:"20px 0"}}>Guardian wallets · recovery, passkeys & transfer limits ↗</a>
         <section className="privacy-hero">
           <div>
             <span className="privacy-kicker">

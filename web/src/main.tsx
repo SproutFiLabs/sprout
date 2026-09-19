@@ -1,5 +1,7 @@
 import { ProofVerifier } from './privacy/ProofVerifier';
-import { StrictMode } from 'react';
+import { StrictMode, lazy, Suspense } from 'react';
+const GuardianPage=lazy(()=>import('./guardian/GuardianPage').then(m=>({default:m.GuardianPage})));
+
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { Landing } from './Landing';
@@ -31,6 +33,7 @@ function currentPath(): string {
 function Root() {
   const path = currentPath();
   if (path === '/' || path === '/index.html') return <Landing />;
+  if (path === '/guardian') return <Suspense fallback={<main style={{padding:'64px',fontFamily:'sans-serif'}}>Opening Guardian…</main>}><GuardianPage /></Suspense>;
   if (path === '/verify') return <ProofVerifier />;
   if (path === '/gift') return <GiftLanding />;
   if (path === '/dashboard/preview') return <Preview />;
