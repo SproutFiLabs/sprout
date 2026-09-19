@@ -1,0 +1,5 @@
+node_modules/
+public/
+src/product/
+out/
+audio-cues.json

@@ -1,0 +1,24 @@
+{
+  "name": "sprout-spend-film",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "prepare": "node prepare.mjs",
+    "stills": "node render-spend.mjs --stills",
+    "render": "node render-spend.mjs"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.525",
+    "@remotion/cli": "4.0.525",
+    "@remotion/renderer": "4.0.525",
+    "lucide-react": "1.45.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.525"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}
