@@ -126,3 +126,14 @@ describe('paid reports', () => {
     expect(redeemToolPurchase(db, first.id, wallet, hash, 2000).result).toEqual({ ready: true });
   });
 });
+
+// More than the recent-history limit must still count toward lifetime burns.
+test('public tool burn totals include all receipts with exact token precision', async () => {
+  const { db, app } = setup();
+  const amount = 123000000000000000001n;
+  for (let i = 0; i < 25; i++) db.run('INSERT INTO tool_burn_redemptions VALUES (?,?,?,?)', ['0x' + i.toString(16).padStart(64, '0'), 'receipt-' + i, String(amount), 1000 + i]);
+  const summary = await (await app.request('/api/tools/burns')).json();
+  expect(summary.count).toBe(25);
+  expect(summary.totalAmount).toBe(String(amount * 25n));
+  expect(summary.latest).toHaveLength(20);
+});

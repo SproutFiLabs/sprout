@@ -94,8 +94,13 @@ export function registerToolRoutes(app: Hono, deps: { db: SproutDb; runtime: Too
     const rows = db.query<{ tx_hash: string; amount: string; at: number }, []>(
       'SELECT tx_hash, amount, at FROM tool_burn_redemptions ORDER BY at DESC LIMIT 20',
     ).all();
-    const total = rows.reduce((sum, row) => sum + BigInt(row.amount), 0n);
-    return c.json({ count: rows.length, totalAmount: String(total), latest: rows.map((row) => ({ txHash: row.tx_hash, amount: row.amount, at: row.at })) });
+    let total = 0n, count = 0;
+    // The recent list is capped, but lifetime totals include every receipt.
+    // Use BigInt, not SQLite SUM, so 18-decimal token amounts stay exact.
+    for (const row of db.query<{ amount: string }, []>('SELECT amount FROM tool_burn_redemptions').iterate()) {
+      total += BigInt(row.amount); count++;
+    }
+    return c.json({ count, totalAmount: String(total), latest: rows.map((row) => ({ txHash: row.tx_hash, amount: row.amount, at: row.at })) });
   });
   app.get('/api/family/tools/purchases', (c) => {
     const session = familySession(c, db, now());
