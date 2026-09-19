@@ -6,20 +6,15 @@ import {
   type FormEvent,
 } from "react";
 import {
-  ArrowDown,
   ArrowRight,
   ArrowUpRight,
   Check,
-  CheckCheck,
   Copy,
-  Leaf,
-  LockKeyhole,
-  MessageCircle,
   Plus,
-  ShieldCheck,
-  Sparkles,
   Wallet,
   X,
+  ArrowUp,
+  ChevronLeft,
 } from "lucide-react";
 import {
   INTELLIGENCE_TOKEN,
@@ -28,7 +23,6 @@ import {
   type IntelligenceConfigPublic,
   type IntelligenceMessage,
 } from "@sprout/shared";
-import { BloomGarden } from "../garden/BloomGarden";
 import { ThemeToggle } from "../theme/ThemeSettings";
 import {
   intelligenceChat,
@@ -42,9 +36,7 @@ import "./intelligence.css";
 
 const TOPICS = [
   {
-    title: "The bigger picture",
-    label: "Understand the trade-offs",
-    icon: "01",
+    title: "Planning for a child",
     question:
       "What questions should we ask before putting money aside for our child?",
     intro: "Start with the purpose, then explore the options.",
@@ -55,9 +47,7 @@ const TOPICS = [
     ],
   },
   {
-    title: "Little money lessons",
-    label: "Make learning a family habit",
-    icon: "02",
+    title: "Teaching kids about money",
     question: "How can I talk about money with a ten-year-old?",
     intro: "Begin with an everyday choice you can explore together.",
     steps: [
@@ -67,9 +57,7 @@ const TOPICS = [
     ],
   },
   {
-    title: "Before you decide",
-    label: "Bring better questions",
-    icon: "03",
+    title: "Preparing for an adviser",
     question:
       "Help me prepare questions for a financial adviser about our family’s goals.",
     intro: "A useful conversation makes the assumptions visible.",
@@ -96,6 +84,7 @@ export function IntelligencePage() {
     [draft, setDraft] = useState(""),
     [messages, setMessages] = useState<IntelligenceMessage[]>([]),
     [copied, setCopied] = useState(false);
+  const [showExample, setShowExample] = useState(false);
   const epoch = useRef(0),
     request = useRef<AbortController | null>(null),
     session = useRef<Verified | null>(null),
@@ -112,6 +101,7 @@ export function IntelligencePage() {
     session.current = null;
     if (previous) void intelligenceLogout(previous.token).catch(() => {});
     setVerified(null);
+    setShowExample(false);
     setMessages([]);
     setDraft("");
     setConnecting(false);
@@ -119,8 +109,7 @@ export function IntelligencePage() {
   }, []);
   useEffect(() => {
     const previousTitle = document.title;
-    document.title =
-      "SPROUT Intelligence — A little clarity. A growing tomorrow.";
+    document.title = "SPROUT Intelligence | Family money, explained";
     let active = true;
     intelligenceConfig()
       .then((c) => {
@@ -153,15 +142,20 @@ export function IntelligencePage() {
   }, [verified, reset]);
   useEffect(() => {
     if (error)
-      document
-        .querySelector(".si-error")
-        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+      document.querySelector(".si-error")?.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      });
   }, [error]);
   useEffect(() => {
     if (messages.length)
       conversationEnd.current?.scrollIntoView({
         block: "nearest",
-        behavior: "smooth",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
       });
   }, [messages.length, busy]);
   async function connect() {
@@ -195,6 +189,7 @@ export function IntelligencePage() {
       }
       session.current = result;
       setVerified(result);
+      setShowExample(false);
       setMessages([]);
     } catch (e) {
       if (version === epoch.current) {
@@ -216,7 +211,9 @@ export function IntelligencePage() {
       return;
     }
     if (!config?.aiReady) {
-      setError("Live AI is being connected. Please try again later.");
+      setError(
+        "Live answers are not available yet. You can browse the examples.",
+      );
       return;
     }
     if (messages.length >= 10) {
@@ -262,18 +259,31 @@ export function IntelligencePage() {
       if (version === epoch.current) setBusy(false);
     }
   }
+  function focusQuestion() {
+    requestAnimationFrame(() => {
+      input.current?.focus({ preventScroll: true });
+      input.current?.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      });
+    });
+  }
   function choose(index: number) {
     setTopic(index);
+    setShowExample(false);
     setDraft(TOPICS[index]!.question);
     setError("");
-    input.current?.focus({ preventScroll: true });
+    focusQuestion();
   }
   function newConversation() {
     if (busy) return;
     setMessages([]);
+    setShowExample(false);
     setDraft("");
     setError("");
-    input.current?.focus({ preventScroll: true });
+    focusQuestion();
   }
   async function copy() {
     try {
@@ -286,21 +296,29 @@ export function IntelligencePage() {
       );
     }
   }
+  const ready = Boolean(config?.aiReady && config?.verificationReady);
+  const promptPlaceholder =
+    "For example: How do I explain saving to my ten-year-old?";
   return (
     <main className="si-page">
+      <a className="si-skip" href="#intelligence">
+        Skip to Intelligence
+      </a>
       <header className="si-header si-wrap">
         <a className="si-brand" href="/" aria-label="SPROUT home">
           <img src="/brand/sprout-logo.png" alt="" />
-          SPROUT<span>Intelligence</span>
+          SPROUT
         </a>
-        <nav aria-label="Intelligence navigation">
-          <a href="#how-it-helps">How it helps</a>
-          <a href="/dashboard">
-            Your garden <ArrowUpRight size={14} />
+        <nav aria-label="Main navigation">
+          <a href="/dashboard">Your garden</a>
+          <a href="/intelligence" aria-current="page">
+            Intelligence
           </a>
+        </nav>
+        <div className="si-header-actions">
           <ThemeToggle />
           <button
-            className="si-button si-button--small"
+            className="si-wallet"
             disabled={connecting || !config}
             onClick={
               verified
@@ -311,270 +329,143 @@ export function IntelligencePage() {
                 : connect
             }
           >
-            <Wallet size={15} />
-            {connecting
-              ? "Verifying…"
-              : verified
-                ? "Disconnect"
-                : "Connect wallet"}
-          </button>
-        </nav>
-      </header>
-      <section className="si-hero si-wrap">
-        <div className="si-hero-copy">
-          <div className="si-eyebrow">
-            <span /> A LITTLE GUIDANCE. A LOT OF POSSIBILITY.
-          </div>
-          <h1>
-            A little clarity.
-            <br />
-            For their <em>big future.</em>
-          </h1>
-          <p>
-            Meet SPROUT Intelligence. A thoughtful AI companion that helps
-            parents understand the options, ask better questions and make more
-            informed decisions.
-          </p>
-          <div className="si-hero-actions">
-            <a className="si-button" href="#intelligence">
-              Explore Intelligence <ArrowDown size={16} />
-            </a>
+            <Wallet size={16} />
             <span>
-              <ShieldCheck size={16} /> Not financial advice
+              {connecting
+                ? "Verifying…"
+                : verified
+                  ? "Disconnect"
+                  : "Connect wallet"}
             </span>
-          </div>
+          </button>
         </div>
-        <div className="si-hero-art" aria-hidden="true">
-          <span className="si-orbit si-orbit--one" />
-          <span className="si-orbit si-orbit--two" />
-          <span className="si-orbit si-orbit--three" />
-          <div className="si-botanical">
-            <BloomGarden compact fullyBloomed scrollMarker={false} />
-          </div>
-          <div className="si-art-note">
-            <Sparkles size={15} />
-            <span>Room for better questions.</span>
-          </div>
-          <span className="si-art-caption">
-            A GROWING MIND, FOR A GROWING FAMILY.
-          </span>
-        </div>
-      </section>
-      <section className="si-holder si-wrap" aria-label="Holder access">
-        <div className="si-holder-label">
-          <span className="si-holder-icon">
-            <Leaf />
-          </span>
-          <div>
-            <small>A LITTLE THANK YOU TO OUR HOLDERS</small>
-            <h2>Your SPROUT. Your access.</h2>
-          </div>
-        </div>
-        <div className="si-threshold">
-          <strong>
-            1,000,000<span> SPROUT</span>
-          </strong>
-          <p>Hold at least 1 million tokens. Intelligence is free to use.</p>
-        </div>
-        <a href="#access-details" className="si-holder-link">
-          How access works <ArrowUpRight size={17} />
-        </a>
-      </section>
-      <section
-        className="si-workspace si-wrap"
-        id="intelligence"
-        aria-label="SPROUT Intelligence workspace"
-      >
-        <div className="si-section-label">
-          <span>
-            <Sparkles size={17} /> YOUR SPACE TO THINK THINGS THROUGH
-          </span>
-          <span className="si-mode">
-            <i />
-            {verified ? "Holder verified" : "Explore an example"}
-          </span>
-        </div>
-        <div className="si-studio">
-          <aside className="si-sidebar">
-            <div className="si-sidebar-title">
-              <span className="si-leaf-mark">
-                <Leaf size={22} />
-              </span>
-              <strong>
-                Intelligence<small>Made for the parent in you.</small>
-              </strong>
-            </div>
+      </header>
+      <div className="si-layout si-wrap">
+        <section
+          className="si-workspace"
+          id="intelligence"
+          tabIndex={-1}
+          aria-label="SPROUT Intelligence workspace"
+        >
+          <div className="si-workspace-top">
+            <p>
+              SPROUT Intelligence{" "}
+              <span>{ready ? "For parents" : "Preview"}</span>
+            </p>
             <button
               className="si-new"
               onClick={newConversation}
               disabled={busy}
             >
-              <Plus size={17} /> A fresh conversation
+              <Plus size={16} />
+              New conversation
             </button>
-            <span className="si-sidebar-caption">A GOOD PLACE TO START</span>
-            <div className="si-topics">
-              {TOPICS.map((item, i) => (
-                <button
-                  key={item.title}
-                  onClick={() => choose(i)}
-                  disabled={busy}
-                  className={topic === i ? "is-selected" : ""}
-                  aria-pressed={topic === i}
-                >
-                  <span>{item.icon}</span>
-                  <div>
-                    {item.title}
-                    <small>{item.label}</small>
-                  </div>
-                  <ArrowUpRight size={15} />
-                </button>
-              ))}
-            </div>
-            <div className="si-sidebar-bottom">
-              <ShieldCheck size={20} />
-              <strong>You stay in the driver’s seat.</strong>
-              <p>Explore ideas and questions. Every decision remains yours.</p>
-              <a href="#access-details">
-                About access & privacy <ArrowUpRight size={13} />
-              </a>
-            </div>
-          </aside>
-          <div className="si-chat">
-            <header className="si-chat-header">
-              <div>
-                <span className="si-chat-dot" />
-                SPROUT Intelligence <span className="si-ai-badge">AI</span>
-              </div>
-              <small>
-                {verified
-                  ? short(verified.access.address)
-                  : "For curious parents"}
-              </small>
-            </header>
-            <div
-              className="si-conversation"
-              role="log"
-              aria-label="Conversation"
-              aria-live="polite"
-              aria-busy={busy}
+          </div>
+          <div className="si-intro">
+            <h1>
+              What would you like
+              <br />
+              to understand?
+            </h1>
+            <p>
+              A space for your family’s money questions. Explore the options,
+              learn the basics and prepare for your next decision.
+            </p>
+          </div>
+          <div className="si-mode-switch" aria-label="Conversation view">
+            <button
+              aria-pressed={!showExample}
+              onClick={() => setShowExample(false)}
             >
-              {!messages.length ? (
-                <>
-                  <div className="si-conversation-heading">
-                    <span className="si-eyebrow">
-                      {verified
-                        ? "A FRESH PERSPECTIVE"
-                        : "EXAMPLE CONVERSATION · NOT A LIVE AI ANSWER"}
-                    </span>
-                    <h2>
-                      Big questions.
-                      <br />
-                      <em>Let’s make a little sense of them.</em>
-                    </h2>
-                  </div>
-                  {!verified ? (
-                    <>
-                      <div className="si-question">
-                        <span>You might ask</span>
-                        <p>{example.question}</p>
-                      </div>
-                      <div className="si-answer-example">
-                        <span className="si-answer-symbol">
-                          <Leaf size={19} />
-                        </span>
-                        <div>
-                          <strong>{example.intro}</strong>
-                          <ol>
-                            {example.steps.map((step) => (
-                              <li key={step}>{step}</li>
-                            ))}
-                          </ol>
-                          <a
-                            href="https://www.consumerfinance.gov/consumer-tools/money-as-you-grow/"
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Parent learning resource · CFPB{" "}
-                            <ArrowUpRight size={12} />
-                          </a>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="si-welcome">
-                      What’s on your mind? Ask about a money concept, compare
-                      general trade-offs or plan a conversation with your child.
-                      Please leave out names, account details and other
-                      sensitive information.
+              Your question
+            </button>
+            <button
+              aria-pressed={showExample}
+              onClick={() => setShowExample(true)}
+              disabled={busy}
+            >
+              See an example <ArrowUpRight size={13} />
+            </button>
+            <span>Not financial advice</span>
+          </div>
+          {showExample ? (
+            <article className="si-example" aria-label="Authored example">
+              <div className="si-example-top">
+                <span>Written example · Not generated live</span>
+                <span>{String(topic + 1).padStart(2, "0")} / 03</span>
+              </div>
+              <h2>{example.question}</h2>
+              <p className="si-example-intro">{example.intro}</p>
+              <ol>
+                {example.steps.map((step, i) => (
+                  <li key={step}>
+                    <span>{i + 1}</span>
+                    <p>{step}</p>
+                  </li>
+                ))}
+              </ol>
+              <div className="si-example-bottom">
+                <a
+                  href="https://www.consumerfinance.gov/consumer-tools/money-as-you-grow/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Further reading: CFPB <ArrowUpRight size={13} />
+                </a>
+                <button
+                  onClick={() => {
+                    setDraft(example.question);
+                    setShowExample(false);
+                    focusQuestion();
+                  }}
+                >
+                  Use this question <ArrowRight size={15} />
+                </button>
+              </div>
+            </article>
+          ) : (
+            <>
+              {messages.length > 0 && (
+                <div
+                  className="si-conversation"
+                  role="log"
+                  aria-live="polite"
+                  aria-busy={busy}
+                  aria-label="Conversation"
+                >
+                  {messages.map((message, i) => (
+                    <article
+                      className={`si-message si-message--${message.role}`}
+                      key={i}
+                    >
+                      <span>
+                        {message.role === "user"
+                          ? "You"
+                          : "SPROUT Intelligence"}
+                      </span>
+                      <div>{message.content}</div>
+                    </article>
+                  ))}
+                  {busy && (
+                    <p className="si-thinking">
+                      Preparing your answer<span>…</span>
                     </p>
                   )}
-                </>
-              ) : (
-                messages.map((message, i) => (
-                  <article
-                    className={`si-message si-message--${message.role}`}
-                    key={i}
-                  >
-                    <span>
-                      {message.role === "user" ? "You" : "SPROUT Intelligence"}
-                    </span>
-                    <div>{message.content}</div>
-                  </article>
-                ))
-              )}
-              {busy && (
-                <div className="si-thinking">
-                  <span />
-                  <span />
-                  <span />
-                  Thinking it through…
+                  <div ref={conversationEnd} />
                 </div>
-              )}
-              <div ref={conversationEnd} />
-            </div>
-            <div className="si-composer-wrap">
-              {error && (
-                <div className="si-error" role="alert">
-                  <span>{error}</span>
-                  <button
-                    aria-label="Dismiss message"
-                    onClick={() => setError("")}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
-              {!verified && (
-                <div className="si-unlock">
-                  <LockKeyhole size={15} />
-                  <span>
-                    Live answers are free for verified 1M+ SPROUT holders.
-                  </span>
-                  <button onClick={connect} disabled={connecting || !config}>
-                    {connecting ? "Verifying…" : "Unlock access"}{" "}
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-              )}
-              {config && (!config.verificationReady || !config.aiReady) && (
-                <p className="si-availability" role="status">
-                  Live access is being connected. You can explore the examples
-                  now.
-                </p>
               )}
               <form onSubmit={submit} className="si-composer">
-                <label htmlFor="si-question" className="si-sr-only">
-                  Your question for SPROUT Intelligence
-                </label>
+                <label htmlFor="si-question">Your question</label>
                 <textarea
                   id="si-question"
                   ref={input}
                   value={draft}
                   maxLength={2500}
-                  rows={2}
+                  rows={3}
                   onChange={(e) => setDraft(e.target.value)}
-                  placeholder="A question today. A clearer tomorrow."
+                  placeholder={promptPlaceholder}
                   disabled={busy}
+                  aria-describedby="si-privacy-hint"
                   onKeyDown={(e) => {
                     if (
                       e.key === "Enter" &&
@@ -586,192 +477,223 @@ export function IntelligencePage() {
                     }
                   }}
                 />
-                <button
-                  className="si-send"
-                  type="submit"
-                  disabled={busy || connecting || !draft.trim() || !config}
-                  aria-label={
-                    verified ? "Send question" : "Verify wallet to ask"
-                  }
-                >
-                  <ArrowRight size={21} />
-                </button>
+                <div className="si-composer-bottom">
+                  <span>
+                    {verified ? (
+                      <>
+                        <Check size={13} />
+                        Wallet verified · {short(verified.access.address)}
+                      </>
+                    ) : (
+                      <>Free for 1M+ SPROUT holders</>
+                    )}
+                  </span>
+                  <button
+                    className="si-send"
+                    type="submit"
+                    disabled={busy || connecting || !draft.trim() || !config}
+                    aria-label={
+                      verified ? "Send question" : "Verify wallet to ask"
+                    }
+                  >
+                    {busy
+                      ? "Thinking"
+                      : connecting
+                        ? "Verifying"
+                        : verified
+                          ? "Send question"
+                          : "Connect to ask"}
+                    {verified ? (
+                      <ArrowUp size={17} />
+                    ) : (
+                      <ArrowRight size={17} />
+                    )}
+                  </button>
+                </div>
               </form>
-              <p className="si-disclaimer">
-                AI can make mistakes. {INTELLIGENCE_DISCLAIMER}
-              </p>
+              <div className="si-composer-note">
+                <p id="si-privacy-hint">
+                  Leave out names, account details and wallet secrets.
+                </p>
+                <span>{draft.length.toLocaleString()} / 2,500</span>
+              </div>
+            </>
+          )}
+          {error && (
+            <div className="si-error" role="alert">
+              <p>{error}</p>
+              <button aria-label="Dismiss message" onClick={() => setError("")}>
+                <X size={16} />
+              </button>
             </div>
-          </div>
-        </div>
-      </section>
-      <section className="si-help si-wrap" id="how-it-helps">
-        <div className="si-section-intro">
-          <span className="si-eyebrow">THOUGHTFUL SUPPORT, AT YOUR PACE</span>
-          <h2>
-            A clearer head.
-            <br />A more confident conversation.
-          </h2>
-          <p>
-            You don’t need to know all the answers. A few good questions are a
-            lovely place to start.
+          )}
+          {!config && !error && (
+            <p className="si-availability" role="status">
+              Checking availability…
+            </p>
+          )}
+          {config && !ready && (
+            <p className="si-availability" role="status">
+              <span />
+              Live answers are not available yet. Explore a written example
+              above.
+            </p>
+          )}
+          <section className="si-topics" aria-label="Suggested questions">
+            <div className="si-section-heading">
+              <h2>
+                {showExample ? "More examples" : "Not sure where to start?"}
+              </h2>
+              <span>Choose a topic</span>
+            </div>
+            {TOPICS.map((item, i) => (
+              <button
+                key={item.title}
+                onClick={() => {
+                  if (showExample) {
+                    setTopic(i);
+                    requestAnimationFrame(() =>
+                      document.querySelector(".si-example")?.scrollIntoView({
+                        block: "start",
+                        behavior: window.matchMedia(
+                          "(prefers-reduced-motion: reduce)",
+                        ).matches
+                          ? "auto"
+                          : "smooth",
+                      }),
+                    );
+                  } else choose(i);
+                }}
+                disabled={busy}
+                className={showExample && topic === i ? "is-selected" : ""}
+              >
+                <span className="si-topic-number">0{i + 1}</span>
+                <div>
+                  <strong>{item.title}</strong>
+                  <span>{item.question}</span>
+                </div>
+                <ArrowRight size={18} />
+              </button>
+            ))}
+          </section>
+          <p className="si-disclaimer">
+            AI can make mistakes. {INTELLIGENCE_DISCLAIMER}
           </p>
-        </div>
-        <div className="si-help-grid">
-          {[
-            {
-              icon: <Leaf />,
-              title: "Understand, a little better.",
-              text: "Untangle unfamiliar terms and explore the risks, costs and questions behind the options.",
-              color: "mint",
-            },
-            {
-              icon: <MessageCircle />,
-              title: "Learn, a little together.",
-              text: "Find everyday ways to talk about needs, wants, goals and money habits with your child.",
-              color: "orange",
-            },
-            {
-              icon: <Sparkles />,
-              title: "Decide, with more context.",
-              text: "Organize your thinking and prepare better questions for a qualified professional.",
-              color: "purple",
-            },
-          ].map((card) => (
-            <article
-              className={`si-help-card si-help-card--${card.color}`}
-              key={card.title}
+        </section>
+        <aside
+          className="si-access"
+          id="access-details"
+          aria-label="Holder access and privacy"
+        >
+          <div className="si-access-heading">
+            <span>Included for holders</span>
+            <a
+              href="#access-explained"
+              aria-label="Read how holder access works"
             >
-              <span>{card.icon}</span>
-              <h3>{card.title}</h3>
-              <p>{card.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-      <section className="si-access si-wrap" id="access-details">
-        <div>
-          <span className="si-eyebrow">A SIMPLE WAY IN</span>
-          <h2>
-            Hold a million.
-            <br />
-            <em>Open a little perspective.</em>
-          </h2>
-          <p>
-            Free access while your verified wallet holds at least 1,000,000
-            SPROUT. Your tokens stay yours.
-          </p>
-          <button
-            className="si-button"
-            onClick={
-              verified
-                ? () =>
-                    document
-                      .getElementById("intelligence")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                : connect
-            }
-            disabled={connecting || !config}
-          >
-            {verified ? <CheckCheck size={16} /> : <Wallet size={16} />}{" "}
-            {verified
-              ? "Return to Intelligence"
-              : connecting
-                ? "Verifying…"
-                : "Check my access"}{" "}
-            <ArrowRight size={16} />
-          </button>
-          <div className="si-contract">
-            <small>SPROUT TOKEN · ROBINHOOD CHAIN</small>
-            <code>{INTELLIGENCE_TOKEN}</code>
-            <button onClick={copy} aria-label="Copy SPROUT contract address">
-              {copied ? <Check size={15} /> : <Copy size={15} />}{" "}
-              {copied ? "Copied" : "Copy"}
-            </button>
+              <ArrowUpRight size={17} />
+            </a>
           </div>
-        </div>
-        <div className="si-access-steps">
-          <article>
-            <span>01</span>
+          <div className="si-access-amount">
+            <strong>1,000,000</strong>
+            <span>SPROUT</span>
+          </div>
+          <p className="si-access-description">
+            Hold at least 1 million SPROUT on Robinhood Chain for free access.
+          </p>
+          <div className="si-access-state">
+            <span className={verified ? "is-verified" : ""} />
+            {verified ? "Your wallet qualifies" : "Wallet not connected"}
+          </div>
+          <div className="si-access-detail" id="access-explained">
+            <h2>How access works</h2>
+            <ol>
+              <li>
+                <span>01</span>
+                <p>
+                  Connect your wallet and sign a message to verify ownership.
+                </p>
+              </li>
+              <li>
+                <span>02</span>
+                <p>
+                  We check your SPROUT balance before each answer. Your tokens
+                  stay in your wallet.
+                </p>
+              </li>
+            </ol>
+            <p className="si-allowance">
+              {config?.dailyLimit ?? 40} questions per wallet each day, subject
+              to service capacity.
+            </p>
+          </div>
+          <div className="si-art" aria-hidden="true">
+            <img src="/art/dashboard/hero-bouquet.png" alt="" />
+          </div>
+          <div className="si-contract">
+            <span>Token contract · Robinhood Chain</span>
             <div>
-              <h3>Connect your wallet.</h3>
-              <p>
-                Sign a verification message to show it’s yours. No transaction
-                or spending approval.
-              </p>
+              <code>{INTELLIGENCE_TOKEN}</code>
+              <button onClick={copy} aria-label="Copy SPROUT contract address">
+                {copied ? <Check size={15} /> : <Copy size={15} />}
+              </button>
             </div>
-          </article>
-          <article>
-            <span>02</span>
-            <div>
-              <h3>We check your SPROUT.</h3>
-              <p>
-                The balance is checked on the token’s network, then checked
-                again with every question.
-              </p>
-            </div>
-          </article>
-          <article>
-            <span>03</span>
-            <div>
-              <h3>Bring your questions.</h3>
-              <p>
-                Explore at your own pace. {config?.dailyLimit ?? 40} questions
-                per wallet per day, subject to service capacity.
-              </p>
-            </div>
-          </article>
-        </div>
-      </section>
+            <span className="si-copy-status" role="status">
+              {copied ? "Contract address copied" : ""}
+            </span>
+          </div>
+          <p className="si-token-note">
+            Token ownership carries market risk. Access is not a recommendation
+            to buy SPROUT.
+          </p>
+          <a className="si-privacy-link" href="#privacy">
+            About your conversation <ArrowRight size={14} />
+          </a>
+        </aside>
+      </div>
       <section
-        className="si-faq si-wrap"
-        aria-label="Questions about Intelligence"
+        className="si-information si-wrap"
+        id="privacy"
+        aria-label="About your conversation"
       >
-        <h2>A few things worth knowing.</h2>
-        <details>
-          <summary>Is this financial advice?</summary>
-          <p>
-            No. SPROUT Intelligence provides general education and information.
-            It does not recommend specific investments, promise returns or make
-            decisions for you. Speak with a qualified professional for advice
-            about your circumstances.
-          </p>
-        </details>
-        <details>
-          <summary>Do I have to stake or spend my tokens?</summary>
-          <p>
-            No. Access checks your wallet’s balance. You never need to transfer
-            tokens, approve spending or pay a subscription to use holder access.
-            Holding SPROUT involves market risk; access is not a recommendation
-            to buy it.
-          </p>
-        </details>
-        <details>
-          <summary>What happens to my questions?</summary>
-          <p>
-            Chats stay in this page’s memory and disappear when you refresh,
-            disconnect or start a fresh conversation. For live answers, your
-            messages are sent to our server and the AI provider (OpenAI). SPROUT
-            does not save chat transcripts; the provider’s own data policies
-            still apply. Avoid personal details about your child, account
-            information and wallet secrets.
-          </p>
-        </details>
-        <details>
-          <summary>What if my balance changes?</summary>
-          <p>
-            Access requires at least 1,000,000 SPROUT at verification and before
-            each answer. If the balance falls below the threshold, or cannot be
-            checked, live answers stay locked. You can verify again later.
-          </p>
-        </details>
+        <div>
+          <span>Before you ask</span>
+          <h2>
+            About
+            <br />
+            Intelligence.
+          </h2>
+        </div>
+        <div className="si-information-copy">
+          <article>
+            <h3>Education, not investment advice.</h3>
+            <p>
+              Intelligence explains concepts and helps you prepare questions. It
+              is not a financial adviser and cannot make decisions for your
+              family. For advice about your circumstances, speak with a
+              qualified professional.
+            </p>
+          </article>
+          <article>
+            <h3>Your conversation is temporary.</h3>
+            <p>
+              SPROUT does not save chat transcripts. Live questions go to our
+              server and OpenAI, whose data policies apply. Refreshing,
+              disconnecting or starting a new conversation clears this page’s
+              chat.
+            </p>
+          </article>
+        </div>
       </section>
       <footer className="si-footer si-wrap">
-        <a className="si-brand" href="/">
-          <img src="/brand/sprout-logo.png" alt="" />
-          SPROUT
+        <a href="/">
+          <ChevronLeft size={14} />
+          Back to SPROUT
         </a>
-        <p>A little understanding. A growing tomorrow.</p>
-        <span>Intelligence · {INTELLIGENCE_DISCLAIMER}</span>
+        <span>Family money, explained.</span>
+        <a href="/dashboard">
+          Open your garden <ArrowUpRight size={14} />
+        </a>
       </footer>
     </main>
   );

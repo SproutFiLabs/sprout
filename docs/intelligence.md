@@ -2,6 +2,12 @@
 
 `/intelligence` is a parent-focused AI learning space that shares the landing page’s botanical artwork, typography and colors. It is linked from the landing page, dashboard and resources menu. Visitors can explore clearly labeled, authored example conversations. Eligible holders can verify a wallet and ask live questions when the server has an AI key configured.
 
+## Workspace
+
+The question composer appears in the first screen. Suggested topics fill the draft; a separate **See an example** view displays authored educational content with an explicit non-live label. **Use this question** returns to the composer. Wallet errors, service availability, privacy reminders and the input character limit sit beside the form. Holder requirements and the copyable contract remain visible in a dedicated information column.
+
+The UI refinement uses [Taste Skill’s redesign guide](https://github.com/Leonxlnx/taste-skill/blob/main/skills/redesign-skill/SKILL.md): task-first layout, plain copy, restrained surfaces, readable type and native keyboard behavior. The existing authentication and AI backend remain the source of access decisions.
+
 ## Holder access
 
 - Network: **Robinhood Chain mainnet, chain ID 4663**.
