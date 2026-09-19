@@ -316,6 +316,13 @@
 .garden-change { display: flex; align-items: center; gap: 8px; font-size: 16px; color: var(--garden-green); margin-top: 2px; flex-wrap: wrap; }
 .garden-change .garden-muted { color: var(--garden-soft); font-size: 13px; }
 .garden-up { color: var(--garden-green); }
+.garden-down { color: #a63c32; }
+html[data-appearance="dark"] .garden-down { color: #ffaaa0; }
+.garden-value-comparison { display: flex; flex-wrap: wrap; align-items: baseline; gap: 20px 32px; margin-bottom: 14px; }
+.garden-value-label { display: block; font-size: 13px; color: var(--garden-soft); }
+.garden-contributed { font-family: var(--garden-serif); font-size: 36px; line-height: 1.2; margin-top: 6px; color: var(--garden-ink); }
+.garden-performance-note { font-size: 12px; color: var(--garden-soft); margin: 8px 0 0; }
+.garden-chart-label { margin-top: 16px; }
 .garden-muted { color: var(--garden-soft); }
 
 .garden-portfolio { display: flex; flex-direction: column; }

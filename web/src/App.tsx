@@ -514,17 +514,6 @@ export function App() {
     return total > 0 ? elapsed / total : isGraduated ? 1 : 0;
   }, [selected, clock, isGraduated]);
 
-  const balanceChange = useMemo(() => {
-    if (!growth?.available || growth.snapshots.length < 2) return null;
-    const first = growth.snapshots[0]!;
-    const last = growth.snapshots[growth.snapshots.length - 1]!;
-    const firstValue = BigInt(first.valueUsd);
-    const lastValue = BigInt(last.valueUsd);
-    const delta = lastValue - firstValue;
-    const pct = firstValue !== 0n ? Number((delta * 10000n) / firstValue) / 100 : null;
-    return { delta: usd(delta.toString(), last.feedDecimals), pct };
-  }, [growth]);
-
   const percentToBps = (percent: string): number => Math.round(Number(percent || '0') * 100);
 
   const submitPlant = async () => {
@@ -826,7 +815,7 @@ export function App() {
     onLocalAccount: (account) => { setLocalAccount(account); void connectLocal(account); },
     sprouts, selectedId, onSelect: (id) => setSelectedId(id), getNickname: (id) => getNickname(id),
     selected, automation: detail?.automation ?? null, milestones: detail?.milestones ?? [], jobs: detail?.jobs ?? [], gifts: detail?.gifts ?? [],
-    holdings, growth, events, beneficiaryState, isParent, isBeneficiary, isGraduated, graduationProgress, balanceChange,
+    holdings, growth, events, beneficiaryState, isParent, isBeneficiary, isGraduated, graduationProgress,
     chainReady, loading, txn, view, setView, drawerOpen, setDrawerOpen,
     onOpenPlant: () => { setPlantStep(1); setShowPlant(true); },
     onOpenFund: () => { setFundForm({ token: settlementToken ?? '', amount: '10' }); setShowFund(true); },

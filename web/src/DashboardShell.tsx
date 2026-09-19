@@ -76,7 +76,6 @@ export interface DashboardShellProps {
   isBeneficiary: boolean;
   isGraduated: boolean;
   graduationProgress: number;
-  balanceChange: { delta: string; pct: number | null } | null;
   chainReady: boolean;
   loading: boolean;
   txn: TxnState | null;
@@ -133,7 +132,6 @@ const HEADINGS: Record<ViewId, { title: ReactNode; sub: string }> = {
 };
 
 const PERIODS = ['1W', '1M', '3M', '1Y'] as const;
-const PERIOD_LABEL: Record<string, string> = { '1W': 'week', '1M': 'month', '3M': '3 months', '1Y': 'year' };
 const PERIOD_MS: Record<string, number> = { '1W': 7 * 86400e3, '1M': 30 * 86400e3, '3M': 90 * 86400e3, '1Y': 365 * 86400e3 };
 
 function money(valueUsd: string | null, feedDecimals: number): string {
@@ -323,7 +321,7 @@ export function DashboardShell(props: DashboardShellProps) {
     health, chain, wallet, connecting, localWallet, localRole, localAccount, toolsMessage, fundTool, advanceSeconds,
     onFundTool, onAdvanceSeconds, onConnect, onConnectLocal, onLocalRole, onLocalAccount, sprouts, selectedId,
     onSelect, getNickname, selected, automation, milestones, jobs, gifts, holdings, growth, events, beneficiaryState,
-    isParent, isBeneficiary, isGraduated, graduationProgress, balanceChange, chainReady, loading, txn, view, setView,
+    isParent, isBeneficiary, isGraduated, graduationProgress, chainReady, loading, txn, view, setView,
     drawerOpen, setDrawerOpen, onOpenPlant, onOpenFund, onOpenSchedule, onOpenGift, onOpenAllocation, onOpenWithdraw,
     onOpenChore, onOpenMilestone, onCancelSchedule, onReleaseMilestone, onCancelMilestone, onClaim, onOpenSettings, onOpenNotifications,
     onOpenHelp, onOpenOnboarding, onOpenAsset, onRunToolFund, onRunToolAdvance, onReconcile, onRunJobs, symbolFor, decimalsFor, anyModalOpen, onOpenGiftPay,
@@ -405,10 +403,14 @@ export function DashboardShell(props: DashboardShellProps) {
       });
 
   const samplePortfolioValue = holdings?.available ? money(holdings.totalValueUsd, holdings.feedDecimals) : isSample ? '$2,480.65' : '—';
+  const performance = holdings?.available ? holdings.performance : undefined;
   const changeText = (): ReactNode => {
-    if (isSample && sample) return <><span className="garden-up">↗</span> {sample.portfolioChange} <span className="garden-muted">in the last {PERIOD_LABEL[period]}</span></>;
-    if (balanceChange) return <>{balanceChange.delta}{balanceChange.pct === null ? '' : ` (${balanceChange.pct.toFixed(2)}%)`} <span className="garden-muted">balance change incl. deposits/withdrawals</span></>;
-    return <span className="garden-muted">Not enough verified history to show a change.</span>;
+    if (performance?.available) {
+      const gain = BigInt(performance.gainUsd);
+      const absoluteGain = money((gain < 0n ? -gain : gain).toString(), performance.feedDecimals);
+      return <><span className={gain < 0n ? 'garden-down' : gain > 0n ? 'garden-up' : 'garden-muted'} data-testid="portfolio-gain">{gain < 0n ? '−' : gain > 0n ? '+' : ''}{absoluteGain}</span><span className="garden-muted">{gain < 0n ? 'loss' : 'gain'} since planting · deposits excluded, withdrawals accounted for</span></>;
+    }
+    return <span className="garden-muted">{performance?.reason ?? 'Verified contribution history is needed to show gain or loss.'}</span>;
   };
 
   /**
@@ -418,7 +420,8 @@ export function DashboardShell(props: DashboardShellProps) {
    * an account nobody has put money into yet.
    */
   const vaultIsEmpty: boolean =
-    !isSample && !!holdings?.available && holdings.holdings.every((h) => h.rawBalance === '0');
+    !isSample && !!holdings?.available && holdings.holdings.every((h) => h.rawBalance === '0') &&
+    !!performance?.available && performance.contributedUsd === '0';
 
   /** Settlement sitting in the vault when nothing has been invested yet. */
   const fundedNotInvested: string | null = (() => {
@@ -584,7 +587,10 @@ export function DashboardShell(props: DashboardShellProps) {
           ))}
         </div>
       </div>
-      <div className="garden-value" data-testid="portfolio-value">{samplePortfolioValue}</div>
+      <div className="garden-value-comparison">
+        <div><span className="garden-value-label">Worth now</span><div className="garden-value" data-testid="portfolio-value">{samplePortfolioValue}</div></div>
+        <div><span className="garden-value-label">Put in</span><div className="garden-contributed" data-testid="portfolio-contributed">{performance?.available ? money(performance.contributedUsd, performance.feedDecimals) : '—'}</div></div>
+      </div>
       {vaultIsEmpty ? (
         <div className="garden-fund-prompt" data-testid="empty-vault-prompt">
           <span>This sprout has no money in it yet. Planting created the vault — adding funds is a separate step.</span>
@@ -597,6 +603,9 @@ export function DashboardShell(props: DashboardShellProps) {
       ) : (
         <div className="garden-change">{changeText()}</div>
       )}
+      {performance?.available && performance.withdrawnUsd !== '0' ? <p className="garden-performance-note">Taken out: {money(performance.withdrawnUsd, performance.feedDecimals)}</p> : null}
+      {performance?.available ? <p className="garden-performance-note">{isSample ? 'Illustrative sample values.' : 'Settlement tokens are valued at $1. Network fees are not included.'}</p> : null}
+      <span className="garden-value-label garden-chart-label">Portfolio value over time · includes deposits and withdrawals</span>
       {growth?.available ? (
         <GardenChart snapshots={growth.snapshots} period={period} feedDecimals={growth.snapshots[0]?.feedDecimals ?? 8} nowMs={chartNow} />
       ) : (

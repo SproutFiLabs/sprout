@@ -63,7 +63,6 @@ export function Preview({ displayName = 'Emma', onRestartTour }: { displayName?:
         isBeneficiary={false}
         isGraduated={false}
         graduationProgress={0.18}
-        balanceChange={{ delta: '+$340.28', pct: 15.9 }}
         chainReady
         loading={false}
         txn={null}
