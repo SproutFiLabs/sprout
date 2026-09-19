@@ -8,7 +8,7 @@ import { investQuote } from '../src/invest';
 import { computeMinOuts } from '../src/jobs';
 import { getSprout, upsertSprout } from '../src/repo';
 import { issueNonce } from '../src/auth';
-import { account, memoryDb, testApp } from './helpers';
+import { account, memoryDb, readHeaders, testApp } from './helpers';
 
 // The production legacy entry, exactly as documented in docs/DEPLOY-RAILWAY.md.
 const PROD_LEGACY = '0x399c4cbf1884a958d20259c53f11e81a11db201d:0xc7366f864cac8d97a89e57957ae949fafb17e520:61625416';
@@ -298,23 +298,25 @@ describe('API: factory and admitted assets per sprout', () => {
     seed(db, VAULT_NEW, null, 2);
     seed(db, VAULT_ROGUE, ROGUE_FACTORY, 3);
     const app = testApp(db, ctx);
+    // Family reads need the parent's session since the privacy release.
+    const auth = { headers: readHeaders(db, PARENT) };
 
-    const old = (await (await app.request(`/api/sprouts/${VAULT_OLD}`)).json()) as { sprout: Record<string, unknown> };
+    const old = (await (await app.request(`/api/sprouts/${VAULT_OLD}`, auth)).json()) as { sprout: Record<string, unknown> };
     expect(old.sprout.factory).toBe(getAddress(OLD_FACTORY));
     expect(old.sprout.admittedAssets).toEqual([getAddress(STOCK_A)]);
 
     // Unknown to the index: read from vault.factory() and remembered.
-    const fresh = (await (await app.request(`/api/sprouts/${VAULT_NEW}`)).json()) as { sprout: Record<string, unknown> };
+    const fresh = (await (await app.request(`/api/sprouts/${VAULT_NEW}`, auth)).json()) as { sprout: Record<string, unknown> };
     expect(fresh.sprout.factory).toBe(getAddress(NEW_FACTORY));
     expect(fresh.sprout.admittedAssets).toEqual([STOCK_A, STOCK_B, STOCK_C].map((a) => getAddress(a)));
     expect(getSprout(db, VAULT_NEW)?.factory?.toLowerCase()).toBe(NEW_FACTORY);
 
     // A factory this server does not serve offers nothing.
-    const rogue = (await (await app.request(`/api/sprouts/${VAULT_ROGUE}`)).json()) as { sprout: Record<string, unknown> };
+    const rogue = (await (await app.request(`/api/sprouts/${VAULT_ROGUE}`, auth)).json()) as { sprout: Record<string, unknown> };
     expect(rogue.sprout.factory).toBe(getAddress(ROGUE_FACTORY));
     expect(rogue.sprout.admittedAssets).toBeNull();
 
-    const list = (await (await app.request(`/api/sprouts?parent=${PARENT}`)).json()) as { sprouts: Array<Record<string, unknown>> };
+    const list = (await (await app.request(`/api/sprouts?parent=${PARENT}`, auth)).json()) as { sprouts: Array<Record<string, unknown>> };
     expect(list.sprouts.map((s) => s.factory)).toEqual([OLD_FACTORY, NEW_FACTORY, ROGUE_FACTORY].map((f) => getAddress(f)));
     expect(list.sprouts[0]!.admittedAssets).toEqual([getAddress(STOCK_A)]);
   });
@@ -324,7 +326,7 @@ describe('API: factory and admitted assets per sprout', () => {
     seed(db, VAULT_OLD, null);
     const config = loadServerConfig({});
     const ctx = { config, publicClient: null, walletClient: null, walletAddress: null, walletIsAnvilDev: false } as unknown as ChainContext;
-    const body = (await (await testApp(db, ctx).request(`/api/sprouts/${VAULT_OLD}`)).json()) as { sprout: Record<string, unknown> };
+    const body = (await (await testApp(db, ctx).request(`/api/sprouts/${VAULT_OLD}`, { headers: readHeaders(db, PARENT) })).json()) as { sprout: Record<string, unknown> };
     expect(body.sprout.factory).toBeNull();
     expect(body.sprout.admittedAssets).toBeNull();
   });
