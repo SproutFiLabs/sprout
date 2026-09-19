@@ -1,4 +1,5 @@
 import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
+import { createToolRuntime, registerToolRoutes, type ToolRuntime } from './tools';
 import { registerHarvestRoutes, type HarvestRuntime } from './harvest';
 import { registerZkRoutes } from './zk';
 import type { RecurringBurnRuntime } from './recurringBurnRuntime';
@@ -87,6 +88,7 @@ import {
 } from './repo';
 
 export interface AppDeps {
+  tools?: ToolRuntime;
   harvest?: HarvestRuntime;
   intelligence?: IntelligenceRuntime;
   db: SproutDb;
@@ -387,6 +389,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   });
   // Stock guide price history, from the stocks' own price feeds (see stockPrices.ts).
   registerStockPriceRoutes(app, deps, logger);
+  registerToolRoutes(app, { db: deps.db, runtime: deps.tools ?? createToolRuntime(deps.chain.publicClient, process.env.SPROUT_TOOLS_ENABLED === 'true', deps.now), now: deps.now });
   // Buy & burn: the route, quotes, verified burns and the public counter (see burns.ts).
   registerBurnRoutes(app, {
     service:

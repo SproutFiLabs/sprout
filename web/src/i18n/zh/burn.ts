@@ -5,6 +5,8 @@
  * it pays nothing, and it is not advice (不构成投资建议).
  */
 export const zh: Record<string, string> = {
+  'Premium tools': '高级工具',
+  'Optional reports paid by burning SPROUT': '可选报告，通过销毁 SPROUT 支付',
   // Titles and buttons
   'Buy & burn': '买入并销毁',
   'Buy & burn 🔥': '买入并销毁 🔥',
@@ -19,8 +21,11 @@ export const zh: Record<string, string> = {
     '任何人都可以从自己的钱包拿出一点 USDG，在公开市场买入 SPROUT 并销毁：它会被送到销毁地址，任何人都再也无法转走。',
   'This buys SPROUT on the open market with your USDG and burns it for good. It’s voluntary, it pays you nothing, and it’s not advice.':
     '这会用你的 USDG 在公开市场买入 SPROUT，并将其永久销毁。完全自愿，不会付给你任何东西，也不构成投资建议。',
-  'Nothing comes out of any sprout, and no Sprout tool costs anything. Burning doesn’t change your tier.':
-    '不会从任何小芽里拿钱，Sprout 的所有工具也都不收费。销毁不会改变你的等级。',
+  'Nothing comes out of any sprout. Core Sprout features stay free; optional paid tools burn SPROUT.':
+    '不会从任何小芽里拿钱。Sprout 的核心功能保持免费；可选的付费工具会销毁 SPROUT。',
+  'Premium tools: SPROUT burned': '付费工具：已销毁的 SPROUT',
+  '{count} premium tool burns · {amount} SPROUT sent to the dead address': '{count} 笔付费工具销毁 · {amount} SPROUT 已送到销毁地址',
+  'This is separate from voluntary Buy & burn activity. Core Sprout features remain free; these optional reports burn SPROUT.': '这与自愿的买入并销毁分开统计。Sprout 核心功能保持免费；这些可选报告会销毁 SPROUT。',
   'How much USDG to spend': '要花多少 USDG',
   'Amount in US dollars (USDG), ${min} to ${max}': '金额（美元，USDG），${min} 到 ${max}',
   'Enter an amount from ${min} to ${max}, like 10 or 12.50.': '请输入 ${min} 到 ${max} 之间的金额，例如 10 或 12.50。',

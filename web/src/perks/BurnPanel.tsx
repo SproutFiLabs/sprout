@@ -88,7 +88,7 @@ export function BurnPanel({ address, wallet, onConnect }: { address: string | nu
       <p>{t('Anyone can spend a little USDG from their own wallet to buy SPROUT on the open market and burn it: it goes to the dead address, where nobody can ever move it again.')}</p>
       <BurnCounter summary={summary} variant="perks" />
       <BurnNote />
-      <p className="perks-muted">{t('Nothing comes out of any sprout, and no Sprout tool costs anything. Burning doesn’t change your tier.')}</p>
+      <p className="perks-muted">{t('Nothing comes out of any sprout. Core Sprout features stay free; optional paid tools burn SPROUT.')}</p>
 
       <form
         className="burn-form"

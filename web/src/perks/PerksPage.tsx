@@ -12,6 +12,7 @@ import { HolderVotes } from './Votes';
 import { RootPanel } from './RootPanel';
 import { RootedBadge } from './RootBits';
 import { BurnPanel } from './BurnPanel';
+import { ToolBurnSummary } from './ToolBurnSummary';
 import './perks.css';
 
 /** Vote weight per tier; the server uses the same table. */
@@ -141,6 +142,7 @@ export function PerksPage() {
         ) : null}
 
         <BurnPanel address={address} wallet={wallet} onConnect={() => void connect()} />
+        <ToolBurnSummary />
 
         <section className="perks-card" aria-labelledby="perks-tiers">
           <h2 id="perks-tiers">{t('The tiers')}</h2>

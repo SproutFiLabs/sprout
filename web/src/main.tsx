@@ -6,6 +6,7 @@ const ManualHarvestPage=lazy(()=>import('./harvest/ManualHarvestPage').then(m=>(
 const HarvestOperator=lazy(()=>import('./harvest/HarvestOperator').then(m=>({default:m.HarvestOperator})));
 const GuardianPage=lazy(()=>import('./guardian/GuardianPage').then(m=>({default:m.GuardianPage})));
 const StockGuidePage=lazy(()=>import('./stockGuide/StockGuidePage').then(m=>({default:m.StockGuidePage})));
+const ToolsPage=lazy(()=>import('./tools/ToolsPage').then(m=>({default:m.ToolsPage})));
 
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
@@ -57,6 +58,7 @@ function Root() {
   }
   if (path === '/settings') return <AppearancePage />;
   if (path === '/perks') return <PerksPage />;
+  if (path === '/tools') return <Suspense fallback={null}><ToolsPage /></Suspense>;
   if (path === '/stocks' || path.startsWith('/stocks/')) return <Suspense fallback={null}><StockGuidePage path={path} /></Suspense>;
   const kid = parseKidPath(path);
   if (kid) return <KidView vault={kid.vault} lessonId={kid.lessonId} />;

@@ -147,6 +147,7 @@ export function EraseFamilyData({ wallet, onClose, onDone }: { wallet: WalletSta
             ) : (
               <>
                 <h3 className="pp-dialog-sub">{t('Erased from Sprout’s server')}</h3>
+                <p>Saved premium-tool reports and their inputs are also deleted. Download any reports you want to keep first. Public burn receipts remain recorded to prevent payment reuse.</p>
                 <ul className="pp-count-list" data-testid="erase-preview">
                   {erasedRows(report.erase).map((row) => (
                     <li key={row.key} data-erase-row={row.key}>

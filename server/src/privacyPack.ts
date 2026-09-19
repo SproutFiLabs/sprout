@@ -22,6 +22,7 @@ import { addressSchema, hashSchema } from '@sprout/shared';
 import type { AppDeps } from './app';
 import { AuthError } from './auth';
 import { digest, familySession } from './privacy';
+import { eraseToolReports } from './toolPurchases';
 
 /** What the family types to confirm an erase. The server checks it too. */
 export const ERASE_CONFIRM = 'DELETE';
@@ -266,6 +267,7 @@ function eraseInTransaction(db: Db, address: string, expectedVaults: string[], n
       throw new AuthError('Your sprouts changed since you reviewed this. Review the list again.', 409);
     }
     const before = familyFootprint(db, address, now);
+    eraseToolReports(db, address);
     const inviteIds: string[] = [];
     for (const v of vaults) {
       for (const gift of giftIdsOf(db, v)) {

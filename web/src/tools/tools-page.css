@@ -1,0 +1,103 @@
+.tools-page {
+  background: #f5f2e9;
+  min-height: 100vh;
+  color: #253126;
+}
+.tools-main {
+  max-width: 1080px;
+  margin: auto;
+  padding: 52px 24px 80px;
+}
+.tools-page-intro {
+  max-width: 760px;
+  margin-bottom: 32px;
+}
+.tools-page-intro h1 {
+  font:
+    clamp(38px, 6vw, 64px) / 1.05 Georgia,
+    serif;
+  margin: 14px 0 22px;
+  letter-spacing: -2px;
+}
+.tools-page-intro p {
+  line-height: 1.65;
+  color: #586455;
+}
+.tools-status,
+.tools-error {
+  padding: 16px;
+  border-radius: 12px;
+  background: #e7efdf;
+  line-height: 1.5;
+}
+.tools-error {
+  background: #fff0e5;
+  color: #7d331c;
+}
+.tools-checkout,
+.tools-library {
+  margin-top: 24px;
+  padding: 24px;
+  background: white;
+  border: 1px solid #dddccf;
+  border-radius: 20px;
+}
+.tools-checkout p,
+.tools-library p {
+  line-height: 1.6;
+}
+.tools-checkout strong {
+  overflow-wrap: anywhere;
+}
+.tools-checkout details {
+  margin-top: 24px;
+}
+.tools-checkout label {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.tools-checkout input {
+  padding: 12px;
+  max-width: 100%;
+  font: inherit;
+}
+.tools-library {
+  display: grid;
+  gap: 12px;
+}
+.tools-library button {
+  padding: 14px;
+  text-align: left;
+  border: 1px solid #dce2d5;
+  border-radius: 10px;
+  background: #f9faf5;
+  color: #285732;
+  cursor: pointer;
+}
+.tools-input-record {
+  padding: 20px;
+}
+.tools-input-record pre {
+  overflow: auto;
+  font-size: 13px;
+}
+.tools-page button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+@media (max-width: 620px) {
+  .tools-main {
+    padding: 28px 16px;
+  }
+  .tools-page .knowledge-topbar {
+    flex-wrap: wrap;
+  }
+  .tools-checkout,
+  .tools-library {
+    padding: 18px;
+  }
+  .tools-page-intro h1 {
+    letter-spacing: -1px;
+  }
+}
