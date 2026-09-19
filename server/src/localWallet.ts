@@ -107,6 +107,10 @@ function allowedRecipients(ctx: ChainContext, db: SproutDb): Set<string> {
   for (const address of [contracts.factory, contracts.settlementToken, contracts.venue]) {
     if (address) set.add(address.toLowerCase());
   }
+  for (const legacy of contracts.legacyDeployments ?? []) {
+    set.add(legacy.factory.toLowerCase());
+    set.add(legacy.venue.toLowerCase());
+  }
   for (const token of contracts.stockTokens) set.add(token.address.toLowerCase());
   for (const vault of listAllVaults(db, ctx.config.chain.chainId)) set.add(vault.toLowerCase());
   for (const account of LOCAL_DEV_ACCOUNTS) set.add(account.address.toLowerCase());

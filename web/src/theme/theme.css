@@ -110,6 +110,21 @@ html[data-appearance="dark"] .reference-landing .reference-answer { background: 
 html[data-appearance="dark"] .reference-landing .create-form input,
 html[data-appearance="dark"] .reference-landing .reference-dock form { background: #172d23; border-color: #355342; color: #f5efe3; }
 html[data-appearance="dark"] .reference-landing .garden-pill--dark { background: #f5efe3; color: #16261d; }
+/* The closing band (questions, sign-off, footer) paints its own light
+   gradient, so in dark mode its light text sat on near-white. Give it the
+   page's green and bring its borders, muted text and risk box along. */
+html[data-appearance="dark"] .reference-landing .reference-ending { background: linear-gradient(#10221a 0, #152a20 35%, #10221a 80%); }
+html[data-appearance="dark"] .reference-landing .reference-faq,
+html[data-appearance="dark"] .reference-landing .reference-closing,
+html[data-appearance="dark"] .reference-landing .reference-faq .accordion-item { border-color: #355342; }
+html[data-appearance="dark"] .reference-landing .faq-plus { background: #294536; color: #f5efe3; }
+html[data-appearance="dark"] .reference-landing .reference-faq > h2,
+html[data-appearance="dark"] .reference-landing .reference-faq .accordion-content,
+html[data-appearance="dark"] .reference-landing .reference-footer-copy p { color: #b5c4b4; }
+html[data-appearance="dark"] .reference-landing .reference-faq-more a { color: #b9dc9e; }
+html[data-appearance="dark"] .reference-landing .reference-footer-risk { background: #2a2517; border-color: #6b5a33; color: #eadcb8; }
+html[data-appearance="dark"] .reference-landing .reference-footer-risk strong { color: #f6d78c; }
+html[data-appearance="dark"] .reference-landing .closing-leaf { opacity: .32; }
 /* A light, low-cost night signal for the living hero. */
 html[data-appearance="dark"] .garden-bouquet--living::before,
 html[data-appearance="dark"] .garden-bouquet--living::after { content: ''; position: absolute; z-index: 4; width: 4px; height: 4px; border-radius: 50%; background: #f6d78c; box-shadow: 38px 22px #f6d78c, 78px 8px #d9eead, 118px 36px #f6d78c, 154px 16px #d9eead; opacity: .8; animation: sprout-firefly 6s ease-in-out infinite; pointer-events: none; }

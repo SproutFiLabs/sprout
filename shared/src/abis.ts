@@ -29,6 +29,19 @@ export const sproutFactoryAbi = [
   },
   {
     "type": "function",
+    "name": "MAX_ADMITTED_ASSETS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MAX_ASSETS",
     "inputs": [],
     "outputs": [

@@ -3,8 +3,18 @@ import { ShieldCheck, EyeOff, Leaf, LockKeyhole } from 'lucide-react';
 import { formatUnits } from '@sprout/shared';
 import { kidRequest, type KidSummary } from './api';
 import { BloomGarden } from './garden/BloomGarden';
+import { LanguageToggle } from './i18n/LanguageToggle';
+import { t, tc } from './i18n';
 import { KidLearn } from './kid/KidLearn';
 import { findLesson } from './kid/lessons';
+import { isKnownStock, stockInfo } from './stocks';
+
+/** What "a little piece of …" names for a ticker (English source text), or null for an unknown one. */
+export function kidCompany(symbol: string): string | null {
+  if (!isKnownStock(symbol)) return null;
+  const info = stockInfo(symbol);
+  return info.kidName ?? info.name;
+}
 
 /** "8 years and 3 months", "5 months", "12 days", or null once it has arrived. */
 export function timeUntil(targetSeconds: number, nowMs: number): string | null {
@@ -13,15 +23,16 @@ export function timeUntil(targetSeconds: number, nowMs: number): string | null {
   if (target.getTime() <= now.getTime()) return null;
   let months = (target.getUTCFullYear() - now.getUTCFullYear()) * 12 + (target.getUTCMonth() - now.getUTCMonth());
   if (target.getUTCDate() < now.getUTCDate()) months -= 1;
-  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const count = (n: number, one: string, many: string) => t(n === 1 ? one : many, { n });
   if (months <= 0) {
     const days = Math.max(1, Math.ceil((target.getTime() - now.getTime()) / 86_400_000));
-    return plural(days, 'day');
+    return count(days, '{n} day', '{n} days');
   }
   const years = Math.floor(months / 12);
   const rest = months % 12;
-  if (years === 0) return plural(rest, 'month');
-  return rest === 0 ? plural(years, 'year') : `${plural(years, 'year')} and ${plural(rest, 'month')}`;
+  if (years === 0) return count(rest, '{n} month', '{n} months');
+  if (rest === 0) return count(years, '{n} year', '{n} years');
+  return t('{years} and {months}', { years: count(years, '{n} year', '{n} years'), months: count(rest, '{n} month', '{n} months') });
 }
 
 /** Names and wallet addresses never belong in an invitation URL. */
@@ -83,8 +94,12 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
   const [data, setData] = useState<KidSummary | null>(null);
   const [error, setError] = useState('');
   const [lesson, setLesson] = useState<string | null>(findLesson(lessonId)?.id ?? null);
+  // Set at render time so the tab title follows the language switch.
+  const pageTitle = t('Your private sprout');
   useEffect(() => {
-    document.title = 'Your private sprout · Sprout';
+    document.title = `${pageTitle} · Sprout`;
+  }, [pageTitle]);
+  useEffect(() => {
     let live = true;
     const load = async () => {
       try {
@@ -131,37 +146,38 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
           <span>SPROUT</span>
         </a>
         <span className="kid-badge">
-          <ShieldCheck size={14} /> Your own little window
+          <ShieldCheck size={14} /> {t('Your own little window')}
         </span>
+        <LanguageToggle />
       </header>
       <section className="kid-hero">
         <div className="kid-hero-copy">
           <h1 data-testid="kid-heading">
-            Your little world.
+            {t('Your little world.')}
             <br />
-            Growing every day.
+            {t('Growing every day.')}
           </h1>
           {error ? (
             <p className="kid-lead" role="alert">
-              {error}
+              {t(error)}
             </p>
           ) : !data ? (
-            <p className="kid-lead">Opening your invitation…</p>
+            <p className="kid-lead">{t('Opening your invitation…')}</p>
           ) : (
             <>
               <p className="kid-value" data-testid="kid-value">
                 {data.balance?.valueUsd
                   ? `$${formatUnits(BigInt(data.balance.valueUsd), data.balance.feedDecimals, 2)}`
-                  : 'A future in bloom'}
+                  : t('A future in bloom')}
               </p>
               <p className="kid-lead">
                 {data.balance
-                  ? 'Your grown-up chose to share this balance with you.'
-                  : 'Your money is tucked away. Your curiosity can grow.'}
+                  ? t('Your grown-up chose to share this balance with you.')
+                  : t('Your money is tucked away. Your curiosity can grow.')}
               </p>
               <span className="kid-badge">
                 <EyeOff size={15} />
-                {data.balance ? 'Only on your invited device' : 'Amounts stay with your grown-up'}
+                {data.balance ? t('Only on your invited device') : t('Amounts stay with your grown-up')}
               </span>
             </>
           )}
@@ -175,25 +191,31 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
           <div className="kid-grid">
             <section className="kid-card">
               <h2>
-                <Leaf size={20} /> A little piece of the world
+                <Leaf size={20} /> {t('A little piece of the world')}
               </h2>
-              <p className="kid-muted">Explore the companies your sprout follows.</p>
+              <p className="kid-muted">{t('Explore the companies your sprout follows.')}</p>
               <ul className="kid-list">
-                {data.symbols.map((symbol) => (
-                  <li key={symbol}>
-                    <b>{symbol}</b>
-                    <span>Learn what makes this company grow</span>
-                  </li>
-                ))}
+                {data.symbols.map((symbol) => {
+                  const company = kidCompany(symbol);
+                  return (
+                    <li key={symbol}>
+                      <b>{symbol}</b>
+                      {company ? <span>{t('a little piece of {company}', { company: tc('holding', company) })}</span> : null}
+                      <span>{t('Learn what makes this company grow')}</span>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
             <section className="kid-card">
               <h2>
-                <LockKeyhole size={20} /> Yours to explore
+                <LockKeyhole size={20} /> {t('Yours to explore')}
               </h2>
-              <p className="kid-muted">Discover what makes your sprout grow. Your grown-up takes care of the money.</p>
+              <p className="kid-muted">{t('Discover what makes your sprout grow. Your grown-up takes care of the money.')}</p>
               <p className="kid-highlight">
-                {data.chores} {data.chores === 1 ? 'chore waiting' : 'chores waiting'} for a grown-up’s approval.
+                {data.chores === 1
+                  ? t('{n} chore waiting for a grown-up’s approval.', { n: data.chores })
+                  : t('{n} chores waiting for a grown-up’s approval.', { n: data.chores })}
               </p>
             </section>
           </div>
@@ -201,7 +223,7 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
         </>
       ) : null}
       <footer className="kid-foot">
-        <ShieldCheck size={16} /> A grown-up can close this window at any time.
+        <ShieldCheck size={16} /> {t('A grown-up can close this window at any time.')}
       </footer>
     </main>
   );

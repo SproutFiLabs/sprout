@@ -391,6 +391,7 @@ html[data-appearance="dark"] .garden-legend-swatch--worth { border-top-color: #a
 .garden-weekly-next small { display: block; font-size: 12px; color: var(--garden-soft); }
 .garden-weekly-next b { font-size: 14px; font-weight: 400; }
 .garden-notice { margin: 8px 0 0; background: #fff4e8; border: 1px solid #f6d9bd; color: #8a4b12; border-radius: 10px; padding: 7px 10px; font-size: 11px; line-height: 1.4; }
+.garden-notice a { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 
 .garden-pill {
   display: inline-flex;
@@ -1383,3 +1384,63 @@ html[data-appearance="dark"] .starter-mix-total--ok { color: #9fd49b; }
 html[data-appearance="dark"] .invest-now-step { background: #1f3a2a; color: #cfe8d2; }
 html[data-appearance="dark"] .invest-now-legs { border-color: #3a4a40; }
 
+
+/* Stock picker (StockPicker.tsx): search, stocks grouped by theme, up to five picks, then a share for each. */
+.stock-mix-editor { display: grid; gap: 10px; }
+.stock-picker { display: grid; gap: 8px; }
+.stock-picker-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; font-size: 14px; }
+.stock-picker-head .fine-print { margin: 0; }
+.stock-search { position: relative; display: block; }
+.stock-search > svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--garden-quiet, #8b877c); pointer-events: none; }
+.garden-root .modal .stock-search input, .stock-search input { width: 100%; box-sizing: border-box; padding-left: 34px; }
+.stock-picker-groups {
+  display: grid; gap: 10px; max-height: min(340px, 42vh); overflow-y: auto; overscroll-behavior: contain;
+  padding: 2px 2px 4px; margin: 0 -2px;
+}
+.stock-picker-group h3 { margin: 2px 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--garden-quiet, #8b877c); }
+.stock-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 6px; }
+.stock-pick {
+  display: grid; align-content: start; gap: 1px; min-height: 44px; padding: 7px 9px; text-align: left; cursor: pointer;
+  border: 1px solid var(--garden-line, #ece7dc); border-radius: 12px; background: var(--garden-surface, #fffdfa);
+  color: var(--garden-ink, #1d1d1b); font: inherit; font-size: 13px; line-height: 1.3;
+}
+.stock-pick:hover:not(:disabled) { border-color: #c9c1b1; }
+.stock-pick:disabled { cursor: not-allowed; opacity: 0.45; }
+.stock-pick--on { border-color: #3e7839; background: #eef6ec; box-shadow: inset 0 0 0 1px #3e7839; }
+.stock-pick-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.stock-pick-top b { font-size: 13px; letter-spacing: 0.02em; }
+.stock-pick-top svg { color: #3e7839; flex: none; }
+.stock-pick-name { font-weight: 600; overflow-wrap: anywhere; }
+.stock-pick small { font-size: 11.5px; color: var(--garden-soft, #5f5c54); overflow-wrap: anywhere; }
+.stock-picker-limit { margin: 0; color: #9a5b12; }
+.stock-weight { display: flex; align-items: center; gap: 8px; }
+.stock-weight > label { flex: 1; min-width: 0; }
+.stock-weight-name { display: grid; flex: 1; min-width: 0; }
+.garden-root .modal .stock-weight label.inline > input, .stock-weight label.inline > input { flex: none; width: 110px; }
+.stock-weight-name small { font-size: 12px; font-weight: 400; color: var(--garden-soft, #5f5c54); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stock-weight-remove {
+  flex: none; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; cursor: pointer;
+  border: 1px solid var(--garden-line, #ece7dc); border-radius: 999px; background: transparent; color: var(--garden-soft, #5f5c54);
+}
+.stock-weight-remove:hover { border-color: #c9c1b1; color: var(--garden-ink, #1d1d1b); }
+@media (max-width: 420px) {
+  .stock-picker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .garden-root .modal .stock-weight label.inline > input, .stock-weight label.inline > input { width: 88px; }
+}
+html[data-appearance="dark"] .stock-pick { background: #183025; border-color: #466451; color: #f3efe4; }
+html[data-appearance="dark"] .stock-pick small { color: #b5c4b4; }
+html[data-appearance="dark"] .stock-pick--on,
+html[data-appearance="dark"] .starter-mix--active { box-shadow: inset 0 0 0 2px #8cc58a; }
+html[data-appearance="dark"] .stock-pick--on { background: #294536; border-color: #8cc58a; }
+html[data-appearance="dark"] .stock-pick-top svg { color: #9fd49b; }
+html[data-appearance="dark"] .stock-picker-limit { color: #e8b75c; }
+html[data-appearance="dark"] .stock-weight-name small { color: #b5c4b4; }
+
+/* Company names under tickers in the mix and in Invest now. */
+.garden-mix-row { grid-template-columns: 76px 1fr 52px; }
+.garden-mix-row > b small { display: block; font-size: 11px; font-weight: 400; color: var(--garden-quiet); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.invest-now-leg-name { color: var(--garden-soft, #5f5c54); font-size: 12px; }
+
+/* Locked stocks and mixes (a hook for later updates; nothing is locked today). */
+.starter-mix:disabled { cursor: not-allowed; opacity: 0.6; }
+.stock-pick--locked small { font-style: italic; }

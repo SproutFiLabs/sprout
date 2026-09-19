@@ -1,5 +1,7 @@
 /** Simplified Chinese for the landing strings, keyed by the English source text. */
 export const zh: Record<string, string> = {
+  'New': '新',
+  '21 stocks now, including Tesla and SpaceX': '现在有 21 只股票，包括特斯拉和 SpaceX',
   // Landing: navigation, header and shared links
   'SPROUT home': 'SPROUT 首页',
   'Explore': '探索',
@@ -162,6 +164,7 @@ export const zh: Record<string, string> = {
   'Nothing moves until you sign.': '没有你的签名，什么都不会动。',
   'Preview a gift': '预览礼物',
   'Your sprout’s nickname': '小芽的昵称',
+  'Add their private nickname after unlocking your family space.': '解锁你们的家庭空间后，再添加孩子的私密昵称。',
   'For the parent': '给家长',
   'A steady habit, a little guidance, and a front-row seat.': '一个稳定的习惯，一点点引导，还有见证成长的前排座位。',
   'For the kid': '给孩子',

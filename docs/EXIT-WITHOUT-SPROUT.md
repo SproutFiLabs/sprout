@@ -31,15 +31,33 @@ family can open.
 
 ## Token addresses and units
 
-Amounts are in each token's smallest unit.
+Amounts are in each token's smallest unit. Sprouts planted before 2026-09-19 can only hold
+AAPL, NVDA, MSFT and SPY; newer sprouts hold up to 5 of the 21 below.
 
 | Token | Address | Decimals | Example |
 | --- | --- | --- | --- |
 | USDG | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` | 6 | $5 = `5000000` |
-| AAPL | `0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9` | 18 | 0.5 = `500000000000000000` |
-| NVDA | `0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC` | 18 | |
-| MSFT | `0xe93237C50D904957Cf27E7B1133b510C669c2e74` | 18 | |
-| SPY | `0x117cc2133c37B721F49dE2A7a74833232B3B4C0C` | 18 | |
+| AAPL (Apple) | `0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9` | 18 | 0.5 = `500000000000000000` |
+| NVDA (NVIDIA) | `0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC` | 18 | |
+| MSFT (Microsoft) | `0xe93237C50D904957Cf27E7B1133b510C669c2e74` | 18 | |
+| SPY (S&P 500) | `0x117cc2133c37B721F49dE2A7a74833232B3B4C0C` | 18 | |
+| TSLA (Tesla) | `0x322F0929c4625eD5bAd873c95208D54E1c003b2d` | 18 | |
+| SPCX (SpaceX) | `0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa` | 18 | |
+| AMZN (Amazon) | `0x12f190a9F9d7D37a250758b26824B97CE941bF54` | 18 | |
+| GOOGL (Google) | `0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3` | 18 | |
+| META (Meta) | `0xc0D6457C16Cc70d6790Dd43521C899C87ce02f35` | 18 | |
+| PLTR (Palantir) | `0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A` | 18 | |
+| AMD (AMD) | `0x86923f96303D656E4aa86D9d42D1e57ad2023fdC` | 18 | |
+| TSM (TSMC) | `0x58FfE4a942d3885bAa22D7520691F611EF09e7AA` | 18 | |
+| MU (Micron) | `0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD` | 18 | |
+| ASML (ASML) | `0x47F93d52cBeC7C6D2CfC080e154002370a60dAEA` | 18 | |
+| INTC (Intel) | `0xc72b96e0E48ecd4DC75E1e45396e26300BC39681` | 18 | |
+| SNDK (Sandisk) | `0xB90A19fF0Af67f7779afF50A882A9CfF42446400` | 18 | |
+| BABA (Alibaba) | `0xad25Ac6C84D497db898fa1E8387bf6Af3532a1c4` | 18 | |
+| QQQ (Nasdaq-100) | `0xD5f3879160bc7c32ebb4dC785F8a4F505888de68` | 18 | |
+| GME (GameStop) | `0x1b0E319c6A659F002271B69dB8A7df2F911c153E` | 18 | |
+| SLV (Silver) | `0x411eFb0E7f985935DAec3D4C3ebaEa0d0AD7D89f` | 18 | |
+| USO (Oil) | `0xa30FA36Db767ad9eD3f7a60fC79526fB4d56D344` | 18 | |
 
 To see how much a sprout holds, open its address on the block explorer
 (`https://robinhoodchain.blockscout.com/address/<sprout address>`, Tokens tab), or call
@@ -91,8 +109,11 @@ Command-line users can do the same with Foundry's `cast send`.
 
 | Contract | Address |
 | --- | --- |
-| SproutFactory | `0x399C4cbf1884A958D20259c53f11E81a11dB201d` |
-| SproutVault (the code every sprout runs) | `0x789ca950BAE92f4c18f5eBf776d54d85a0fF9A59` |
-| UniswapV3Adapter | `0xC7366F864Cac8D97a89e57957aE949FAFb17e520` |
+| SproutFactory (sprouts planted from 2026-09-19, 21 stocks) | `0x10E70171A79c4e13b61CE37e81dc3A63bE3B3a9d` |
+| UniswapV3Adapter (for those sprouts) | `0x78998dEb89E804Aea5c71DdccF3ebd743d7919AD` |
+| SproutFactory (first sprouts, 4 stocks) | `0x399C4cbf1884A958D20259c53f11E81a11dB201d` |
+| UniswapV3Adapter (for the first sprouts) | `0xC7366F864Cac8D97a89e57957aE949FAFb17e520` |
+| SproutVault (the code every sprout runs, from either factory) | `0x789ca950BAE92f4c18f5eBf776d54d85a0fF9A59` |
 
-All three are verified on Sourcify with exact matches.
+All five are verified on Sourcify with exact matches. The exit steps above are the same for
+a sprout from either factory: it is the same vault code.

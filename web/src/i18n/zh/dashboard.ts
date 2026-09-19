@@ -86,6 +86,7 @@ export const zh: Record<string, string> = {
   'Change': '涨跌',
   'Cash balance': '现金余额',
   'Stock token': '股票代币',
+  '{name} · Stock token': '{name} · 股票代币',
   'n/a': '暂无',
 
   // Top row: sample badge and wallet menu
@@ -130,6 +131,11 @@ export const zh: Record<string, string> = {
   'Recent activity': '最近动态',
   'Download every deposit, gift and purchase as a spreadsheet (CSV)': '把每一笔存入、礼物和买入下载为表格（CSV）',
   'Download': '下载',
+  'Downloading…': '正在下载…',
+  'History unavailable.': '历史记录暂时无法获取。',
+  // Errors api.downloadHistory throws; the dashboard shows them under Recent activity.
+  'History could not be downloaded. Reconnect your family session and try again.': '历史记录下载失败。请重新连接家庭会话后再试。',
+  'Family session changed.': '家庭会话已变更。',
   'No activity indexed yet. On-chain history is still being read in — a sprout you just created can take a while to appear here. Nothing is lost; this list trails the chain.':
     '还没有索引到任何动态。链上历史仍在读取中，刚创建的小芽可能要过一会儿才会出现在这里。什么都没有丢失，这个列表只是比链上慢一步。',
   'Contribution': '存入资金',
@@ -247,8 +253,10 @@ export const zh: Record<string, string> = {
   'Their future. Their keys.': '孩子的未来，由孩子掌握。',
   'Graduation hands full control to the child and is irreversible.': '交接会把全部控制权交给孩子，而且不可撤销。',
   'Their own view': '孩子自己的页面',
-  'A read-only page {name} can open on any device to watch their sprout grow: what it holds, chores and rewards, and how long until it’s theirs. It can’t move money. The link includes the name you gave this sprout.':
-    '一个只读页面，{name} 在任何设备上都能打开，看着自己的小芽长大：里面有什么、家务与奖励，以及还要多久才归自己。这个页面不能动用资金。链接里包含你给这株小芽起的名字。',
+  'A read-only page {name} can open on any device to watch their sprout grow: what it holds, learning and progress with amounts hidden by default. Create an expiring invitation in Family privacy. It cannot move money.':
+    '一个只读页面，{name} 在任何设备上都能打开，看着自己的小芽长大：里面有什么、学习和进度，金额默认隐藏。请在“家庭隐私”里创建一个会过期的邀请。这个页面不能动用资金。',
+  'Manage private kid access': '管理孩子的私密访问',
+  // Before Family privacy the dashboard linked straight to the kid view; kept for any caller still using them.
   'Open their view': '打开孩子页面',
   'Link copied': '链接已复制',
   'Copy link': '复制链接',

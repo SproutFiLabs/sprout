@@ -84,9 +84,7 @@ const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1
 describe('the Chinese dictionary', () => {
   test('every string the code translates has a Chinese entry', () => {
     const keys = literalKeys();
-    // The privacy screens (App, DashboardShell, GiftPage, KidView, Landing) are not wrapped in t() yet in
-    // this repository, so fewer strings are found here than on the English / Chinese site.
-    expect(keys.size).toBeGreaterThan(150);
+    expect(keys.size).toBeGreaterThan(500);
     const missing = [...keys].filter(([k]) => ZH[k] === undefined).map(([k, file]) => `${file}: ${k}`);
     expect(missing).toEqual([]);
   });

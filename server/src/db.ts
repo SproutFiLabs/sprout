@@ -35,7 +35,9 @@ CREATE TABLE IF NOT EXISTS sprouts (
   weights_json TEXT NOT NULL,
   created_tx_hash TEXT,
   created_block INTEGER,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  -- The factory that created the vault (vault.factory()); decides its venue.
+  factory TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_sprouts_parent ON sprouts(parent);
 CREATE INDEX IF NOT EXISTS idx_sprouts_beneficiary ON sprouts(beneficiary);
@@ -128,6 +130,17 @@ CREATE TABLE IF NOT EXISTS indexer_cursor (
   updated_at INTEGER NOT NULL
 );
 
+-- How far each factory's own logs have been read. indexer_cursor stays the
+-- cursor of the shared pass over every factory and vault; a factory behind it
+-- (one newly added to the configuration) is caught up on its own first.
+CREATE TABLE IF NOT EXISTS indexer_factory_cursor (
+  chain_id INTEGER NOT NULL,
+  factory TEXT NOT NULL,
+  last_block INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (chain_id, factory)
+);
+
 CREATE TABLE IF NOT EXISTS growth_snapshots (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   vault_id TEXT NOT NULL,
@@ -215,6 +228,19 @@ function migrate(db: SproutDb): void {
   if (!hasColumn(db, 'keeper_txs', 'signer')) {
     db.exec('ALTER TABLE keeper_txs ADD COLUMN signer TEXT;');
   }
+  if (!hasColumn(db, 'sprouts', 'factory')) {
+    db.exec('ALTER TABLE sprouts ADD COLUMN factory TEXT;');
+  }
+  // A sprout's factory is the address that emitted its SproutCreated event.
+  // Only configured factories are ever indexed, so this needs no chain read.
+  db.exec(`
+    UPDATE sprouts SET factory = (
+      SELECT e.address FROM chain_events e
+      WHERE e.event_name = 'SproutCreated' AND e.chain_id = sprouts.chain_id AND lower(e.vault_id) = lower(sprouts.id)
+      ORDER BY e.block_number ASC LIMIT 1
+    )
+    WHERE factory IS NULL;
+  `);
   if (!hasColumn(db, 'milestones', 'uid')) {
     db.exec(`
       ALTER TABLE milestones RENAME TO milestones_legacy;

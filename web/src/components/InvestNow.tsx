@@ -6,6 +6,7 @@ import { contractWriter, waitForSuccess, type WalletState } from '../wallet';
 import { RiskLine } from './BetaNotice';
 import { rememberOneOffSchedule } from '../localStore';
 import { t, tj, getLocale } from '../i18n';
+import { displayName } from '../stocks';
 
 /**
  * "Invest now": the parent buys the sprout's stock mix from its own wallet.
@@ -250,6 +251,7 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
               <span>{fmt(leg.amountIn, decimals, 2)} {ticker}</span>
               <span aria-hidden>→</span>
               <b>{t('about {amount} {symbol}', { amount: fmt(leg.expectedOut, stockDecimals(leg.asset)), symbol: leg.symbol })}</b>
+              {displayName(leg.symbol) ? <small className="invest-now-leg-name">{displayName(leg.symbol)}</small> : null}
             </li>
           ))}
         </ul>
