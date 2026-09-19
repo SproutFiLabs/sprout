@@ -14,8 +14,18 @@ import {SproutVault} from "./SproutVault.sol";
 ///      admitted assets and admitted venues are fixed at deployment. A vault can
 ///      only ever select a subset of these, so a parent cannot admit a hostile
 ///      token or venue after the fact.
+///
+///      Two different limits apply. The factory may admit up to
+///      {MAX_ADMITTED_ASSETS} assets: that is the menu families choose from.
+///      Each sprout still holds at most {MAX_ASSETS} of them at a time, which
+///      {SproutVault} enforces on initialization and on every allocation
+///      change, so a single purchase never fans out across the whole menu.
 contract SproutFactory {
+    /// @notice Most assets one sprout may hold at a time. Mirrors
+    ///         `SproutVault.MAX_ASSETS`, which is what actually enforces it.
     uint256 public constant MAX_ASSETS = 5;
+    /// @notice Most assets this factory may admit in total.
+    uint256 public constant MAX_ADMITTED_ASSETS = 32;
 
     address public immutable vaultImplementation;
     address public immutable settlementToken;
@@ -42,7 +52,7 @@ contract SproutFactory {
 
     constructor(address implementation_, address settlementToken_, address[] memory assets_, address[] memory venues_) {
         if (implementation_ == address(0) || settlementToken_ == address(0)) revert BadArguments();
-        if (assets_.length == 0 || assets_.length > MAX_ASSETS) revert BadArguments();
+        if (assets_.length == 0 || assets_.length > MAX_ADMITTED_ASSETS) revert BadArguments();
         vaultImplementation = implementation_;
         settlementToken = settlementToken_;
 

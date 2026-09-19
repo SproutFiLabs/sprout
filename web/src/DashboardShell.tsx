@@ -19,9 +19,14 @@ import { formatRunDateTime } from './dates';
 import { cadenceLabel, choreRewardText, holdingSharesText } from './garden/format';
 import { growthSummary, putInSteps } from './garden/growthSummary';
 import { ThemeToggle } from './theme/ThemeSettings';
+import { LanguageToggle } from './i18n/LanguageToggle';
 import { CampaignProgress, GiftNotesList, giftAmountLabel } from './components/Campaign';
 import { ResourcesMenu } from './components/ResourcesMenu';
 import { BloomGarden } from './garden/BloomGarden';
+import { HolderMenuRow, PerksSideLink } from './perks/DashboardBits';
+import { t, tj, dateLocale } from './i18n';
+import { autoInvestPerkText, useAutoInvestLock } from './perks/autoInvest';
+import { displayName } from './stocks';
 
 export type ViewId = 'overview' | 'portfolio' | 'invest' | 'chores' | 'gifts' | 'graduation';
 
@@ -138,30 +143,31 @@ const VIEWS: Array<{ id: ViewId; label: string; icon: typeof Home }> = [
   { id: 'graduation', label: 'Growing up', icon: Leaf },
 ];
 
-const HEADINGS: Record<ViewId, { title: ReactNode; sub: string }> = {
-  overview: { title: null, sub: '' },
-  portfolio: { title: <>Their portfolio,<br />at a glance.</>, sub: 'A clear picture of contributions, market value and holdings.' },
-  invest: { title: <>A steady habit,<br />every week.</>, sub: 'Choose an amount that works for your family. Change it any time.' },
-  chores: { title: <>Small jobs.<br />Meaningful rewards.</>, sub: 'Set a reward. Approve it when the job is done, and the vault releases it.' },
-  gifts: { title: <>A little love<br />from their people.</>, sub: 'Give family and friends a simple way to contribute.' },
-  graduation: { title: <>Growing into<br />their own.</>, sub: 'The immutable handover plan, one milestone at a time.' },
+/** Titles are translation keys; `{br}` is the line break, filled with <br /> by tj() at render. */
+const HEADINGS: Record<ViewId, { title: string; sub: string }> = {
+  overview: { title: '', sub: '' },
+  portfolio: { title: 'Their portfolio,{br}at a glance.', sub: 'A clear picture of contributions, market value and holdings.' },
+  invest: { title: 'A steady habit,{br}every week.', sub: 'Choose an amount that works for your family. Change it any time.' },
+  chores: { title: 'Small jobs.{br}Meaningful rewards.', sub: 'Set a reward. Approve it when the job is done, and the vault releases it.' },
+  gifts: { title: 'A little love{br}from their people.', sub: 'Give family and friends a simple way to contribute.' },
+  graduation: { title: 'Growing into{br}their own.', sub: 'The immutable handover plan, one milestone at a time.' },
 };
 
 const PERIODS = ['1W', '1M', '3M', '1Y'] as const;
-const PERIOD_LABEL: Record<string, string> = { '1W': 'week', '1M': 'month', '3M': '3 months', '1Y': 'year' };
+const PERIOD_LABEL: Record<string, string> = { '1W': 'in the last week', '1M': 'in the last month', '3M': 'in the last 3 months', '1Y': 'in the last year' };
 const PERIOD_MS: Record<string, number> = { '1W': 7 * 86400e3, '1M': 30 * 86400e3, '3M': 90 * 86400e3, '1Y': 365 * 86400e3 };
 
 function money(valueUsd: string | null, feedDecimals: number): string {
-  if (!valueUsd) return 'unavailable';
+  if (!valueUsd) return t('unavailable');
   try {
-    return `$${Number(formatUnits(BigInt(valueUsd), feedDecimals)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    return `$${Number(formatUnits(BigInt(valueUsd), feedDecimals)).toLocaleString(dateLocale(), { maximumFractionDigits: 2 })}`;
   } catch {
-    return 'unavailable';
+    return t('unavailable');
   }
 }
 
 function short(address: string): string {
-  if (!address) return 'wallet';
+  if (!address) return t('wallet');
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
@@ -174,7 +180,7 @@ function initials(name: string): string {
 }
 
 function niceDate(tsMs: number): string {
-  return new Date(tsMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(tsMs).toLocaleDateString(dateLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 /** Inline, offline brand marks for the sample/live holdings table. */
@@ -243,7 +249,7 @@ function GardenChart({
   if (windowed.length < 2) {
     return (
       <div className="garden-chart-empty" ref={ref}>
-        History unavailable for this period — not enough recorded on-chain snapshots. No returns are invented.
+        {t('History unavailable for this period — not enough recorded on-chain snapshots. No returns are invented.')}
       </div>
     );
   }
@@ -305,8 +311,8 @@ function GardenChart({
 
   const hasPutIn = putIn.length > 0;
   const chartLabel = hasPutIn
-    ? 'Recorded portfolio value and the money put in, plotted at real timestamps'
-    : 'Recorded portfolio value plotted at real timestamps';
+    ? t('Recorded portfolio value and the money put in, plotted at real timestamps')
+    : t('Recorded portfolio value plotted at real timestamps');
 
   const chart = (
     <div className="garden-chart" ref={ref}>
@@ -321,7 +327,7 @@ function GardenChart({
           <g key={t}>
             <line x1={padL} y1={yFor(t)} x2={W - padR} y2={yFor(t)} stroke="#efece4" strokeWidth="1" />
             <text x={padL - 8} y={yFor(t) + 4} textAnchor="end" className="garden-axis-label" style={{ fontSize }}>
-              ${Math.round(t).toLocaleString('en-US')}
+              ${Math.round(t).toLocaleString(dateLocale())}
             </text>
           </g>
         ))}
@@ -341,7 +347,7 @@ function GardenChart({
             className="garden-axis-label"
             style={{ fontSize }}
           >
-            {new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {new Date(t).toLocaleDateString(dateLocale(), { month: 'short', day: 'numeric' })}
           </text>
         ))}
         <line x1={padL} y1={plotBottom} x2={W - padR} y2={plotBottom} stroke="#dce3d2" strokeWidth="1" />
@@ -350,7 +356,7 @@ function GardenChart({
         <g>
           <rect x={tipX} y={tipY} width={tipW} height="44" rx="10" fill="#ffffff" stroke="#ece7dc" />
           <text x={tipX + 12} y={tipY + 19} className="garden-tip-value" style={{ fontSize: fontSize + 1 }}>
-            {`$${values[values.length - 1]!.toLocaleString('en-US', { maximumFractionDigits: 2 })}`}
+            {`$${values[values.length - 1]!.toLocaleString(dateLocale(), { maximumFractionDigits: 2 })}`}
           </text>
           <text x={tipX + 12} y={tipY + 34} className="garden-tip-date" style={{ fontSize }}>
             {niceDate(times[times.length - 1]!)}
@@ -365,8 +371,8 @@ function GardenChart({
     <>
       {hasPutIn ? (
         <div className="garden-chart-legend" data-testid="chart-legend">
-          <span><i className="garden-legend-swatch garden-legend-swatch--worth" aria-hidden />Worth</span>
-          <span><i className="garden-legend-swatch garden-legend-swatch--put-in" aria-hidden />Put in</span>
+          <span><i className="garden-legend-swatch garden-legend-swatch--worth" aria-hidden />{t('Worth')}</span>
+          <span><i className="garden-legend-swatch garden-legend-swatch--put-in" aria-hidden />{t('Put in')}</span>
         </div>
       ) : null}
       {chart}
@@ -398,6 +404,11 @@ export function DashboardShell(props: DashboardShellProps) {
   const chartNow = nowMs ?? Date.now();
   const [period, setPeriod] = useState('3M');
   const [toggledChores, setToggledChores] = useState<Record<string, boolean>>({});
+  // Automatic weekly investing can be a SPROUT holder perk; say so to a parent who doesn't hold the tier.
+  const perkTier = useAutoInvestLock(health?.automation, isParent && !isSample ? selected?.parent : null);
+  const perkNotice = perkTier ? (
+    <p className="garden-notice" data-testid="autoinvest-perk">{autoInvestPerkText(perkTier)} <a href="/perks">{t('See SPROUT perks')}</a></p>
+  ) : null;
 
   const settlementToken = chain?.contracts.settlementToken;
   const settlementDecimals = chain?.contracts.settlementDecimals ?? 6;
@@ -416,7 +427,7 @@ export function DashboardShell(props: DashboardShellProps) {
   const canParentAct = isParent && !isGraduated;
 
   const choreTitle = (m: Milestone): string => {
-    if (isSample && sample?.choreLabels[m.id]) return sample.choreLabels[m.id]!;
+    if (isSample && sample?.choreLabels[m.id]) return t(sample.choreLabels[m.id]!);
     return getMilestoneTitle(chain?.chainId ?? 0, m.vaultId, m.id) ?? `${formatUnits(BigInt(m.amount), decimalsFor(m.token), 2)} ${symbolFor(m.token)}`;
   };
   const choreProgress = chores.length ? Math.round((releasedChores.length / chores.length) * 100) : 0;
@@ -431,7 +442,7 @@ export function DashboardShell(props: DashboardShellProps) {
   };
   const nameFor = (id: string): string => getNickname(id) ?? (isSample ? getNickname(id) ?? 'Sprout' : 'Sprout');
   const avatarFor = (id: string): string | null => (isSample ? sample?.childAvatars[id] ?? null : null);
-  const assetName = (symbol: string): string | null => (isSample ? sample?.assetNames[symbol] ?? null : null);
+  const assetName = (symbol: string): string | null => (isSample && sample?.assetNames[symbol] ? t(sample.assetNames[symbol]!) : null);
   const assetChange = (symbol: string): string | null => (isSample ? sample?.assetChanges[symbol] ?? null : null);
 
   const activity = events.slice().reverse().slice(0, 30);
@@ -442,28 +453,28 @@ export function DashboardShell(props: DashboardShellProps) {
       try { return formatUnits(BigInt(String(v ?? 0)), dec); } catch { return '—'; }
     };
     switch (e.eventName) {
-      case 'Funded': return { title: 'Contribution', sub: fmtTokenAmount(String(p.amount ?? 0), token), kind: 'fund' };
-      case 'GiftReceived': return { title: 'Gift received', sub: fmtTokenAmount(String(p.amount ?? 0), token), kind: 'gift' };
+      case 'Funded': return { title: t('Contribution'), sub: fmtTokenAmount(String(p.amount ?? 0), token), kind: 'fund' };
+      case 'GiftReceived': return { title: t('Gift received'), sub: fmtTokenAmount(String(p.amount ?? 0), token), kind: 'gift' };
       case 'InvestmentExecuted':
         return {
-          title: 'Weekly investment',
+          title: t('Weekly investment'),
           sub: `${amt(p.amountIn, chain?.contracts.settlementDecimals ?? 6)} → ${amt(p.amountOut, decimalsFor(token))} ${symbolFor(token)}`,
           kind: 'invest',
         };
-      case 'InvestmentScheduled': return { title: 'Weekly plan set', sub: 'Recurring investment scheduled', kind: 'invest' };
-      case 'InvestmentCancelled': return { title: 'Weekly plan paused', sub: 'Recurring investment cancelled', kind: 'invest' };
-      case 'MilestoneCreated': return { title: 'Chore added', sub: `${fmtTokenAmount(String(p.amount ?? 0), token)} reward`, kind: 'chore' };
-      case 'MilestoneReleased': return { title: 'Reward released', sub: `${fmtTokenAmount(String(p.amount ?? 0), token)} to allowance`, kind: 'chore' };
-      case 'MilestoneCancelled': return { title: 'Chore cancelled', sub: 'Reward earmark released', kind: 'chore' };
-      case 'AllowanceClaimed': return { title: 'Allowance claimed', sub: fmtTokenAmount(String(p.amount ?? 0), token), kind: 'chore' };
-      case 'Withdrawn': return { title: 'Withdrawn after graduation', sub: fmtTokenAmount(String(p.amount ?? 0), token), kind: 'gift' };
-      case 'SproutInitialized': return { title: 'Sprout planted', sub: 'Vault created on-chain', kind: 'invest' };
-      default: return { title: e.eventName, sub: 'on-chain event', kind: 'invest' };
+      case 'InvestmentScheduled': return { title: t('Weekly plan set'), sub: t('Recurring investment scheduled'), kind: 'invest' };
+      case 'InvestmentCancelled': return { title: t('Weekly plan paused'), sub: t('Recurring investment cancelled'), kind: 'invest' };
+      case 'MilestoneCreated': return { title: t('Chore added'), sub: t('{amount} reward', { amount: fmtTokenAmount(String(p.amount ?? 0), token) }), kind: 'chore' };
+      case 'MilestoneReleased': return { title: t('Reward released'), sub: t('{amount} to allowance', { amount: fmtTokenAmount(String(p.amount ?? 0), token) }), kind: 'chore' };
+      case 'MilestoneCancelled': return { title: t('Chore cancelled'), sub: t('Reward earmark released'), kind: 'chore' };
+      case 'AllowanceClaimed': return { title: t('Allowance claimed'), sub: fmtTokenAmount(String(p.amount ?? 0), token), kind: 'chore' };
+      case 'Withdrawn': return { title: t('Withdrawn after graduation'), sub: fmtTokenAmount(String(p.amount ?? 0), token), kind: 'gift' };
+      case 'SproutInitialized': return { title: t('Sprout planted'), sub: t('Vault created on-chain'), kind: 'invest' };
+      default: return { title: t(e.eventName), sub: t('on-chain event'), kind: 'invest' };
     }
   };
 
   const activityRows = isSample && sample
-    ? sample.activity
+    ? sample.activity.map((a) => ({ ...a, title: t(a.title), sub: t(a.sub), date: t(a.date) }))
     : activity.slice(0, 4).map((e) => {
         const d = describe(e);
         return { title: d.title, sub: d.sub, amount: '', date: '', kind: d.kind as SampleActivity['kind'] };
@@ -471,9 +482,9 @@ export function DashboardShell(props: DashboardShellProps) {
 
   const samplePortfolioValue = holdings?.available ? money(holdings.totalValueUsd, holdings.feedDecimals) : isSample ? '$2,480.65' : '—';
   const changeText = (): ReactNode => {
-    if (isSample && sample) return <><span className="garden-up">↗</span> {sample.portfolioChange} <span className="garden-muted">in the last {PERIOD_LABEL[period]}</span></>;
-    if (balanceChange) return <>{balanceChange.delta}{balanceChange.pct === null ? '' : ` (${balanceChange.pct.toFixed(2)}%)`} <span className="garden-muted">balance change incl. deposits/withdrawals</span></>;
-    return <span className="garden-muted">Not enough verified history to show a change.</span>;
+    if (isSample && sample) return <><span className="garden-up">↗</span> {sample.portfolioChange} <span className="garden-muted">{t(PERIOD_LABEL[period] ?? '')}</span></>;
+    if (balanceChange) return <>{balanceChange.delta}{balanceChange.pct === null ? '' : ` (${balanceChange.pct.toFixed(2)}%)`} <span className="garden-muted">{t('balance change incl. deposits/withdrawals')}</span></>;
+    return <span className="garden-muted">{t('Not enough verified history to show a change.')}</span>;
   };
 
   /**
@@ -493,7 +504,7 @@ export function DashboardShell(props: DashboardShellProps) {
   const putInSummary: ReactNode = putInFigures ? (
     <div className="garden-change garden-put-in" data-testid="growth-summary">
       <span className="garden-put-in-figures">
-        <span>Put in <b data-testid="growth-put-in">{putInFigures.putIn}</b></span>
+        <span>{tj('Put in {amount}', { amount: <b data-testid="growth-put-in">{putInFigures.putIn}</b> })}</span>
         {putInFigures.growth ? (
           <>
             <span className="garden-put-in-sep" aria-hidden>·</span>
@@ -501,16 +512,18 @@ export function DashboardShell(props: DashboardShellProps) {
               className={putInFigures.tone === 'up' ? 'garden-up' : putInFigures.tone === 'down' ? 'garden-down' : undefined}
               data-testid="growth-amount"
             >
-              Growth {putInFigures.growth}{putInFigures.percent ? ` (${putInFigures.percent})` : ''}
+              {putInFigures.percent
+                ? t('Growth {amount} ({percent})', { amount: putInFigures.growth, percent: putInFigures.percent })
+                : t('Growth {amount}', { amount: putInFigures.growth })}
             </span>
           </>
         ) : null}
       </span>
       <span
         className="garden-muted"
-        title="Growth is today's value minus the money put in (deposits and gifts, less claims and withdrawals). It moves with the market and can go down."
+        title={t("Growth is today's value minus the money put in (deposits and gifts, less claims and withdrawals). It moves with the market and can go down.")}
       >
-        {growth?.note ?? 'Growth is market moves only, not a promise.'}
+        {growth?.note ?? t('Growth is market moves only, not a promise.')}
       </span>
     </div>
   ) : null;
@@ -540,31 +553,36 @@ export function DashboardShell(props: DashboardShellProps) {
 
   const holdingsRows: ReactNode = vaultIsEmpty ? (
     <div className="garden-empty-vault" data-testid="empty-vault-holdings">
-      <p className="garden-empty-vault-lead">Nothing in this sprout yet.</p>
+      <p className="garden-empty-vault-lead">{t('Nothing in this sprout yet.')}</p>
       <p className="garden-empty-note">
-        Planting created the vault; it does not move any money. Add funds to start, and holdings
-        will appear here once there is something to hold.
+        {t('Planting created the vault; it does not move any money. Add funds to start, and holdings will appear here once there is something to hold.')}
       </p>
       {canParentAct ? (
         <button className="garden-pill garden-pill--dark" data-testid="empty-vault-fund" onClick={onOpenFund} disabled={!chainReady}>
-          Add funds <ArrowUpRight size={15} />
+          {t('Add funds')} <ArrowUpRight size={15} />
         </button>
       ) : null}
     </div>
   ) : !holdings?.available ? (
-    <p className="garden-empty-note">{holdings?.reason ?? 'Could not load holdings just now. Your balance is safe on-chain — this is a display problem, not a missing balance. Try again in a moment.'}</p>
+    <p className="garden-empty-note">{holdings?.reason ?? t('Could not load holdings just now. Your balance is safe on-chain — this is a display problem, not a missing balance. Try again in a moment.')}</p>
   ) : (
     <table className="garden-table">
       <thead>
         <tr>
-          <th>Asset</th>
-          <th className="garden-right">{isSample ? 'Shares' : 'Tokens'}</th>
-          <th className="garden-right">Value</th>
-          <th className="garden-right">{isSample ? 'Change (3M)' : 'Change'}</th>
+          <th>{t('Asset')}</th>
+          <th className="garden-right">{isSample ? t('Shares') : t('Tokens')}</th>
+          <th className="garden-right">{t('Value')}</th>
+          <th className="garden-right">{isSample ? t('Change (3M)') : t('Change')}</th>
         </tr>
       </thead>
       <tbody>
-        {holdings.holdings.slice(0, 4).map((h) => {
+        {/* Top holdings shows four; the portfolio view (its See all) shows every one, up to five stocks and cash.
+            The server returns a row per configured stock (21), so keep only cash, anything held,
+            and the stocks in this sprout's current mix. */}
+        {holdings.holdings
+          .filter((h) => isSample || h.kind === 'settlement' || h.rawBalance !== '0' || !selected || selected.assets.some((a) => a.toLowerCase() === h.address.toLowerCase()))
+          .slice(0, view === 'portfolio' ? undefined : 4)
+          .map((h) => {
           const shares = holdingSharesText({ shareEquivalent: h.shareEquivalent, rawBalance: h.rawBalance, decimals: h.decimals });
           const change = assetChange(h.symbol);
           // The server labels the settlement row "SETTLEMENT", which reads as
@@ -572,6 +590,7 @@ export function DashboardShell(props: DashboardShellProps) {
           // configured. data-testid keeps the server's symbol: the browser and
           // hosted suites select on holding-SETTLEMENT.
           const label = h.kind === 'settlement' ? (chain?.contracts.settlementSymbol ?? h.symbol) : h.symbol;
+          const company = h.kind === 'stock' ? displayName(h.symbol) : null;
           return (
             <tr key={h.address + h.kind} data-testid={`holding-${h.symbol}`}>
               <td>
@@ -579,14 +598,14 @@ export function DashboardShell(props: DashboardShellProps) {
                   <AssetGlyph symbol={label} />
                   <span className="garden-asset-name">
                     <b>{label}</b>
-                    <small>{assetName(h.symbol) ?? (h.kind === 'settlement' ? 'Cash balance' : 'Stock token')}</small>
+                    <small>{assetName(h.symbol) ?? (h.kind === 'settlement' ? t('Cash balance') : company ? t('{name} · Stock token', { name: company }) : t('Stock token'))}</small>
                   </span>
                 </button>
               </td>
               <td className="garden-right garden-tabular">{shares}</td>
               <td className="garden-right garden-tabular">{money(h.valueUsd, h.feedDecimals)}</td>
               <td className={'garden-right garden-tabular ' + (change ? 'garden-up' : 'garden-muted')}>
-                {change ?? (isSample ? '—' : 'n/a')}
+                {change ?? (isSample ? '—' : t('n/a'))}
               </td>
             </tr>
           );
@@ -601,12 +620,12 @@ export function DashboardShell(props: DashboardShellProps) {
         <button
           className="garden-drawer-toggle"
           data-testid="sidebar-toggle"
-          aria-label="Open menu"
+          aria-label={t('Open menu')}
           onClick={() => setDrawerOpen(true)}
         >
           ☰
         </button>
-        <div className="garden-children" role="group" aria-label="Select a sprout">
+        <div className="garden-children" role="group" aria-label={t('Select a sprout')}>
           {sprouts.map((s) => {
             const active = s.id.toLowerCase() === selectedId?.toLowerCase();
             const avatar = avatarFor(s.id);
@@ -633,28 +652,30 @@ export function DashboardShell(props: DashboardShellProps) {
       <div className="garden-toprow-right">
         {isSample ? null : <PublicCa variant="dashboard" />}
         <ThemeToggle />
+        <LanguageToggle />
         {isSample ? (
           <details className="garden-sample" data-testid="sample-menu">
             <summary data-testid="sample-badge" className="garden-sample-badge">
               <FlaskConical size={18} />
-              Sample data
+              {t('Sample data')}
             </summary>
             <div className="garden-menu">
-              <p className="garden-menu-note">You are viewing a local sample. No wallet, vault or live data is used.</p>
-              <a className="garden-menu-action" href="/dashboard" data-testid="sample-go-live">Go to live dashboard</a>
+              <p className="garden-menu-note">{t('You are viewing a local sample. No wallet, vault or live data is used.')}</p>
+              <a className="garden-menu-action" href="/dashboard" data-testid="sample-go-live">{t('Go to live dashboard')}</a>
             </div>
           </details>
         ) : (
           <details className="garden-wallet">
             <summary className="garden-wallet-summary" data-testid="wallet-control">
               <Wallet size={17} />
-              <span>{wallet ? short(wallet.address) : 'Wallet'}</span>
+              <span>{wallet ? short(wallet.address) : t('Wallet')}</span>
               <ChevronDown size={15} />
             </summary>
             <div className="garden-menu">
-              <div className="garden-menu-row"><span>Network</span><b>{chain?.name ?? 'Not configured'}</b></div>
+              <div className="garden-menu-row"><span>{t('Network')}</span><b>{chain?.name ?? t('Not configured')}</b></div>
               {selected ? <SproutAddressRow address={selected.id} /> : null}
-              {chain && !chain.configured ? <div className="garden-menu-row"><span>Status</span><b>Unconfigured</b></div> : null}
+              <HolderMenuRow address={wallet?.address} />
+              {chain && !chain.configured ? <div className="garden-menu-row"><span>{t('Status')}</span><b>{t('Unconfigured')}</b></div> : null}
               {/* A first-time visitor reaches for this menu to connect, so it must offer to. */}
               {wallet ? null : (
                 <button
@@ -664,7 +685,7 @@ export function DashboardShell(props: DashboardShellProps) {
                   disabled={connecting || !chain}
                   onClick={(e) => { e.currentTarget.closest('details')?.removeAttribute('open'); onConnect(); }}
                 >
-                  {connecting ? 'Connecting…' : 'Connect wallet'}
+                  {connecting ? t('Connecting…') : t('Connect wallet')}
                 </button>
               )}
             </div>
@@ -679,13 +700,17 @@ export function DashboardShell(props: DashboardShellProps) {
       <div className="garden-hero-copy garden-view-enter" key={`hero-${view}-${selectedId ?? 'none'}`}>
         {view === 'overview' ? (
           <>
-            <h1>A little today.<br />A growing tomorrow.</h1>
-            <p className="garden-hero-sub">Investing, learning, and good habits for {selected ? `${nameFor(selected.id)}’s` : 'their'} big future.</p>
+            <h1>{tj('A little today.{br}A growing tomorrow.', { br: <br /> })}</h1>
+            <p className="garden-hero-sub">
+              {selected
+                ? t('Investing, learning, and good habits for {name}’s big future.', { name: nameFor(selected.id) })
+                : t('Investing, learning, and good habits for their big future.')}
+            </p>
           </>
         ) : (
           <>
-            <h1>{HEADINGS[view].title}</h1>
-            <p className="garden-hero-sub">{HEADINGS[view].sub}</p>
+            <h1>{tj(HEADINGS[view].title, { br: <br /> })}</h1>
+            <p className="garden-hero-sub">{t(HEADINGS[view].sub)}</p>
           </>
         )}
       </div>
@@ -696,11 +721,11 @@ export function DashboardShell(props: DashboardShellProps) {
   const portfolioCard = (
     <div className="garden-card garden-portfolio">
       <div className="garden-card-head">
-        <h2>{selected ? `${nameFor(selected.id)}’s portfolio` : 'Portfolio'}</h2>
-        <div className="garden-periods" role="group" aria-label="Chart period">
+        <h2>{selected ? t('{name}’s portfolio', { name: nameFor(selected.id) }) : t('Portfolio')}</h2>
+        <div className="garden-periods" role="group" aria-label={t('Chart period')}>
           {PERIODS.map((p) => (
             <button key={p} className={'garden-period' + (p === period ? ' garden-period--active' : '')} aria-pressed={p === period} onClick={() => setPeriod(p)}>
-              {p}
+              {t(p)}
             </button>
           ))}
         </div>
@@ -708,10 +733,10 @@ export function DashboardShell(props: DashboardShellProps) {
       <div className="garden-value" data-testid="portfolio-value">{samplePortfolioValue}</div>
       {vaultIsEmpty ? (
         <div className="garden-fund-prompt" data-testid="empty-vault-prompt">
-          <span>This sprout has no money in it yet. Planting created the vault — adding funds is a separate step.</span>
+          <span>{t('This sprout has no money in it yet. Planting created the vault — adding funds is a separate step.')}</span>
           {canParentAct ? (
             <button className="garden-pill garden-pill--dark" data-testid="prompt-fund" onClick={onOpenFund} disabled={!chainReady}>
-              Add the first funds <ArrowUpRight size={15} />
+              {t('Add the first funds')} <ArrowUpRight size={15} />
             </button>
           ) : null}
         </div>
@@ -720,9 +745,9 @@ export function DashboardShell(props: DashboardShellProps) {
       )}
       {fundedNotInvested && canParentAct ? (
         <div className="garden-fund-prompt" data-testid="invest-prompt">
-          <span>{fundedNotInvested} is in the sprout, waiting to be invested.</span>
+          <span>{t('{amount} is in the sprout, waiting to be invested.', { amount: fundedNotInvested })}</span>
           <button className="garden-pill garden-pill--dark" data-testid="prompt-invest" onClick={onOpenInvestNow} disabled={!chainReady}>
-            Invest it now <ArrowUpRight size={15} />
+            {t('Invest it now')} <ArrowUpRight size={15} />
           </button>
         </div>
       ) : null}
@@ -730,15 +755,15 @@ export function DashboardShell(props: DashboardShellProps) {
         <GardenChart snapshots={growth.snapshots} contributions={growth.contributions} period={period} feedDecimals={growth.snapshots[0]?.feedDecimals ?? 8} nowMs={chartNow} />
       ) : (
         <div className="garden-chart-empty">
-          {isSample ? 'No sample history.' : vaultIsEmpty
-            ? 'Nothing in this sprout yet — add funds and a value line starts from your first deposit.'
+          {isSample ? t('No sample history.') : vaultIsEmpty
+            ? t('Nothing in this sprout yet — add funds and a value line starts from your first deposit.')
             : fundedNotInvested
             /* A funded vault with no snapshots yet used to render as a blank
                chart under a blank change figure, which reads as "the money is
                gone" rather than "nothing has been invested yet". Say where it
                actually is. */
-            ? `Funded and waiting. ${fundedNotInvested} is in the vault, ready for the first investment — a return line appears once one has run.`
-            : 'No verified valuation snapshots yet. Live returns are only shown when a real feed provides them.'}
+            ? t('Funded and waiting. {amount} is in the vault, ready for the first investment — a return line appears once one has run.', { amount: fundedNotInvested })
+            : t('No verified valuation snapshots yet. Live returns are only shown when a real feed provides them.')}
         </div>
       )}
     </div>
@@ -747,11 +772,11 @@ export function DashboardShell(props: DashboardShellProps) {
   const weeklyCard = (
     <div className={'garden-card garden-weekly' + (scheduled && automation?.enabled === false ? ' garden-weekly--automation-off' : '')}>
       <div className="garden-weekly-head">
-        <button className="garden-weekly-title" onClick={() => setView('invest')} aria-label="Open weekly investing settings">
+        <button className="garden-weekly-title" onClick={() => setView('invest')} aria-label={t('Open weekly investing settings')}>
           <span className="garden-weekly-icon"><CalendarDays size={28} /></span>
           <span>
-            <b>Weekly investing</b>
-            <small>{isSample && sample ? sample.weeklySubtitle : 'A little each week can make a big difference.'}</small>
+            <b>{t('Weekly investing')}</b>
+            <small>{isSample && sample ? t(sample.weeklySubtitle) : t('A little each week can make a big difference.')}</small>
           </span>
         </button>
         <ChevronRight size={18} className="garden-weekly-chevron" />
@@ -760,29 +785,30 @@ export function DashboardShell(props: DashboardShellProps) {
         <div className="garden-weekly-amount">
           <span className="garden-weekly-figure">
             ${formatUnits(BigInt(scheduled.amount), settlementDecimals, 2)}
-            <span className="garden-weekly-unit"> / week</span>
+            <span className="garden-weekly-unit"> {t('/ week')}</span>
           </span>
           <span className={'garden-chip ' + (automation?.enabled === false ? 'garden-chip--muted' : 'garden-chip--active')}>
-            {automation?.enabled === false ? 'Automation off' : scheduled.status === 'active' ? 'Active' : scheduled.status}
+            {automation?.enabled === false ? t('Automation off') : scheduled.status === 'active' ? t('Active') : t(scheduled.status)}
           </span>
         </div>
       ) : (
         <div className="garden-weekly-amount">
-          <span className="garden-weekly-figure">—<span className="garden-weekly-unit"> / week</span></span>
-          <button className="garden-chip garden-chip--link" data-testid="schedule-open" onClick={onOpenSchedule} disabled={!canParentAct || !chainReady}>Set up</button>
+          <span className="garden-weekly-figure">—<span className="garden-weekly-unit"> {t('/ week')}</span></span>
+          <button className="garden-chip garden-chip--link" data-testid="schedule-open" onClick={onOpenSchedule} disabled={!canParentAct || !chainReady}>{t('Set up')}</button>
         </div>
       )}
       {scheduled && automation?.enabled === false ? (
-        <p className="garden-notice" data-testid="automation-unavailable">Automatic investments are temporarily unavailable. Your schedule is unchanged.</p>
+        <p className="garden-notice" data-testid="automation-unavailable">{t('Automatic investments are temporarily unavailable. Your schedule is unchanged.')}</p>
       ) : null}
+      {scheduled ? perkNotice : null}
       <div className="garden-weekly-foot">
         <div className="garden-weekly-next">
-          <small>Next contribution</small>
-          <b>{isSample && sample?.weeklyNext ? sample.weeklyNext : scheduled ? niceDate(scheduled.nextRunAt * 1000) : 'Not scheduled'}</b>
+          <small>{t('Next contribution')}</small>
+          <b>{isSample && sample?.weeklyNext ? t(sample.weeklyNext) : scheduled ? niceDate(scheduled.nextRunAt * 1000) : t('Not scheduled')}</b>
         </div>
         {canParentAct ? (
           <button className="garden-pill garden-pill--dark" data-testid="fund-open" onClick={onOpenFund} disabled={!chainReady}>
-            Add money
+            {t('Add money')}
           </button>
         ) : null}
       </div>
@@ -792,12 +818,12 @@ export function DashboardShell(props: DashboardShellProps) {
   const choresCard = (
     <div className="garden-card garden-chores-preview">
       <div className="garden-card-head">
-        <h2>Next up for {selected ? nameFor(selected.id) : 'them'}</h2>
-        <button className="garden-see-all" onClick={() => setView('chores')}>See all</button>
+        <h2>{selected ? t('Next up for {name}', { name: nameFor(selected.id) }) : t('Next up for them')}</h2>
+        <button className="garden-see-all" onClick={() => setView('chores')}>{t('See all')}</button>
       </div>
       {openChores.length === 0 ? (
         <p className="garden-empty-note">
-          {canParentAct ? 'No chores yet. Add the first little job from Chores & rewards.' : 'No chores waiting right now.'}
+          {canParentAct ? t('No chores yet. Add the first little job from Chores & rewards.') : t('No chores waiting right now.')}
         </p>
       ) : (
         openChores.slice(0, 2).map((m) => {
@@ -829,8 +855,8 @@ export function DashboardShell(props: DashboardShellProps) {
   const holdingsCard = (
     <div className="garden-card garden-holdings-card">
       <div className="garden-card-head">
-        <h2>Top holdings</h2>
-        <button className="garden-see-all" onClick={() => setView('portfolio')}>See all</button>
+        <h2>{t('Top holdings')}</h2>
+        <button className="garden-see-all" onClick={() => setView('portfolio')}>{t('See all')}</button>
       </div>
       {holdingsRows}
     </div>
@@ -839,7 +865,7 @@ export function DashboardShell(props: DashboardShellProps) {
   const activityCard = (
     <div className="garden-card garden-activity-card">
       <div className="garden-card-head">
-        <h2>Recent activity</h2>
+        <h2>{t('Recent activity')}</h2>
         <div className="garden-card-head-actions">
           {!isSample && selected ? (
             <button
@@ -847,17 +873,18 @@ export function DashboardShell(props: DashboardShellProps) {
               disabled={historyBusy}
               onClick={() => { setHistoryBusy(true); setHistoryError(''); void api.downloadHistory(selected.id).catch(e => setHistoryError(e instanceof Error ? e.message : 'History unavailable.')).finally(() => setHistoryBusy(false)); }}
               data-testid="history-download"
-              title="Download every deposit, gift and purchase as a spreadsheet (CSV)"
+              title={t('Download every deposit, gift and purchase as a spreadsheet (CSV)')}
             >
-              {historyBusy ? 'Downloading…' : 'Download'}
+              {historyBusy ? t('Downloading…') : t('Download')}
             </button>
           ) : null}
-          <button className="garden-see-all" onClick={onOpenNotifications}>See all</button>
+          <button className="garden-see-all" onClick={onOpenNotifications}>{t('See all')}</button>
         </div>
       </div>
-      {historyError ? <p role="alert" className="garden-empty-note">{historyError}</p> : null}
+      {/* The error is kept in English and translated here, so a language switch re-renders it. */}
+      {historyError ? <p role="alert" className="garden-empty-note">{t(historyError)}</p> : null}
       {activityRows.length === 0 ? (
-        <p className="garden-empty-note">No activity indexed yet. On-chain history is still being read in — a sprout you just created can take a while to appear here. Nothing is lost; this list trails the chain.</p>
+        <p className="garden-empty-note">{t('No activity indexed yet. On-chain history is still being read in — a sprout you just created can take a while to appear here. Nothing is lost; this list trails the chain.')}</p>
       ) : (
         activityRows.map((a, i) => (
           <div className="garden-activity-row" key={`${a.title}-${i}`}>
@@ -880,14 +907,14 @@ export function DashboardShell(props: DashboardShellProps) {
 
   const beneficiaryStrip = isBeneficiary && (claimable.length > 0 || isGraduated) ? (
     <div className="garden-claim-strip">
-      <span className="garden-claim-strip-label">Beneficiary actions</span>
+      <span className="garden-claim-strip-label">{t('Beneficiary actions')}</span>
       {claimable.map((a) => (
         <button key={a.token} data-testid={`claim-${symbolFor(a.token)}`} className="garden-pill garden-pill--dark" onClick={() => onClaim(a.token, BigInt(a.bucket))} disabled={!chainReady}>
-          Claim {fmtTokenAmount(a.bucket, a.token)}
+          {t('Claim {amount}', { amount: fmtTokenAmount(a.bucket, a.token) })}
         </button>
       ))}
       {isGraduated ? (
-        <button data-testid="withdraw-open" className="garden-pill" onClick={onOpenWithdraw} disabled={!chainReady}>Withdraw</button>
+        <button data-testid="withdraw-open" className="garden-pill" onClick={onOpenWithdraw} disabled={!chainReady}>{t('Withdraw')}</button>
       ) : null}
     </div>
   ) : null;
@@ -918,16 +945,16 @@ export function DashboardShell(props: DashboardShellProps) {
         <div className="garden-detail">
           {portfolioCard}
           <div className="garden-card">
-            <div className="garden-card-head"><h2>Their stock mix</h2></div>
-            <p className="garden-empty-note">Your allocation determines how investments are divided.</p>
+            <div className="garden-card-head"><h2>{t('Their stock mix')}</h2></div>
+            <p className="garden-empty-note">{t('Your allocation determines how investments are divided.')}</p>
             {(selected.assets ?? []).map((a, i) => (
               <div className="garden-mix-row" key={a}>
-                <b>{symbolFor(a)}</b>
+                <b>{symbolFor(a)}{displayName(symbolFor(a)) ? <small>{displayName(symbolFor(a))}</small> : null}</b>
                 <div className="garden-progress"><span style={{ width: `${(selected.weights[i] ?? 0) / 100}%` }} /></div>
                 <span>{(selected.weights[i] ?? 0) / 100}%</span>
               </div>
             ))}
-            {canParentAct ? <button className="garden-pill" data-testid="allocation-open" onClick={onOpenAllocation} disabled={!chainReady}>Edit allocation <ArrowUpRight size={15} /></button> : <p className="garden-empty-note">Allocation editing is parent-only before graduation.</p>}
+            {canParentAct ? <button className="garden-pill" data-testid="allocation-open" onClick={onOpenAllocation} disabled={!chainReady}>{t('Edit allocation')} <ArrowUpRight size={15} /></button> : <p className="garden-empty-note">{t('Allocation editing is parent-only before graduation.')}</p>}
           </div>
           {holdingsCard}
           {activityCard}
@@ -939,8 +966,8 @@ export function DashboardShell(props: DashboardShellProps) {
         <div className="garden-detail garden-detail--split">
           <div className="garden-card">
             <div className="garden-card-head">
-              <h2>Your weekly plan</h2>
-              <span className="garden-chip">{!automation?.enabled ? 'Automation unavailable' : activeJobs.length ? `${activeJobs.length} active` : previousJob ? 'Paused' : 'No plan'}</span>
+              <h2>{t('Your weekly plan')}</h2>
+              <span className="garden-chip">{!automation?.enabled ? t('Automation unavailable') : activeJobs.length ? t('{count} active', { count: activeJobs.length }) : previousJob ? t('Paused') : t('No plan')}</span>
             </div>
             {activeJobs.length ? activeJobs.map((j) => (
               <div className="garden-plan-row" key={j.id} data-testid="schedule-row">
@@ -950,18 +977,18 @@ export function DashboardShell(props: DashboardShellProps) {
                 </div>
                 <div className="garden-plan-meta">
                   <div className="garden-plan-field">
-                    <small>Next investment</small>
+                    <small>{t('Next investment')}</small>
                     <b>{formatRunDateTime(j.nextRunAt)}</b>
                   </div>
                   <div className="garden-plan-field">
-                    <small>Status</small>
-                    <b data-testid="schedule-status">{j.status}</b>
+                    <small>{t('Status')}</small>
+                    <b data-testid="schedule-status">{t(j.status)}</b>
                   </div>
                 </div>
                 {canParentAct ? (
                   <div className="garden-plan-actions">
-                    <button data-testid="schedule-open" className="garden-pill garden-pill--dark" onClick={onOpenSchedule} disabled={!chainReady}>Edit plan</button>
-                    <button data-testid="schedule-cancel" className="garden-pill" onClick={onCancelSchedule} disabled={!chainReady}>Pause plan</button>
+                    <button data-testid="schedule-open" className="garden-pill garden-pill--dark" onClick={onOpenSchedule} disabled={!chainReady}>{t('Edit plan')}</button>
+                    <button data-testid="schedule-cancel" className="garden-pill" onClick={onCancelSchedule} disabled={!chainReady}>{t('Pause plan')}</button>
                   </div>
                 ) : null}
               </div>
@@ -969,63 +996,64 @@ export function DashboardShell(props: DashboardShellProps) {
               <div className="garden-plan-row garden-plan-row--idle">
                 <div className="garden-plan-amount">
                   {previousJob ? `$${formatUnits(BigInt(previousJob.amount), settlementDecimals, 2)}` : '—'}
-                  <span className="garden-plan-cadence">/ {previousJob ? cadenceLabel(previousJob.periodSeconds) : 'period'}</span>
+                  <span className="garden-plan-cadence">/ {previousJob ? cadenceLabel(previousJob.periodSeconds) : t('period')}</span>
                 </div>
                 <div className="garden-plan-meta">
                   <div className="garden-plan-field">
-                    <small>Next investment</small>
-                    <b>{previousJob ? 'Paused' : 'Not scheduled'}</b>
+                    <small>{t('Next investment')}</small>
+                    <b>{previousJob ? t('Paused') : t('Not scheduled')}</b>
                   </div>
                   <div className="garden-plan-field">
-                    <small>Status</small>
-                    <b data-testid="schedule-status">{previousJob ? 'paused' : 'none'}</b>
+                    <small>{t('Status')}</small>
+                    <b data-testid="schedule-status">{previousJob ? t('paused') : t('none')}</b>
                   </div>
                 </div>
               </div>
             )}
             <p className="garden-plan-note">
               {previousJob && !activeJobs.length
-                ? 'Your last plan is paused. Resuming signs it again with the same amount and period.'
-                : 'At most one installment runs each period. If a run is missed, the next one catches up with a single purchase — never more.'}
+                ? t('Your last plan is paused. Resuming signs it again with the same amount and period.')
+                : t('At most one installment runs each period. If a run is missed, the next one catches up with a single purchase — never more.')}
             </p>
-            {!automation?.enabled ? <p className="garden-notice" data-testid="automation-unavailable">Automatic investments are temporarily unavailable. Your schedule is unchanged.</p> : null}
+            {!automation?.enabled ? <p className="garden-notice" data-testid="automation-unavailable">{t('Automatic investments are temporarily unavailable. Your schedule is unchanged.')}</p> : null}
+            {activeJobs.length ? perkNotice : null}
             <details className="garden-how">
-              <summary>How it works</summary>
-              <p>Your plan is a recurring instruction on the vault. The service checks it each period and places one purchase; if it was offline, the next check places a single catch-up purchase. Quotes, funding and eligibility depend on the market feed connected to the vault.</p>
+              <summary>{t('How it works')}</summary>
+              <p>{t('Your plan is a recurring instruction on the vault. The service checks it each period and places one purchase; if it was offline, the next check places a single catch-up purchase. Quotes, funding and eligibility depend on the market feed connected to the vault.')}</p>
             </details>
             <div className="garden-plan-buttons">
               {canParentAct && !activeJobs.length ? (
                 <button data-testid="schedule-open" className="garden-pill garden-pill--dark" onClick={onOpenSchedule} disabled={!chainReady}>
-                  {previousJob ? 'Resume weekly plan' : 'Set weekly plan'}
+                  {previousJob ? t('Resume weekly plan') : t('Set weekly plan')}
                 </button>
               ) : null}
               {canInvestNow ? (
                 <button data-testid="invest-now-open" className="garden-pill" onClick={onOpenInvestNow} disabled={!chainReady}>
-                  {activeJobs.length ? 'Run this week’s purchase now' : 'Invest now'}
+                  {activeJobs.length ? t('Run this week’s purchase now') : t('Invest now')}
                 </button>
               ) : null}
             </div>
             {canParentAct && !automation?.enabled ? (
               <p className="garden-empty-note" data-testid="invest-now-hint">
                 {hasCashToInvest
-                  ? 'While automatic investing is off, use Invest now to buy the mix from your own wallet.'
-                  : 'Add funds first; then Invest now buys the mix from your own wallet.'}
+                  ? t('While automatic investing is off, use Invest now to buy the mix from your own wallet.')
+                  : t('Add funds first; then Invest now buys the mix from your own wallet.')}
               </p>
             ) : null}
           </div>
           <div className="garden-card garden-plan-mix">
-            <h2>Familiar names. Little pieces.</h2>
-            <p className="garden-empty-note">Their starter mix, chosen by your family.</p>
+            <h2>{t('Familiar names. Little pieces.')}</h2>
+            <p className="garden-empty-note">{t('Their starter mix, chosen by your family.')}</p>
             <div className="garden-mix-rows">
               {(selected.assets ?? []).map((a) => (
                 <div className="garden-mix-stock" key={a}>
                   <span className="garden-mix-icon">{symbolFor(a)[0]?.toLowerCase()}</span>
-                  <div><b>{symbolFor(a)}</b><small>Stock token</small></div>
+                  <div><b>{symbolFor(a)}</b><small>{displayName(symbolFor(a)) ? t('{name} · Stock token', { name: displayName(symbolFor(a))! }) : t('Stock token')}</small></div>
                   <b className="garden-mix-weight">{(selected.weights[(selected.assets ?? []).indexOf(a)] ?? 0) / 100}%</b>
                 </div>
               ))}
             </div>
-            <p className="garden-mix-foot">Investments follow this mix. Purchases need available funds and a current market quote.</p>
+            <p className="garden-mix-foot">{t('Investments follow this mix. Purchases need available funds and a current market quote.')}</p>
           </div>
         </div>
       );
@@ -1034,16 +1062,16 @@ export function DashboardShell(props: DashboardShellProps) {
       return (
         <div className="garden-detail">
           <div className="garden-stats">
-            <div><small>Rewards open</small><b>{openChores.length}</b></div>
-            <div><small>Released</small><b>{releasedChores.length}</b></div>
-            <div><small>Claimable allowance</small><b>{claimable.length ? claimable.map((a) => fmtTokenAmount(a.bucket, a.token)).join(' · ') : '—'}</b></div>
+            <div><small>{t('Rewards open')}</small><b>{openChores.length}</b></div>
+            <div><small>{t('Released')}</small><b>{releasedChores.length}</b></div>
+            <div><small>{t('Claimable allowance')}</small><b>{claimable.length ? claimable.map((a) => fmtTokenAmount(a.bucket, a.token)).join(' · ') : '—'}</b></div>
           </div>
           <div className="garden-card">
             <div className="garden-card-head">
-              <h2>{selected ? `${nameFor(selected.id)}’s little to-dos` : 'Little to-dos'}</h2>
-              {canParentAct ? <button className="garden-pill garden-pill--dark" data-testid="milestone-open" onClick={onOpenMilestone} disabled={!chainReady}>Add a chore</button> : null}
+              <h2>{selected ? t('{name}’s little to-dos', { name: nameFor(selected.id) }) : t('Little to-dos')}</h2>
+              {canParentAct ? <button className="garden-pill garden-pill--dark" data-testid="milestone-open" onClick={onOpenMilestone} disabled={!chainReady}>{t('Add a chore')}</button> : null}
             </div>
-            {chores.length === 0 ? <p className="garden-empty-note">No chores yet. Add the first little job above.</p> : chores.map((m) => {
+            {chores.length === 0 ? <p className="garden-empty-note">{t('No chores yet. Add the first little job above.')}</p> : chores.map((m) => {
               const status = m.status;
               return (
                 <div className={'garden-chores-row' + (status === 'released' ? ' garden-chores-row--done' : '')} key={m.id}>
@@ -1052,24 +1080,24 @@ export function DashboardShell(props: DashboardShellProps) {
                   </span>
                   <div className="garden-chores-copy">
                     <b>{choreTitle(m)}</b>
-                    <small>{`${formatUnits(BigInt(m.amount), decimalsFor(m.token), 2)} ${symbolFor(m.token)} · ${status === 'created' ? 'waiting to approve' : status}`}</small>
+                    <small>{`${formatUnits(BigInt(m.amount), decimalsFor(m.token), 2)} ${symbolFor(m.token)} · ${status === 'created' ? t('waiting to approve') : t(status)}`}</small>
                   </div>
                   <b className="garden-chores-amount">{formatUnits(BigInt(m.amount), decimalsFor(m.token), 2)}</b>
                   {canParentAct && status === 'created' ? (
                     <span className="garden-row-actions">
-                      <button data-testid="milestone-release" className="garden-pill garden-pill--dark" onClick={() => onReleaseMilestone(m)} disabled={!chainReady}>Approve &amp; reward</button>
-                      <button data-testid="milestone-cancel" className="garden-pill" onClick={() => onCancelMilestone(m)} disabled={!chainReady}>Cancel</button>
+                      <button data-testid="milestone-release" className="garden-pill garden-pill--dark" onClick={() => onReleaseMilestone(m)} disabled={!chainReady}>{t('Approve & reward')}</button>
+                      <button data-testid="milestone-cancel" className="garden-pill" onClick={() => onCancelMilestone(m)} disabled={!chainReady}>{t('Cancel')}</button>
                     </span>
                   ) : null}
                   {isBeneficiary && BigInt((allowances.find((x) => x.token.toLowerCase() === m.token.toLowerCase())?.bucket) ?? '0') > 0n && status === 'released' ? (
-                    <button className="garden-pill" onClick={() => onClaim(m.token, BigInt(allowances.find((x) => x.token.toLowerCase() === m.token.toLowerCase())?.bucket ?? '0'))} disabled={!chainReady}>Claim {symbolFor(m.token)}</button>
+                    <button className="garden-pill" onClick={() => onClaim(m.token, BigInt(allowances.find((x) => x.token.toLowerCase() === m.token.toLowerCase())?.bucket ?? '0'))} disabled={!chainReady}>{t('Claim {token}', { token: symbolFor(m.token) })}</button>
                   ) : null}
                 </div>
               );
             })}
           </div>
           <div className="garden-info-band">
-            Rewards are real. A parent approves a finished chore, the amount moves into the child’s allowance, and the child claims it. Nothing moves without those steps.
+            {t('Rewards are real. A parent approves a finished chore, the amount moves into the child’s allowance, and the child claims it. Nothing moves without those steps.')}
           </div>
         </div>
       );
@@ -1079,15 +1107,15 @@ export function DashboardShell(props: DashboardShellProps) {
         <div className="garden-detail">
           <div className="garden-gift-hero">
             <div>
-              <span className="garden-eyebrow">From their people. For their future.</span>
-              <h2>Less plastic. More possibility.</h2>
-              <p>One shared savings pot. One simple link. Gifts add funds without granting any control.</p>
+              <span className="garden-eyebrow">{t('From their people. For their future.')}</span>
+              <h2>{t('Less plastic. More possibility.')}</h2>
+              <p>{t('One shared savings pot. One simple link. Gifts add funds without granting any control.')}</p>
               {canParentAct ? (
                 <div className="garden-gift-hero-actions">
-                  <button className="garden-pill garden-pill--dark" data-testid="gift-open" onClick={onOpenGift} disabled={!chainReady}>Create a gift link</button>
+                  <button className="garden-pill garden-pill--dark" data-testid="gift-open" onClick={onOpenGift} disabled={!chainReady}>{t('Create a gift link')}</button>
                   {gifting ? (
                     <button className="garden-pill" data-testid="campaign-open" onClick={gifting.onOpenCampaign} disabled={!chainReady}>
-                      Start a birthday campaign
+                      {t('Start a birthday campaign')}
                     </button>
                   ) : null}
                 </div>
@@ -1096,20 +1124,20 @@ export function DashboardShell(props: DashboardShellProps) {
             <img src="/art/card-lavender.png" alt="" aria-hidden />
           </div>
           <div className="garden-card">
-            <div className="garden-card-head"><h2>Gift links</h2><span className="garden-muted">{gifts.length ? `${gifts.length} link${gifts.length === 1 ? '' : 's'}` : 'Private links'}</span></div>
-            {gifts.length === 0 ? <p className="garden-empty-note">No gift links yet.</p> : (
+            <div className="garden-card-head"><h2>{t('Gift links')}</h2><span className="garden-muted">{gifts.length ? (gifts.length === 1 ? t('{count} link', { count: gifts.length }) : t('{count} links', { count: gifts.length })) : t('Private links')}</span></div>
+            {gifts.length === 0 ? <p className="garden-empty-note">{t('No gift links yet.')}</p> : (
               <ul className="garden-stack">
                 {gifts.map((g) => (
                   <li key={g.id} className="garden-gift-row">
                     <span className="garden-gift-row-title">
-                      {g.campaign ? <b>{g.campaign.title}</b> : (g.label ?? 'Gift link')}
+                      {g.campaign ? <b>{g.campaign.title}</b> : (g.label ?? t('Gift link'))}
                       {g.campaign ? <CampaignProgress campaign={g.campaign} nowMs={nowMs ?? Date.now()} compact /> : null}
                     </span>
                     <code data-testid="gift-link">{`${window.location.origin}/gift/${g.id}`}</code>
-                    <span className="garden-muted" data-testid="gift-count">{g.paymentCount} gift(s)</span>
+                    <span className="garden-muted" data-testid="gift-count">{t('{count} gift(s)', { count: g.paymentCount })}</span>
                     <span className="garden-gift-actions">
-                      {onOpenGiftQr ? <button data-testid="gift-qr" className="garden-pill" onClick={() => onOpenGiftQr(g)}>QR code</button> : null}
-                      <button data-testid="gift-pay" className="garden-pill" onClick={() => onOpenGiftPay(g)} disabled={!chainReady}>Pay</button>
+                      {onOpenGiftQr ? <button data-testid="gift-qr" className="garden-pill" onClick={() => onOpenGiftQr(g)}>{t('QR code')}</button> : null}
+                      <button data-testid="gift-pay" className="garden-pill" onClick={() => onOpenGiftPay(g)} disabled={!chainReady}>{t('Pay')}</button>
                     </span>
                   </li>
                 ))}
@@ -1117,7 +1145,7 @@ export function DashboardShell(props: DashboardShellProps) {
             )}
           </div>
           <div className="garden-card">
-            <h2>{gifting ? 'Notes from family' : 'Every little gift belongs.'}</h2>
+            <h2>{gifting ? t('Notes from family') : t('Every little gift belongs.')}</h2>
             {gifting ? (
               gifts.some((g) => (g.notes?.length ?? 0) > 0 || (g.hiddenNotes ?? 0) > 0 || gifting.allNotes[g.id]) ? (
                 gifts.map((g) => {
@@ -1127,7 +1155,7 @@ export function DashboardShell(props: DashboardShellProps) {
                   if (notes.length === 0 && hidden === 0) return null;
                   return (
                     <div className="garden-gift-notes-group" key={g.id} data-testid="gift-notes-group">
-                      <small className="garden-muted">{g.campaign?.title ?? g.label ?? 'Gift link'}</small>
+                      <small className="garden-muted">{g.campaign?.title ?? g.label ?? t('Gift link')}</small>
                       <GiftNotesList
                         notes={notes}
                         tokenLabel={(token, amount) => (chain ? giftAmountLabel(token, amount, chain.contracts) : amount)}
@@ -1135,19 +1163,19 @@ export function DashboardShell(props: DashboardShellProps) {
                       />
                       {!all && hidden > 0 && canParentAct ? (
                         <button className="garden-see-all" data-testid="gift-notes-show-hidden" onClick={() => gifting.onShowAllNotes(g)}>
-                          Show {hidden} hidden {hidden === 1 ? 'note' : 'notes'}
+                          {hidden === 1 ? t('Show {count} hidden note', { count: hidden }) : t('Show {count} hidden notes', { count: hidden })}
                         </button>
                       ) : null}
                     </div>
                   );
                 })
               ) : (
-                <p className="garden-empty-note">When family add a gift, they can leave a short note. Notes show up here and on the gift page, and you can hide any of them.</p>
+                <p className="garden-empty-note">{t('When family add a gift, they can leave a short note. Notes show up here and on the gift page, and you can hide any of them.')}</p>
               )
             ) : (
-              <p className="garden-empty-note">Even a small gift becomes part of their mix.</p>
+              <p className="garden-empty-note">{t('Even a small gift becomes part of their mix.')}</p>
             )}
-            <a className="garden-pill" href="/gift">Preview the gift experience <ArrowUpRight size={15} /></a>
+            <a className="garden-pill" href="/gift">{t('Preview the gift experience')} <ArrowUpRight size={15} /></a>
           </div>
         </div>
       );
@@ -1156,8 +1184,8 @@ export function DashboardShell(props: DashboardShellProps) {
     return (
       <div className="garden-detail garden-detail--split">
         <div className="garden-card">
-          <div className="garden-card-head"><h2>One irreversible handover.</h2><span className="garden-chip">{isGraduated ? 'Graduated' : `${Math.max(0, Math.min(100, Math.round(graduationProgress * 100)))}%`}</span></div>
-          <p className="garden-empty-note">Parent powers stop at the fixed graduation timestamp; full control then moves to the beneficiary.</p>
+          <div className="garden-card-head"><h2>{t('One irreversible handover.')}</h2><span className="garden-chip">{isGraduated ? t('Graduated') : `${Math.max(0, Math.min(100, Math.round(graduationProgress * 100)))}%`}</span></div>
+          <p className="garden-empty-note">{t('Parent powers stop at the fixed graduation timestamp; full control then moves to the beneficiary.')}</p>
           <div className="garden-ladder">
             {[
               { title: 'Watch & learn', text: 'Their own view of the portfolio.' },
@@ -1166,38 +1194,37 @@ export function DashboardShell(props: DashboardShellProps) {
             ].map((s, i) => (
               <div className="garden-ladder-step" key={s.title}>
                 <span>{i + 1}</span>
-                <div><b>{s.title}</b><small>{s.text}</small></div>
+                <div><b>{t(s.title)}</b><small>{t(s.text)}</small></div>
               </div>
             ))}
           </div>
           <div className="garden-review">
-            <b>Graduation</b>
+            <b>{t('Graduation')}</b>
             <p>{selected ? new Date(selected.graduationTimestamp * 1000).toISOString().replace('T', ' ').slice(0, 16) : '—'} UTC</p>
-            <p className="garden-empty-note">The graduation date is locked: it is fixed when the sprout is planted and cannot be changed.</p>
+            <p className="garden-empty-note">{t('The graduation date is locked: it is fixed when the sprout is planted and cannot be changed.')}</p>
           </div>
         </div>
         <div className="garden-card">
           {isBeneficiary ? (
             <>
-              <h2>Beneficiary controls</h2>
+              <h2>{t('Beneficiary controls')}</h2>
               {claimable.length ? claimable.map((a) => (
-                <button key={a.token} data-testid={`claim-${symbolFor(a.token)}`} className="garden-pill garden-pill--dark" onClick={() => onClaim(a.token, BigInt(a.bucket))} disabled={!chainReady}>Claim {symbolFor(a.token)}</button>
-              )) : <p className="garden-empty-note">No claimable allowance right now.</p>}
-              {isGraduated ? <button data-testid="withdraw-open" className="garden-pill" onClick={onOpenWithdraw} disabled={!chainReady}>Withdraw balances</button> : <p className="garden-empty-note">Withdrawal unlocks after graduation.</p>}
+                <button key={a.token} data-testid={`claim-${symbolFor(a.token)}`} className="garden-pill garden-pill--dark" onClick={() => onClaim(a.token, BigInt(a.bucket))} disabled={!chainReady}>{t('Claim {token}', { token: symbolFor(a.token) })}</button>
+              )) : <p className="garden-empty-note">{t('No claimable allowance right now.')}</p>}
+              {isGraduated ? <button data-testid="withdraw-open" className="garden-pill" onClick={onOpenWithdraw} disabled={!chainReady}>{t('Withdraw balances')}</button> : <p className="garden-empty-note">{t('Withdrawal unlocks after graduation.')}</p>}
             </>
           ) : (
             <>
-              <h2>Their future. Their keys.</h2>
-              <p className="garden-empty-note">Graduation hands full control to the child and is irreversible.</p>
+              <h2>{t('Their future. Their keys.')}</h2>
+              <p className="garden-empty-note">{t('Graduation hands full control to the child and is irreversible.')}</p>
               {selected && !isSample ? (
                 <div className="garden-kid-link">
-                  <b>Their own view</b>
+                  <b>{t('Their own view')}</b>
                   <p className="garden-empty-note">
-                    A read-only page {nameFor(selected.id)} can open on any device to watch their sprout grow: what it holds,
-                    learning and progress with amounts hidden by default. Create an expiring invitation in Family privacy. It cannot move money.
+                    {t('A read-only page {name} can open on any device to watch their sprout grow: what it holds, learning and progress with amounts hidden by default. Create an expiring invitation in Family privacy. It cannot move money.', { name: nameFor(selected.id) })}
                   </p>
                   <div className="garden-kid-link-actions">
-                    <button className="garden-pill garden-pill--dark" onClick={() => window.dispatchEvent(new Event('sprout-open-privacy'))} data-testid="kid-view-open">Manage private kid access <ArrowUpRight size={15} /></button>
+                    <button className="garden-pill garden-pill--dark" onClick={() => window.dispatchEvent(new Event('sprout-open-privacy'))} data-testid="kid-view-open">{t('Manage private kid access')} <ArrowUpRight size={15} /></button>
                   </div>
                 </div>
               ) : null}
@@ -1215,8 +1242,8 @@ export function DashboardShell(props: DashboardShellProps) {
           <span className="garden-brand-mark"><img src="/brand/sprout-logo.png" alt="" /></span>
           <span>SPROUT</span>
         </a>
-        <button className="garden-drawer-close" aria-label="Close menu" onClick={() => setDrawerOpen(false)}>×</button>
-        <nav className="garden-nav" aria-label="Sections">
+        <button className="garden-drawer-close" aria-label={t('Close menu')} onClick={() => setDrawerOpen(false)}>×</button>
+        <nav className="garden-nav" aria-label={t('Sections')}>
           {VIEWS.map((v) => (
             <button
               key={v.id}
@@ -1226,7 +1253,7 @@ export function DashboardShell(props: DashboardShellProps) {
               onClick={() => { setView(v.id); setDrawerOpen(false); }}
             >
               <v.icon size={24} />
-              <span>{v.label}</span>
+              <span>{t(v.label)}</span>
             </button>
           ))}
         </nav>
@@ -1235,83 +1262,84 @@ export function DashboardShell(props: DashboardShellProps) {
         <div className="garden-side-foot">
           {health?.localDemo ? (
             <details className="garden-tools" data-testid="local-tools" open>
-              <summary>Local demo tools</summary>
+              <summary>{t('Local demo tools')}</summary>
               {localWallet?.enabled ? (
                 <>
-                  <label>Role
+                  <label>{t('Role')}
                     <select data-testid="local-role" value={localRole} onChange={(e) => onLocalRole(e.target.value as 'parent')}>
-                      <option value="parent">Parent</option><option value="beneficiary">Beneficiary</option><option value="gifter">Gifter</option>
+                      <option value="parent">{t('Parent')}</option><option value="beneficiary">{t('Beneficiary')}</option><option value="gifter">{t('Gifter')}</option>
                     </select>
                   </label>
-                  <label>Account
+                  <label>{t('Account')}
                     <select data-testid="local-account" value={localAccount} onChange={(e) => onLocalAccount(e.target.value)}>
                       {localWallet.accounts.map((a) => <option key={a.address} value={a.address}>{a.label} · {short(a.address)}</option>)}
                     </select>
                   </label>
-                  <label>Mock fund amount<input data-testid="fund-tool-amount" value={fundTool.amount} onChange={(e) => onFundTool({ ...fundTool, amount: e.target.value })} /></label>
-                  <button className="garden-pill garden-pill--sm" data-testid="fund-tool" onClick={onRunToolFund}>Replenish mock funds</button>
-                  <label>Advance seconds<input data-testid="advance-seconds" value={advanceSeconds} onChange={(e) => onAdvanceSeconds(e.target.value)} /></label>
-                  <button className="garden-pill garden-pill--sm" data-testid="advance-time" onClick={onRunToolAdvance}>Advance local time</button>
+                  <label>{t('Mock fund amount')}<input data-testid="fund-tool-amount" value={fundTool.amount} onChange={(e) => onFundTool({ ...fundTool, amount: e.target.value })} /></label>
+                  <button className="garden-pill garden-pill--sm" data-testid="fund-tool" onClick={onRunToolFund}>{t('Replenish mock funds')}</button>
+                  <label>{t('Advance seconds')}<input data-testid="advance-seconds" value={advanceSeconds} onChange={(e) => onAdvanceSeconds(e.target.value)} /></label>
+                  <button className="garden-pill garden-pill--sm" data-testid="advance-time" onClick={onRunToolAdvance}>{t('Advance local time')}</button>
                   {toolsMessage ? <p className="garden-tools-message" data-testid="tools-message">{toolsMessage}</p> : null}
                 </>
               ) : null}
-              <button className="garden-pill garden-pill--sm" data-testid="reconcile" onClick={onReconcile} disabled={!selectedId}>Reconcile chain</button>
-              <button className="garden-pill garden-pill--sm" data-testid="run-jobs" onClick={onRunJobs} disabled={!selectedId}>Run due investments</button>
+              <button className="garden-pill garden-pill--sm" data-testid="reconcile" onClick={onReconcile} disabled={!selectedId}>{t('Reconcile chain')}</button>
+              <button className="garden-pill garden-pill--sm" data-testid="run-jobs" onClick={onRunJobs} disabled={!selectedId}>{t('Run due investments')}</button>
             </details>
           ) : null}
           {!isSample ? (
-            <button className="garden-side-link" data-testid="plant-open" onClick={() => { setDrawerOpen(false); onOpenPlant(); }} disabled={!chainReady}><Plus size={22} />Plant a sprout</button>
+            <button className="garden-side-link" data-testid="plant-open" onClick={() => { setDrawerOpen(false); onOpenPlant(); }} disabled={!chainReady}><Plus size={22} />{t('Plant a sprout')}</button>
           ) : null}
-          {onOpenOnboarding ? <button className="garden-side-link" data-testid="onboarding-open" onClick={onOpenOnboarding}><SproutIcon size={22} />How SPROUT works</button> : null}
+          {onOpenOnboarding ? <button className="garden-side-link" data-testid="onboarding-open" onClick={onOpenOnboarding}><SproutIcon size={22} />{t('How SPROUT works')}</button> : null}
+          <PerksSideLink />
           <ResourcesMenu />
-          <button className="garden-side-link" data-testid="settings-open" onClick={() => { setDrawerOpen(false); onOpenSettings(); }}><Settings size={22} />Family settings</button>
-          <button className="garden-side-link" data-testid="help-open" onClick={() => { setDrawerOpen(false); (onOpenHelp ?? onOpenNotifications)(); }}><HelpCircle size={22} />Help</button>
+          <button className="garden-side-link" data-testid="settings-open" onClick={() => { setDrawerOpen(false); onOpenSettings(); }}><Settings size={22} />{t('Family settings')}</button>
+          <button className="garden-side-link" data-testid="help-open" onClick={() => { setDrawerOpen(false); (onOpenHelp ?? onOpenNotifications)(); }}><HelpCircle size={22} />{t('Help')}</button>
         </div>
       </aside>
 
       <section className="garden-main">
         {topRow}
         {!selected ? (
-          loading ? <div className="garden-empty-state garden-empty-state--loading"><p>Loading your little garden…</p></div> : (
+          loading ? <div className="garden-empty-state garden-empty-state--loading"><p>{t('Loading your little garden…')}</p></div> : (
             <div className="garden-empty-dashboard" data-testid="empty-dashboard">
               <div className="garden-empty-hero">
                 <div className="garden-empty-copy">
-                  <span className="garden-eyebrow">A fresh little beginning</span>
-                  <h1>{needsWallet ? 'Connect to open their garden.' : 'Plant their first sprout.'}</h1>
+                  <span className="garden-eyebrow">{t('A fresh little beginning')}</span>
+                  <h1>{needsWallet ? t('Connect to open their garden.') : t('Plant their first sprout.')}</h1>
                   <p>{needsWallet
-                    ? 'Connect a wallet to see your sprouts, or plant the first one. Balances and permissions live on-chain; private names stay on this device.'
-                    : 'A place for weekly investing, earned rewards and gifts from their people. Start with a name, then grow it together.'}</p>
+                    ? t('Connect a wallet to see your sprouts, or plant the first one. Balances and permissions live on-chain; private names stay on this device.')
+                    : t('A place for weekly investing, earned rewards and gifts from their people. Start with a name, then grow it together.')}</p>
                   <div className="garden-empty-actions">
                     {needsWallet ? (
                       <button className="garden-pill garden-pill--dark" data-testid="connect-injected" onClick={onConnect} disabled={connecting || !chain}>
-                        {connecting ? 'Connecting…' : 'Connect wallet'}
+                        {connecting ? t('Connecting…') : t('Connect wallet')}
                       </button>
-                    ) : chainReady ? <button className="garden-pill garden-pill--dark" data-testid="empty-plant-open" onClick={onOpenPlant}>Plant a sprout <Plus size={15} /></button> : null}
-                    {onOpenOnboarding ? <button className="garden-pill" data-testid="empty-onboarding-open" onClick={onOpenOnboarding}>See how it works</button> : null}
+                    ) : chainReady ? <button className="garden-pill garden-pill--dark" data-testid="empty-plant-open" onClick={onOpenPlant}>{t('Plant a sprout')} <Plus size={15} /></button> : null}
+                    {onOpenOnboarding ? <button className="garden-pill" data-testid="empty-onboarding-open" onClick={onOpenOnboarding}>{t('See how it works')}</button> : null}
                   </div>
                   {needsWallet && localWallet?.enabled ? (
                     <div className="garden-local-entry" data-testid="local-entry">
-                      <p className="garden-empty-note">Local demo mode signs with unlocked public Anvil accounts through a loopback-only proxy. No private keys reach the browser.</p>
-                      <label>Role
+                      <p className="garden-empty-note">{t('Local demo mode signs with unlocked public Anvil accounts through a loopback-only proxy. No private keys reach the browser.')}</p>
+                      <label>{t('Role')}
                         <select data-testid="local-role" value={localRole} onChange={(e) => onLocalRole(e.target.value as 'parent')}>
-                          <option value="parent">Parent</option><option value="beneficiary">Beneficiary</option><option value="gifter">Gifter</option>
+                          <option value="parent">{t('Parent')}</option><option value="beneficiary">{t('Beneficiary')}</option><option value="gifter">{t('Gifter')}</option>
                         </select>
                       </label>
-                      <label>Account
+                      <label>{t('Account')}
                         <select data-testid="local-account" value={localAccount} onChange={(e) => { onLocalAccount(e.target.value); }}>
                           {localWallet.accounts.map((a) => <option key={a.address} value={a.address}>{a.label} · {short(a.address)}</option>)}
                         </select>
                       </label>
-                      <button className="garden-pill garden-pill--dark" data-testid="use-local-wallet" onClick={() => onConnectLocal(localAccount)}>Use local demo wallet</button>
+                      <button className="garden-pill garden-pill--dark" data-testid="use-local-wallet" onClick={() => onConnectLocal(localAccount)}>{t('Use local demo wallet')}</button>
                     </div>
                   ) : null}
                 </div>
                 <BloomGarden theme={view} compact />
               </div>
-              <div className="garden-empty-feature-grid" aria-label="Ways to grow a sprout">
-                <div className="garden-empty-feature-card"><span><Repeat2 size={20} /></span><h2>Weekly investing</h2><p>Choose a rhythm that fits your family and adjust it whenever life changes.</p></div>
-                <div className="garden-empty-feature-card"><span><Gift size={20} /></span><h2>Family gifts</h2><p>Give grandparents and friends a simple way to add a little love.</p></div>
-                <div className="garden-empty-feature-card"><span><CheckCircle2 size={20} /></span><h2>Earned rewards</h2><p>Turn everyday jobs into visible milestones they can understand.</p></div>
+              <div className="garden-empty-feature-grid" aria-label={t('Ways to grow a sprout')}>
+                <div className="garden-empty-feature-card"><span><Repeat2 size={20} /></span><h2>{t('Weekly investing')}</h2><p>{t('Choose a rhythm that fits your family and adjust it whenever life changes.')}</p></div>
+                <div className="garden-empty-feature-card"><span><Gift size={20} /></span><h2>{t('Family gifts')}</h2><p>{t('Give grandparents and friends a simple way to add a little love.')}</p></div>
+                <div className="garden-empty-feature-card"><span><CheckCircle2 size={20} /></span><h2>{t('Earned rewards')}</h2><p>{t('Turn everyday jobs into visible milestones they can understand.')}</p></div>
               </div>
             </div>
           )

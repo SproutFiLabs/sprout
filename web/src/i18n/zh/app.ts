@@ -58,6 +58,7 @@ export const zh: Record<string, string> = {
   'Nickname (stays on this device)': '昵称（只保存在这台设备上）',
   'e.g. Robin': '例如：朵朵',
   'Beneficiary wallet': '受益人钱包',
+  'Create a recoverable Guardian beneficiary wallet': '创建可恢复的 Guardian 受益人钱包',
   '{rule}: rewards you approve before graduation, and everything at graduation. It can’t be changed later, so use a wallet your family can open. The nickname stays on this device.': '{rule}：交接日之前你批准发放的奖励，以及交接日时的全部资金。受益人钱包以后不能更改，所以请用一个你们家能打开的钱包。昵称只保存在这台设备上。',
   'Money in this sprout can only ever be paid to this wallet': '这株小芽里的钱只能付给这个钱包',
   'Allocation (percent, must total 100%)': '配比（百分比，合计必须为 100%）',
@@ -92,7 +93,7 @@ export const zh: Record<string, string> = {
   'Maya turns 8': '朵朵 8 岁啦',
   'Goal (US dollars)': '目标（美元）',
   'Ends on': '结束日期',
-  'Family open the link, see the goal and how close it is, and can leave a short note with their gift. Gifts still arrive after the end date; the page just stops counting down. The title is shown to anyone with the link.': '亲友打开链接，就能看到目标和还差多少，还可以随礼物留一句话。过了结束日期，礼物依然可以送达，只是页面不再倒计时。任何拿到链接的人都能看到标题。',
+  'Goals stay in your family dashboard. Gift links use a generic preview; your title is encrypted on this device. Enable encrypted gift messages in Family privacy.': '目标只留在你们家的控制台里。礼物链接使用通用的预览；你填写的标题会在这台设备上加密。请在“家庭隐私”里开启加密的礼物留言。',
   'Label': '标签',
   'The link carries only an opaque id and accepted assets, never a child name or spending key.': '链接里只有一个不含个人信息的 ID 和可接受的资产，绝不会包含孩子的名字或能动用资金的密钥。',
   'Pay gift to {address}': '向 {address} 送出礼物',
@@ -119,7 +120,7 @@ export const zh: Record<string, string> = {
   // Settings, updates and help
   'Family settings': '家庭设置',
   '{count} sprout(s) in this workspace': '这个空间里有 {count} 株小芽',
-  'Nicknames and chore titles are stored on this device only. Balances, roles and graduation live on-chain.': '昵称和家务名称只保存在这台设备上。余额、角色和交接日都记录在链上。',
+  'Nicknames and chore titles are encrypted on this device. Manage keys and kid invitations in Family privacy. Balances, roles and graduation live on-chain.': '昵称和家务名称会在这台设备上加密保存。密钥和孩子页面的邀请请在“家庭隐私”里管理。余额、角色和交接日都记录在链上。',
   'Family co-parent accounts and notification delivery are not implemented in the backend. Nothing is faked here.': '后端还没有实现共同家长账户和通知推送。这里不会假装已经有这些功能。',
   'Local demo reset': '重置本地演示',
   'In local demo mode you can reset device labels without deleting on-chain data. On-chain records cannot be deleted by the app.': '在本地演示模式下，你可以重置设备上的标签，而不会删除链上数据。应用无法删除链上记录。',
@@ -147,6 +148,10 @@ export const zh: Record<string, string> = {
   'missing-feed': '缺少价格源',
   'Stock tokens are tokenized exposure, not direct ownership of a brokerage-held share. Availability depends on eligibility. Prices come from configured feeds; when a feed is stale the value is shown as unavailable.': '股票代币提供的是代币化的价格敞口，并不等于直接持有券商托管的股票。能否使用取决于资格条件。价格来自已配置的价格源；价格源过时时，价值会显示为暂不可用。',
   'No live holding data for this asset.': '这项资产暂时没有实时持仓数据。',
+  // Family privacy and Guardian wallets
+  'Family safety': '家庭安全',
+  'Guardian wallets': 'Guardian 钱包',
+  'Family privacy': '家庭隐私',
   // Dialogs
   'Close': '关闭',
 };

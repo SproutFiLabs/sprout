@@ -24,8 +24,10 @@ import { AuthError, authenticate, issueNonce } from './auth';
 import { createFamilySession, familySession, authorizeVault, childSession, digest, secret, CHILD_TTL, type KidInvite } from './privacy';
 import { historyCsv, historyFilename } from './history';
 import { reconcile, snapshotAll } from './indexer';
-import { automationCapability, runDueJobs } from './jobs';
+import { automationCapability, autoInvestRequirement, holderAutoInvestGate, runDueJobs } from './jobs';
 import { investQuote } from './invest';
+import { factoryAdmitsVenue, sproutDeploymentView } from './deployments';
+import { listDeployments } from './config';
 import { localFixtures } from './fixtures';
 import {
   LocalWalletError,
@@ -36,6 +38,7 @@ import {
   localWalletStatus,
 } from './localWallet';
 import { createMutex } from './lock';
+import { createHolderChecker, loadPerksConfig, publicPerks, type HolderChecker } from './holders';
 import { DEFAULT_PUBLIC_ORIGIN, giftPreviewHtml } from './sharePreview';
 import {
   CAMPAIGN_MAX_DAYS,
@@ -80,6 +83,8 @@ export interface AppDeps {
   localDemo: boolean;
   adminToken?: string;
   now?: () => number;
+  /** SPROUT holder tiers; built from the environment when not given. */
+  holders?: HolderChecker;
   runExclusive?: <T>(fn: () => Promise<T>) => Promise<T>;
   serveWeb?: boolean;
   webDistPath?: string;
@@ -158,6 +163,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     localDemo: inputDeps.localDemo && process.env.NODE_ENV !== 'production',
   };
   const app = new Hono();
+  const holders = deps.holders ?? createHolderChecker(deps.chain.publicClient, loadPerksConfig(process.env));
   const serialize = deps.runExclusive ?? createMutex();
 
   const nowSeconds = () => Math.floor((deps.now ? deps.now() : Date.now()) / 1000);
@@ -310,7 +316,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       configured: deps.chain.config.chain.configured,
       missing: deps.chain.config.chain.missing,
       localDemo: deps.localDemo,
-      automation: automationCapability(deps.chain),
+      // autoInvestTier: the SPROUT tier a parent needs for the keeper to run their plan (null: everyone).
+      automation: { ...automationCapability(deps.chain), autoInvestTier: autoInvestRequirement(holders.config) },
     }),
   );
 
@@ -345,27 +352,110 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     });
   });
 
+  // SPROUT holder perks: the tier ladder, what is in early access, and one wallet's tier.
+  app.get('/api/perks', (c) => c.json(publicPerks(holders.config)));
+  app.get('/api/holders/:address', async (c) => {
+    const address = c.req.param('address');
+    if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new HttpError(400, 'invalid address');
+    try {
+      return c.json(await holders.status(address));
+    } catch (error) {
+      logger.error?.('holder check failed', error);
+      throw new HttpError(503, 'holder check unavailable, try again shortly');
+    }
+  });
+
+  // Holder stock votes (see votes.ts). The module is imported where it is used,
+  // like ./repo in POST /api/sprouts, so the feature stays in this one block.
+  app.get('/api/polls', async (c) => {
+    const votes = await import('./votes');
+    const now = nowSeconds();
+    return c.json({
+      polls: votes.listCurrentPolls(deps.db, now).map((p) => votes.pollView(deps.db, p, now)),
+      weights: votes.VOTE_WEIGHTS,
+    });
+  });
+
+  app.get('/api/polls/:id/mine', async (c) => {
+    const votes = await import('./votes');
+    const parsed = addressSchema.safeParse(c.req.query('address'));
+    if (!parsed.success) throw new HttpError(400, 'invalid address');
+    const poll = votes.getPoll(deps.db, c.req.param('id'));
+    if (!poll) throw new HttpError(404, 'poll not found');
+    return c.json({ vote: votes.getVote(deps.db, poll.id, parsed.data) });
+  });
+
+  app.post('/api/polls/:id/vote', async (c) => {
+    const signer = await requireAuth(c, deps, 'vote');
+    const votes = await import('./votes');
+    const body = await readJson(c, votes.voteInputSchema);
+    const poll = votes.getPoll(deps.db, c.req.param('id'));
+    if (!poll) throw new HttpError(404, 'poll not found');
+    const assertOpen = () => {
+      const status = votes.pollStatus(poll, nowSeconds());
+      if (status === 'upcoming') throw new HttpError(409, 'This poll has not opened yet');
+      if (status === 'closed') throw new HttpError(409, 'This poll has closed');
+    };
+    assertOpen();
+    if (!poll.options.some((o) => o.id === body.optionId)) throw new HttpError(400, 'unknown option');
+    // Re-read on every vote, so a changed vote carries the wallet's tier now.
+    const tier = await holders.tier(signer);
+    if (!tier) throw new HttpError(403, 'Voting is for SPROUT holders');
+    // The holder check reads the chain and can take a moment; the poll may have closed meanwhile.
+    assertOpen();
+    const vote = votes.recordVote(deps.db, { pollId: poll.id, address: signer, optionId: body.optionId, tier, votedAt: nowSeconds() });
+    return c.json({ poll: votes.pollView(deps.db, poll, nowSeconds()), vote });
+  });
+
+  app.post('/api/polls', async (c) => {
+    requireAdmin(c, deps);
+    const votes = await import('./votes');
+    const body = await readJson(c, votes.pollInputSchema);
+    const question = textRule(() => cleanText(body.question, votes.QUESTION_MAX, 'Question'));
+    if (!question) throw new HttpError(400, 'Question is required');
+    const options = body.options.map((o) => {
+      const label = textRule(() => cleanText(o.label, votes.OPTION_LABEL_MAX, 'Option label'));
+      if (!label) throw new HttpError(400, 'Every option needs a label');
+      return { id: o.id, label };
+    });
+    if (new Set(options.map((o) => o.id.toLowerCase())).size !== options.length) throw new HttpError(400, 'Option ids must be different');
+    const now = nowSeconds();
+    const opensAt = body.opensAt ?? now;
+    if (body.closesAt <= now) throw new HttpError(400, 'A poll must close in the future');
+    if (body.closesAt <= opensAt) throw new HttpError(400, 'A poll must close after it opens');
+    if (body.closesAt - opensAt > votes.POLL_MAX_DAYS * 86_400) {
+      throw new HttpError(400, `A poll can run for at most ${votes.POLL_MAX_DAYS} days`);
+    }
+    const poll = votes.createPoll(deps.db, { question, options, opensAt, closesAt: body.closesAt, createdAt: now });
+    return c.json({ poll: votes.pollView(deps.db, poll, now) }, 201);
+  });
+
   if (deps.localDemo) {
     app.get('/api/fixtures', (c) => c.json(localFixtures(deps.chain.config.chain.chainId)));
   }
 
   // Public, aggregate-only numbers for the landing page. The sprout count is
-  // read from the factory, so it includes sprouts this server never indexed.
+  // read from every configured factory (current and legacy), so it includes
+  // sprouts this server never indexed.
   app.get('/api/stats', async (c) => {
     const chain = deps.chain;
     const stats = await chainCache(chain).get('stats', READ_TTL.stats, async () => {
       const totals = activityTotals(deps.db, chain.config.chain.chainId);
       let planted = totals.sprouts;
       let source: 'chain' | 'index' = 'index';
-      const factory = chain.config.chain.contracts.factory;
-      if (chain.publicClient && chain.config.chain.configured && factory) {
+      const factories = listDeployments(chain.config).map((d) => d.factory);
+      const client = chain.publicClient;
+      if (client && chain.config.chain.configured && factories.length > 0) {
         try {
-          planted = Number(
-            await chain.publicClient.readContract({ address: factory, abi: sproutFactoryAbi, functionName: 'totalSprouts' }),
+          const counts = await Promise.all(
+            factories.map((factory) =>
+              client.readContract({ address: factory, abi: sproutFactoryAbi, functionName: 'totalSprouts' }),
+            ),
           );
+          planted = counts.reduce((sum, n) => sum + Number(n), 0);
           source = 'chain';
         } catch {
-          // fall back to the indexed count
+          // fall back to the indexed count, which spans every factory too
         }
       }
       return {
@@ -403,6 +493,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const sprouts = await Promise.all(
       records.map(async (s) => ({
         ...s,
+        // factory + admittedAssets: which stocks this sprout may ever hold.
+        ...(await sproutDeploymentView(deps.chain, deps.db, s)),
         graduated: await isGraduated(deps.chain, s.graduationTimestamp, nowMs),
         role: parent ? 'parent' : 'beneficiary',
       })),
@@ -415,8 +507,11 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     if (!sprout) throw new HttpError(404, 'sprout not found');
     const graduated = await isGraduated(deps.chain, sprout.graduationTimestamp, deps.now ? deps.now() : Date.now());
     const settlementDecimals = await settlementDecimalsFor();
+    // The sprout's own factory decides which stocks it may hold (a legacy
+    // sprout: only the legacy factory's four), whatever /api/config lists.
+    const deployment = await sproutDeploymentView(deps.chain, deps.db, sprout);
     return c.json({
-      sprout: { ...sprout, graduated },
+      sprout: { ...sprout, ...deployment, graduated },
       automation: automationCapability(deps.chain),
       milestones: listMilestonesByVault(deps.db, sprout.chainId, sprout.id),
       jobs: listJobsByVault(deps.db, sprout.id),
@@ -472,6 +567,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
         weights: state.weights,
         createdTxHash: body.txHash,
         createdBlock: null,
+        factory: created.factory,
       });
     }
     return c.json({ sprout: getSprout(deps.db, created.vault) }, 201);
@@ -611,7 +707,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       z.object({
         vaultId: addressSchema,
         label: z.string().min(1).max(60).optional(),
-        acceptedAssets: z.array(addressSchema).min(1).max(5),
+        // The settlement token plus at most five stocks (SproutVault.MAX_ASSETS).
+        acceptedAssets: z.array(addressSchema).min(1).max(6),
         campaign: z
           .object({
             title: z.string(),
@@ -827,7 +924,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
 
   app.post('/api/jobs/run', async (c) => {
     requireAdmin(c, deps);
-    const results = await serialize(() => runDueJobs(deps.chain, deps.db));
+    const results = await serialize(() => runDueJobs(deps.chain, deps.db, { mayAutoInvest: holderAutoInvestGate(deps.db, holders) }));
     return c.json({ results });
   });
 
@@ -875,8 +972,33 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     }
     checks.rpcReachable = rpcReachable;
     checks.chainIdMatch = chainIdMatch;
+    // Every factory must admit the venue configured for it (SPROUT_VENUE_ADDRESS
+    // for the current one, SPROUT_LEGACY_DEPLOYMENTS for each legacy one), or
+    // its sprouts' purchases would revert. A wrong pairing fails readiness, so
+    // a deploy with it never replaces the running version.
+    let venuesAdmitted = false;
+    if (rpcReachable && chainIdMatch && checks.configured === true) {
+      const deployments = listDeployments(deps.chain.config).filter((d) => d.venue);
+      try {
+        const admitted = await Promise.all(deployments.map((d) => factoryAdmitsVenue(deps.chain, d.factory, d.venue!)));
+        checks.deployments = deployments.map((d, i) => ({
+          factory: d.factory,
+          venue: d.venue,
+          current: d.current,
+          venueAdmitted: admitted[i],
+        }));
+        venuesAdmitted = admitted.every(Boolean);
+      } catch {
+        venuesAdmitted = false;
+      }
+    }
+    checks.venuesAdmitted = venuesAdmitted;
     const ready =
-      checks.configured === true && rpcReachable && chainIdMatch && checks.startBlockConfigured === true;
+      checks.configured === true &&
+      rpcReachable &&
+      chainIdMatch &&
+      checks.startBlockConfigured === true &&
+      venuesAdmitted;
     return c.json({ ready, checks }, ready ? 200 : 503);
   });
 

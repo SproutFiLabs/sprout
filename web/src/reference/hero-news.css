@@ -1,0 +1,8 @@
+/* "New" pill above the landing headline, pointing at the latest update. */
+.hero-news { display: inline-flex; align-items: center; gap: 9px; margin: 0 auto 22px; padding: 6px 14px 6px 6px; border-radius: 99px; background: #eef5e8; border: 1px solid #d3e4c6; color: #2f5d2a; font-size: 13px; line-height: 1.3; text-decoration: none; max-width: 100%; }
+.hero-news:hover { filter: brightness(.97); }
+.hero-news b { flex: none; padding: 3px 9px; border-radius: 99px; background: #3f7a3a; color: #fff; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+.hero-news svg { flex: none; width: 14px; height: 14px; }
+html[data-appearance="dark"] .hero-news { background: #1e3222; border-color: #355342; color: #b8e0ad; }
+html[data-appearance="dark"] .hero-news b { background: #8ccb7f; color: #0e1611; }
+@media (max-width: 767px) { .hero-news { font-size: 12px; margin-bottom: 18px; } }

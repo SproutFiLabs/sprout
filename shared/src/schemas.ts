@@ -33,7 +33,8 @@ export const scheduleInvestmentSchema = z.object({
 export const createGiftSchema = z.object({
   vaultId: z.string().min(1).max(128),
   label: z.string().min(1).max(60).optional(),
-  acceptedAssets: z.array(addressSchema).min(1).max(5),
+  // The settlement token plus at most five stocks (SproutVault.MAX_ASSETS).
+  acceptedAssets: z.array(addressSchema).min(1).max(6),
   txHash: hashSchema.optional(),
 });
 

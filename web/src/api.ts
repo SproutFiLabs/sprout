@@ -70,7 +70,8 @@ export interface Health {
   configured: boolean;
   missing: string[];
   localDemo: boolean;
-  automation: AutomationCapability;
+  /** `autoInvestTier`: the SPROUT holder tier a parent needs for automatic weekly investing; null means everyone. */
+  automation: AutomationCapability & { autoInvestTier?: string | null };
 }
 
 export interface Sprout {
@@ -87,6 +88,14 @@ export interface Sprout {
   createdAt: number;
   graduated?: boolean;
   role?: 'parent' | 'beneficiary';
+  /** The factory that created this sprout (sent by newer servers; null when unknown). */
+  factory?: Address | null;
+  /**
+   * Stock tokens that factory admitted: the only ones this sprout's mix can
+   * ever use. Absent on older servers and null when unknown; callers then fall
+   * back to the configured stock tokens.
+   */
+  admittedAssets?: Address[] | null;
 }
 
 export interface Milestone {
@@ -342,6 +351,9 @@ export const api = {
   sprout: (id: string) =>
     getJson<{
       sprout: Sprout;
+      /** See Sprout.factory and Sprout.admittedAssets; a server may send them here instead. */
+      factory?: Address | null;
+      admittedAssets?: Address[] | null;
       automation: AutomationCapability;
       milestones: Milestone[];
       jobs: Job[];

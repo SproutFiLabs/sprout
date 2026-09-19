@@ -20,7 +20,7 @@ import {
   type ChainConfig,
   type StockTokenConfig,
 } from '@sprout/shared';
-import type { ServerConfig } from './config';
+import { listDeployments, type ServerConfig } from './config';
 import { createReadCache, FOREVER_MS, type ReadCache } from './readCache';
 
 export interface LocalDevAccount {
@@ -232,10 +232,11 @@ export function requirePublic(ctx: ChainContext): PublicClient {
   return ctx.publicClient;
 }
 
-function requireFactory(ctx: ChainContext): Address {
-  const factory = ctx.config.chain.contracts.factory;
-  if (!factory) throw new ChainConfigError('SPROUT_FACTORY_ADDRESS is not configured');
-  return factory;
+/** Every configured factory (current first, then legacy); throws when there is none. */
+function requireFactories(ctx: ChainContext): Address[] {
+  const factories = listDeployments(ctx.config).map((d) => d.factory);
+  if (factories.length === 0) throw new ChainConfigError('SPROUT_FACTORY_ADDRESS is not configured');
+  return factories;
 }
 
 export interface DecodedLog {
@@ -653,6 +654,8 @@ async function readStockHolding(
 }
 
 export interface SproutCreatedEvent {
+  /** The configured factory that emitted the event, i.e. the vault's factory(). */
+  factory: Address;
   vault: Address;
   parent: Address;
   beneficiary: Address;
@@ -662,11 +665,11 @@ export interface SproutCreatedEvent {
 
 export async function verifySproutCreated(ctx: ChainContext, txHash: Hex): Promise<SproutCreatedEvent> {
   const client = requirePublic(ctx);
-  const factory = requireFactory(ctx);
+  const factories = new Set(requireFactories(ctx).map((f) => f.toLowerCase()));
   const receipt = await client.getTransactionReceipt({ hash: txHash });
   if (receipt.status !== 'success') throw new Error('transaction reverted');
   for (const log of receipt.logs) {
-    if (log.address.toLowerCase() !== factory.toLowerCase()) continue;
+    if (!factories.has(log.address.toLowerCase())) continue;
     try {
       const event = decodeEventLog({ abi: sproutFactoryAbi, data: log.data, topics: log.topics });
       if (event.eventName !== 'SproutCreated') continue;
@@ -678,6 +681,7 @@ export async function verifySproutCreated(ctx: ChainContext, txHash: Hex): Promi
         graduationTimestamp: bigint;
       };
       return {
+        factory: log.address as Address,
         vault: args.vault,
         parent: args.parent,
         beneficiary: args.beneficiary,
@@ -691,16 +695,18 @@ export async function verifySproutCreated(ctx: ChainContext, txHash: Hex): Promi
   throw new Error('SproutCreated event not found in transaction');
 }
 
+/** A parent's sprouts across every configured factory, current first. */
 export async function getFactorySprouts(ctx: ChainContext, parent: Address): Promise<Address[]> {
   const client = requirePublic(ctx);
-  const factory = requireFactory(ctx);
-  const result = (await client.readContract({
-    address: factory,
-    abi: sproutFactoryAbi,
-    functionName: 'sproutsOf',
-    args: [parent],
-  })) as readonly Address[];
-  return [...result];
+  const lists = await Promise.all(
+    requireFactories(ctx).map(
+      (factory) =>
+        client.readContract({ address: factory, abi: sproutFactoryAbi, functionName: 'sproutsOf', args: [parent] }) as Promise<
+          readonly Address[]
+        >,
+    ),
+  );
+  return lists.flat();
 }
 
 export async function sendKeeperTransaction(

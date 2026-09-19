@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from './api';
+import { api, type Health } from './api';
 
 /**
  * Whether the server is running automatic weekly purchases, from /api/health.
@@ -9,17 +9,22 @@ import { api } from './api';
  * hard-coded "switched off" becomes false. `null` means not known yet (or the
  * server could not be reached); callers say nothing either way in that case.
  */
-let pending: Promise<boolean | null> | null = null;
+let pending: Promise<Health['automation'] | null> | null = null;
 
-export function loadAutomationEnabled(): Promise<boolean | null> {
+/** The server's automation block, fetched once per page. */
+export function loadAutomation(): Promise<Health['automation'] | null> {
   pending ??= api
     .health()
-    .then((h) => h.automation.enabled)
+    .then((h) => h.automation)
     .catch(() => {
       pending = null;
       return null;
     });
   return pending;
+}
+
+export function loadAutomationEnabled(): Promise<boolean | null> {
+  return loadAutomation().then((automation) => automation?.enabled ?? null);
 }
 
 export function useAutomationEnabled(initial: boolean | null = null): boolean | null {

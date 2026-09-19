@@ -4,7 +4,9 @@ import type { SproutDb } from './db';
 import type { ChainContext } from './chain';
 import { ChainConfigError, invalidateChainReads } from './chain';
 import { keeperBudget, type KeeperBudgetConfig } from './config';
-import { dueJobs, recordJobRun, setJobStatus, getJob, type JobRecord } from './repo';
+import { resolveVaultVenue } from './deployments';
+import { dueJobs, recordJobRun, setJobStatus, getJob, getSprout, type JobRecord } from './repo';
+import { tierAtLeast, type HolderChecker, type PerksConfig, type TierId } from './holders';
 import {
   keeperChain,
   keeperSigner,
@@ -31,10 +33,13 @@ export async function chainNowSeconds(ctx: ChainContext): Promise<number> {
   }
 }
 
-export async function computeMinOuts(ctx: ChainContext, vault: Address, spend: bigint): Promise<bigint[]> {
+/**
+ * Oracle-floor minimums for a purchase of `spend` through `venue`, which must
+ * be the vault's own venue (see resolveVaultVenue); resolved when omitted.
+ */
+export async function computeMinOuts(ctx: ChainContext, vault: Address, spend: bigint, venueOverride?: Address): Promise<bigint[]> {
   if (!ctx.publicClient) throw new ChainConfigError('RPC is not configured');
-  const venue = ctx.config.chain.contracts.venue;
-  if (!venue) throw new ChainConfigError('SPROUT_VENUE_ADDRESS is not configured');
+  const venue = venueOverride ?? (await resolveVaultVenue(ctx, vault)).venue;
   const [assets, weights, schedule] = await Promise.all([
     ctx.publicClient.readContract({ address: vault, abi: sproutVaultAbi, functionName: 'assets' }) as Promise<readonly Address[]>,
     ctx.publicClient.readContract({ address: vault, abi: sproutVaultAbi, functionName: 'weights' }) as Promise<readonly number[]>,
@@ -69,9 +74,27 @@ export async function computeMinOuts(ctx: ChainContext, vault: Address, spend: b
 export interface RunDueJobsOptions {
   nowSeconds?: number;
   sinceMs?: number;
+  /** Whether the keeper may run this due plan; absent means every plan runs. */
+  mayAutoInvest?: (job: JobRecord) => Promise<boolean>;
 }
 
 const AUTOMATION_DISABLED = 'automation disabled: keeper key or gas budget not configured';
+export const AUTOINVEST_PERK = 'auto-invest is a SPROUT holder perk';
+
+/** The tier the keeper requires, or null when every plan runs (no tier set, or perks off). */
+export function autoInvestRequirement(config: PerksConfig): TierId | null {
+  return config.token ? config.autoInvestTier : null;
+}
+
+/** Lets the keeper run a plan only when the sprout's parent wallet holds the required tier. */
+export function holderAutoInvestGate(db: SproutDb, holders: HolderChecker): RunDueJobsOptions['mayAutoInvest'] {
+  const required = autoInvestRequirement(holders.config);
+  if (!required) return undefined;
+  return async (job) => {
+    const parent = getSprout(db, job.vaultId)?.parent;
+    return parent ? tierAtLeast(await holders.tier(parent), required) : false;
+  };
+}
 
 /**
  * Execute due investments. Reconciles any in-flight signed tx first (same hash,
@@ -113,6 +136,15 @@ export async function runDueJobs(ctx: ChainContext, db: SproutDb, options: RunDu
 
   const chain = keeperChain(ctx);
   for (const job of due) {
+    if (options.mayAutoInvest && !(await options.mayAutoInvest(job))) {
+      // Not this parent's perk (yet). Like a missing keeper: no transaction, the
+      // week is kept, and resync re-activates the plan so the next pass checks
+      // the tier again. The reason is recorded once, not on every pass.
+      setJobStatus(db, job.id, 'unavailable');
+      if (job.lastError !== AUTOINVEST_PERK) recordJobRun(db, job.id, { nextRunAt: job.nextRunAt, error: AUTOINVEST_PERK });
+      results.push({ jobId: job.id, vaultId: job.vaultId, status: 'paused', error: AUTOINVEST_PERK });
+      continue;
+    }
     results.push(await runJob(ctx, db, job, nowSeconds, sinceMs, budget));
   }
   return results;
@@ -140,9 +172,10 @@ async function runJob(
     if (BigInt(nowSeconds) < schedule[3]) {
       return { jobId: job.id, vaultId: job.vaultId, status: 'skipped', error: 'not due' };
     }
-    const venue = ctx.config.chain.contracts.venue;
-    if (!venue) throw new ChainConfigError('SPROUT_VENUE_ADDRESS is not configured');
-    const mins = await computeMinOuts(ctx, job.vaultId as Address, schedule[1]);
+    // The vault's own factory decides the venue: a legacy sprout can only buy
+    // through the legacy venue. An unknown factory throws, and the job fails closed.
+    const { venue } = await resolveVaultVenue(ctx, job.vaultId as Address);
+    const mins = await computeMinOuts(ctx, job.vaultId as Address, schedule[1], venue);
     const data = encodeFunctionData({ abi: sproutVaultAbi, functionName: 'executeInvestment', args: [venue, mins] });
     const signer = keeperSigner(ctx)!;
 

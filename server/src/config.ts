@@ -1,5 +1,12 @@
 import { join } from 'node:path';
-import { assertRuntimeChainGuard, loadChainConfig, type ChainConfig, type EnvLike } from '@sprout/shared';
+import type { Address } from 'viem';
+import {
+  assertRuntimeChainGuard,
+  loadChainConfig,
+  parseLegacyDeployments,
+  type ChainConfig,
+  type EnvLike,
+} from '@sprout/shared';
 
 export interface ServerConfig {
   chain: ChainConfig;
@@ -62,6 +69,39 @@ export function keeperBudget(config: ServerConfig): KeeperBudgetConfig | null {
   return { maxFeePerGasWei: maxFee, maxPriorityFeePerGasWei: priority, gasLimitCap: gasCap, dailyFeeBudgetWei: daily };
 }
 
+/**
+ * One factory this server serves, with the only venue its sprouts may trade
+ * through. The current deployment (SPROUT_FACTORY_ADDRESS / SPROUT_VENUE_ADDRESS
+ * / SPROUT_START_BLOCK) plants new sprouts; legacy ones (SPROUT_LEGACY_DEPLOYMENTS)
+ * keep serving the sprouts they created.
+ */
+export interface Deployment {
+  factory: Address;
+  /** Undefined only for a local current deployment without a venue. */
+  venue?: Address;
+  startBlock: number;
+  current: boolean;
+}
+
+/** Every configured deployment, the current one first. */
+export function listDeployments(config: ServerConfig): Deployment[] {
+  const { contracts } = config.chain;
+  const deployments: Deployment[] = [];
+  if (contracts.factory) {
+    deployments.push({ factory: contracts.factory, venue: contracts.venue, startBlock: config.startBlock ?? 0, current: true });
+  }
+  for (const legacy of contracts.legacyDeployments ?? []) {
+    deployments.push({ factory: legacy.factory, venue: legacy.venue, startBlock: legacy.startBlock, current: false });
+  }
+  return deployments;
+}
+
+/** The configured deployment for a factory address, or null when this server does not know it. */
+export function deploymentFor(config: ServerConfig, factory: string): Deployment | null {
+  const wanted = factory.toLowerCase();
+  return listDeployments(config).find((d) => d.factory.toLowerCase() === wanted) ?? null;
+}
+
 function parseWei(value: string | undefined): bigint | undefined {
   return value && /^\d+$/.test(value) ? BigInt(value) : undefined;
 }
@@ -96,6 +136,16 @@ export function loadServerConfig(env: EnvLike = process.env): ServerConfig {
   const startBlock = Number(env.SPROUT_START_BLOCK ?? 0);
   if (!Number.isInteger(startBlock) || startBlock < 0) {
     throw new Error('SPROUT_START_BLOCK must be a non-negative integer');
+  }
+  // Malformed legacy deployments fail the deploy, so the live site keeps the
+  // previous version instead of silently dropping a factory's sprouts.
+  const legacyDeployments = parseLegacyDeployments(env.SPROUT_LEGACY_DEPLOYMENTS);
+  const currentFactory = chain.contracts.factory?.toLowerCase();
+  if (currentFactory && legacyDeployments.some((d) => d.factory.toLowerCase() === currentFactory)) {
+    throw new Error('SPROUT_LEGACY_DEPLOYMENTS must not list the current SPROUT_FACTORY_ADDRESS');
+  }
+  if (chain.chainId !== 31337 && legacyDeployments.some((d) => d.startBlock <= 0)) {
+    throw new Error('Every SPROUT_LEGACY_DEPLOYMENTS start block must be a positive deployment block on a public chain');
   }
   const maxLogRange = Number(env.SPROUT_MAX_LOG_RANGE ?? 2000);
   if (!Number.isInteger(maxLogRange) || maxLogRange < 1 || maxLogRange > 100_000) {

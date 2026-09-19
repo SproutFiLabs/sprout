@@ -3,7 +3,8 @@ import { openDb, type SproutDb } from './db';
 import { createChainContext, verifyRpcChain, type ChainContext } from './chain';
 import { createApp } from './app';
 import { listAllVaults, reconcile, snapshotAll } from './indexer';
-import { runDueJobs } from './jobs';
+import { holderAutoInvestGate, runDueJobs } from './jobs';
+import { createHolderChecker, loadPerksConfig } from './holders';
 import { purgeExpiredNonces } from './repo';
 import { createMutex } from './lock';
 
@@ -20,9 +21,12 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
   const db = openDb(config.dbPath);
   const chain = createChainContext(config);
   const serialize = createMutex();
+  // Shared by the API and the keeper loop, so both see the same tiers (and cache).
+  const holders = createHolderChecker(chain.publicClient, loadPerksConfig(process.env));
   const app = createApp({
     db,
     chain,
+    holders,
     localDemo: config.allowFixtures,
     adminToken: config.adminToken,
     runExclusive: serialize,
@@ -70,7 +74,7 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
       // Always run: with no keeper/budget this reconciles any in-flight tx and
       // marks schedules unavailable rather than leaving them looking active.
       try {
-        const results = await runDueJobs(chain, db);
+        const results = await runDueJobs(chain, db, { mayAutoInvest: holderAutoInvestGate(db, holders) });
         if (results.length > 0) console.info('jobs', results);
       } catch (error) {
         console.warn('job run failed', error instanceof Error ? error.message : error);
