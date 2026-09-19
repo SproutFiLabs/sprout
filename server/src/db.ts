@@ -3,6 +3,22 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS harvest_rounds (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS harvest_registrations (
+ round_id TEXT NOT NULL REFERENCES harvest_rounds(id), address TEXT NOT NULL,
+ balance TEXT NOT NULL, registered_at INTEGER NOT NULL, amount TEXT,
+ tx_hash TEXT, log_index INTEGER, paid_at INTEGER,
+ PRIMARY KEY(round_id,address), UNIQUE(tx_hash,log_index)
+);
+CREATE TABLE IF NOT EXISTS harvest_audit (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, round_id TEXT NOT NULL,
+ action TEXT NOT NULL, detail TEXT NOT NULL, created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS harvest_submissions (
+ round_id TEXT NOT NULL, address TEXT NOT NULL, tx_hash TEXT NOT NULL, log_index INTEGER NOT NULL,
+ PRIMARY KEY(round_id,address), UNIQUE(tx_hash,log_index),
+ FOREIGN KEY(round_id,address) REFERENCES harvest_registrations(round_id,address)
+);
 CREATE TABLE IF NOT EXISTS intelligence_sessions (token_hash TEXT PRIMARY KEY, address TEXT NOT NULL, expires_at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS intelligence_session_address ON intelligence_sessions(address);
 CREATE TABLE IF NOT EXISTS intelligence_usage (address TEXT NOT NULL, bucket TEXT NOT NULL, used INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(address,bucket));

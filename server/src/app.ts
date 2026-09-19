@@ -1,4 +1,5 @@
 import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
+import { registerHarvestRoutes, type HarvestRuntime } from './harvest';
 import { registerZkRoutes } from './zk';
 import { randomBytes, createPublicKey } from 'node:crypto';
 import { join } from 'node:path';
@@ -79,6 +80,7 @@ import {
 } from './repo';
 
 export interface AppDeps {
+  harvest?: HarvestRuntime;
   intelligence?: IntelligenceRuntime;
   db: SproutDb;
   chain: ChainContext;
@@ -235,6 +237,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   });
 
   registerZkRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
+  registerHarvestRoutes(app, {db:deps.db,runtime:deps.harvest,now:deps.now,requireAuth:(c,purpose)=>requireAuth(c,deps,purpose),requireAdmin:c=>requireAdmin(c,deps)});
   registerIntelligenceRoutes(app, { db: deps.db, now: deps.now, runtime: deps.intelligence ?? createIntelligenceRuntime(deps.chain.config.intelligence ?? loadIntelligenceConfig({})) }, (c, purpose) => requireAuth(c, deps, purpose));
 
   app.post('/api/family/gift-key', async (c) => {

@@ -2,6 +2,11 @@
 
 final result: passed
 
+## Manual payout update
+
+The real holder interface retains the white/serif/botanical layout and adds empty, announced-budget, registered, allocated, submitted and verified-payment states. The old demo is separated at `?demo=1`. The operator desk includes budget/deadline inputs, unpaid exports and transaction verification. Browser QA verified local operator publication, missing-wallet fallback, rules, dark mode and 390px mobile; holder and authenticated operator screens had no horizontal overflow. Evidence: `output/harvest-manual-qa/`. Pending allocations display a dash rather than implying the full budget belongs to a holder.
+
+
 Scope: the interactive **product preview**, not production payout readiness.
 
 ## Reference and comparison

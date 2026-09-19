@@ -11,6 +11,7 @@
     "lib.ts",
     "deploy-local.ts",
     "e2e-smoke.ts",
-    "../server/src/**/*.ts"
+    "../server/src/**/*.ts",
+    "harvest-chain-check.ts"
   ]
 }
