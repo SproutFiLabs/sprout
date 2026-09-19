@@ -18,6 +18,8 @@ FROM deps AS build
 COPY tsconfig.base.json tsconfig.base.json
 COPY shared shared
 COPY web web
+COPY circuits/milestone-v1/milestone.circom circuits/milestone-v1/milestone.circom
+COPY scripts/ensure-fonts.mjs scripts/check-zk.mjs scripts/
 RUN bun run --cwd web build
 
 FROM base AS runtime

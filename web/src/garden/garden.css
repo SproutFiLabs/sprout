@@ -309,6 +309,10 @@ button.garden-menu-action:disabled { opacity: .6; cursor: default; }
 .garden-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .garden-see-all { font-size: 13px; color: var(--garden-soft); background: none; border: 0; padding: 0; }
 .garden-see-all:hover { color: var(--garden-ink); }
+
+/* Card header with more than one action (e.g. Download + See all). */
+.garden-card-head-actions { display: flex; align-items: center; gap: 14px; }
+a.garden-see-all { text-decoration: none; }
 .garden-portfolio { padding: 26px 28px; }
 
 .garden-periods { display: inline-flex; gap: 6px; }
@@ -490,6 +494,26 @@ html[data-appearance="dark"] .garden-legend-swatch--worth { border-top-color: #a
 .garden-stack { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .garden-gift-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f2efe8; }
 .garden-gift-row code { font-size: 11px; word-break: break-all; }
+.garden-gift-actions { display: inline-flex; gap: 8px; }
+
+/* Gift link QR code: a card that prints on its own. */
+.gift-qr { display: grid; gap: 14px; }
+.gift-qr-print { display: grid; justify-items: center; gap: 6px; padding: 22px 18px; border: 1px solid #eadfcd; border-radius: 22px; background: #fffdfa; color: #1d1d1b; text-align: center; }
+.gift-qr-kicker { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 24px; }
+.gift-qr-label { margin: 0; font-size: 15px; color: #5f5c54; }
+.gift-qr-image { width: min(260px, 70vw); height: auto; margin: 8px 0 4px; image-rendering: pixelated; }
+.gift-qr-instructions { margin: 0; font-size: 14px; }
+.gift-qr-url { margin: 0; max-width: 100%; font-size: 10px; color: #6c685f; word-break: break-all; }
+.gift-qr-note { margin: 0; font-size: 12.5px; line-height: 1.5; }
+.gift-qr-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.gift-qr-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+@media print {
+  body:has(.gift-qr-print) * { visibility: hidden !important; }
+  body:has(.gift-qr-print) .gift-qr-print,
+  body:has(.gift-qr-print) .gift-qr-print * { visibility: visible !important; }
+  body:has(.gift-qr-print) .gift-qr-print { position: fixed; inset: 0; margin: auto; width: 12cm; height: max-content; border: 1px solid #999; }
+  body:has(.gift-qr-print) .gift-qr-image { width: 8cm; }
+}
 .garden-info-band { background: #f4f2ec; border-radius: 14px; padding: 14px 16px; font-size: 13px; color: var(--garden-soft); }
 
 .garden-chores-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid #f2efe8; }
@@ -1299,6 +1323,24 @@ html[data-appearance="dark"] .risk-line svg { color: #e8b75c; }
   font-size: 13px; line-height: 1.45; color: var(--garden-soft, #5f5c54);
 }
 .garden-fund-prompt > span { flex: 1; min-width: 220px; }
+
+/* Starter mixes in the allocation step. */
+.starter-mixes { display: grid; gap: 8px; margin-bottom: 4px; }
+.starter-mix-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.starter-mix {
+  min-height: 36px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--garden-line, #ece7dc); background: var(--garden-surface, #fffdfa);
+  color: var(--garden-ink, #1d1d1b); font: inherit; font-size: 13px;
+}
+.starter-mix:hover { border-color: #c9c1b1; }
+.starter-mix--active { border-color: #3e7839; background: #eef6ec; color: #2f5a2c; }
+.starter-mix-note { margin: 0; }
+.starter-mix-total { margin: 0; font-size: 13px; font-weight: 600; color: #9a5b12; }
+.starter-mix-total--ok { color: #3e7839; }
+html[data-appearance="dark"] .starter-mix { background: #183025; border-color: #466451; color: #f3efe4; }
+html[data-appearance="dark"] .starter-mix--active { background: #294536; border-color: #8cc58a; color: #e4f4e2; }
+html[data-appearance="dark"] .starter-mix-total { color: #e8b75c; }
+html[data-appearance="dark"] .starter-mix-total--ok { color: #9fd49b; }
 
 .garden-empty-vault { padding: 6px 0 2px; }
 .garden-empty-vault-lead {

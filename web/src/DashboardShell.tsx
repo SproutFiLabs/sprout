@@ -10,6 +10,7 @@ import type {
   AutomationCapability, BeneficiaryState, ChainEvent, ChainPublic, GiftNote, GiftSummary, Growth, Health,
   Holdings, Job, LocalWalletInfo, Milestone, Sprout,
 } from './api';
+import { api } from './api';
 import type { WalletState } from './wallet';
 import { PublicCa, SproutAddressRow } from './components/PublicCa';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
@@ -93,6 +94,8 @@ export interface DashboardShellProps {
   onOpenInvestNow: () => void;
   onOpenGift: () => void;
   onOpenGiftPay: (g: GiftSummary) => void;
+  /** Show a printable QR code for a gift link. */
+  onOpenGiftQr?: (g: GiftSummary) => void;
   anyModalOpen: boolean;
   onOpenAllocation: () => void;
   onOpenWithdraw: () => void;
@@ -379,10 +382,13 @@ export function DashboardShell(props: DashboardShellProps) {
     isParent, isBeneficiary, isGraduated, graduationProgress, balanceChange, chainReady, loading, txn, view, setView,
     drawerOpen, setDrawerOpen, onOpenPlant, onOpenFund, onOpenSchedule, onOpenInvestNow, onOpenGift, onOpenAllocation, onOpenWithdraw,
     onOpenChore, onOpenMilestone, onCancelSchedule, onReleaseMilestone, onCancelMilestone, onClaim, onOpenSettings, onOpenNotifications,
-    onOpenHelp, onOpenOnboarding, onOpenAsset, onRunToolFund, onRunToolAdvance, onReconcile, onRunJobs, symbolFor, decimalsFor, anyModalOpen, onOpenGiftPay,
+    onOpenHelp, onOpenOnboarding, onOpenAsset, onRunToolFund, onRunToolAdvance, onReconcile, onRunJobs, symbolFor, decimalsFor, anyModalOpen, onOpenGiftPay, onOpenGiftQr,
     mode = 'live', sample = null, nowMs,
   } = props;
 
+  const [historyError, setHistoryError] = useState('');
+  const [historyBusy, setHistoryBusy] = useState(false);
+  useEffect(() => { setHistoryError(''); }, [selected?.id, wallet?.address]);
   const isSample = mode === 'sample';
   const gifting = isSample ? undefined : props.gifting;
   // Disconnected live mode still renders the real dashboard shell: the garden
@@ -834,8 +840,22 @@ export function DashboardShell(props: DashboardShellProps) {
     <div className="garden-card garden-activity-card">
       <div className="garden-card-head">
         <h2>Recent activity</h2>
-        <button className="garden-see-all" onClick={onOpenNotifications}>See all</button>
+        <div className="garden-card-head-actions">
+          {!isSample && selected ? (
+            <button
+              className="garden-see-all"
+              disabled={historyBusy}
+              onClick={() => { setHistoryBusy(true); setHistoryError(''); void api.downloadHistory(selected.id).catch(e => setHistoryError(e instanceof Error ? e.message : 'History unavailable.')).finally(() => setHistoryBusy(false)); }}
+              data-testid="history-download"
+              title="Download every deposit, gift and purchase as a spreadsheet (CSV)"
+            >
+              {historyBusy ? 'Downloading…' : 'Download'}
+            </button>
+          ) : null}
+          <button className="garden-see-all" onClick={onOpenNotifications}>See all</button>
+        </div>
       </div>
+      {historyError ? <p role="alert" className="garden-empty-note">{historyError}</p> : null}
       {activityRows.length === 0 ? (
         <p className="garden-empty-note">No activity indexed yet. On-chain history is still being read in — a sprout you just created can take a while to appear here. Nothing is lost; this list trails the chain.</p>
       ) : (
@@ -1087,7 +1107,10 @@ export function DashboardShell(props: DashboardShellProps) {
                     </span>
                     <code data-testid="gift-link">{`${window.location.origin}/gift/${g.id}`}</code>
                     <span className="garden-muted" data-testid="gift-count">{g.paymentCount} gift(s)</span>
-                    <button data-testid="gift-pay" className="garden-pill" onClick={() => onOpenGiftPay(g)} disabled={!chainReady}>Pay</button>
+                    <span className="garden-gift-actions">
+                      {onOpenGiftQr ? <button data-testid="gift-qr" className="garden-pill" onClick={() => onOpenGiftQr(g)}>QR code</button> : null}
+                      <button data-testid="gift-pay" className="garden-pill" onClick={() => onOpenGiftPay(g)} disabled={!chainReady}>Pay</button>
+                    </span>
                   </li>
                 ))}
               </ul>

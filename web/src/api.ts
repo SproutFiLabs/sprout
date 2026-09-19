@@ -311,6 +311,19 @@ async function signedPostJson<T>(wallet: WalletState, url: string, purpose: stri
 }
 
 export const api = {
+  downloadHistory: async (vault: string) => {
+    const version = sessionVersion;
+    const res = await fetch(`/api/sprouts/${vault}/history.csv`, { headers: familyHeaders(), cache: 'no-store' });
+    if (!res.ok) throw new Error('History could not be downloaded. Reconnect your family session and try again.');
+    const blob = await res.blob();
+    if (version !== sessionVersion) throw new Error('Family session changed.');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sprout-${vault.slice(2, 8).toLowerCase()}-history.csv`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
   zkCertificates: (vault: string) => getJson<{ certificates: ZkCertificateStatus[] }>(`/api/zk/certificates/${vault}`),
   issueZk: (wallet: WalletState, vault: string, thresholdCents: string) => signedPostJson<ZkIssuance>(wallet, `/api/zk/issue/${vault}`, `zk-issue:${vault.toLowerCase()}`, { thresholdCents }),
   revokeZk: (wallet: WalletState, id: string) => signedPostJson(wallet, `/api/zk/revoke/${id}`, `zk-revoke:${id}`, {}),

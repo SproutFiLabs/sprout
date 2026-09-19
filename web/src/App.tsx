@@ -36,10 +36,12 @@ import { formatUtcDate, formatZonedDateTime, parseDateOnlyToUtcTs, viewerTimeZon
 import { GrowthRing } from './components/GrowthRing';
 import { DemoBanner } from './components/DemoBanner';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
+import { StarterMixPicker } from './components/StarterMixes';
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
 import { InvestNowForm } from './components/InvestNow';
 import { GiftPage } from './GiftPage';
+import { GiftQrCard } from './components/GiftQr';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
 import { TITLE_MAX, endOfDayUtc, textProblem } from './components/Campaign';
 import {
@@ -137,6 +139,7 @@ export function App() {
   const [showAllocation, setShowAllocation] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showPayGift, setShowPayGift] = useState<GiftSummary | null>(null);
+  const [giftQr, setGiftQr] = useState<GiftSummary | null>(null);
   const [view, setView] = useState<'overview' | 'portfolio' | 'invest' | 'chores' | 'gifts' | 'graduation'>('overview');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showChore, setShowChore] = useState(false);
@@ -297,10 +300,10 @@ export function App() {
   }, [selectedId, loadDetail]);
 
   useEffect(() => {
-    const ended = () => { setWallet(null); setDetail(null); setParentSprouts([]); setBeneficiarySprouts([]); setSelectedId(null); setHoldings(null); setGrowth(null); setEvents([]); setAllGiftNotes({}); };
+    const ended = () => { setWallet(null); setDetail(null); setParentSprouts([]); setBeneficiarySprouts([]); setSelectedId(null); setHoldings(null); setGrowth(null); setEvents([]); setAllGiftNotes({}); setGiftQr(null); };
     const changed = () => {
       if (!getPrivateLabel('gift.privateKey')) {
-        setAllGiftNotes({});
+        setAllGiftNotes({}); setGiftQr(null);
         setDetail(prev => prev ? { ...prev, gifts: prev.gifts.map(g => ({ ...g, label: 'A gift for the future', campaign: g.campaign ? { ...g.campaign, title: 'Family gift' } : null, notes: [] })) } : prev);
       }
     };
@@ -448,6 +451,8 @@ export function App() {
     [localWallet, connectLocal],
   );
 
+  useEffect(() => { setGiftQr(null); }, [wallet?.address, selectedId]);
+
   // React to account/chain changes by clearing stale state.
   useEffect(() => {
     if (!wallet) return;
@@ -521,6 +526,7 @@ export function App() {
     showInvestNow ||
     showGift ||
     showPayGift !== null ||
+    giftQr !== null ||
     showMilestone ||
     showAllocation ||
     showWithdraw ||
@@ -965,6 +971,7 @@ export function App() {
     onRunToolAdvance: () => void runToolAdvance(),
     onReconcile: () => void withTxn('Reconcile', async () => { await fetch('/api/index/reconcile', { method: 'POST' }); if (selectedId) await loadDetail(selectedId); }),
     onRunJobs: () => void withTxn('Run due investments', async () => { await api.runJobs(); if (selectedId) await loadDetail(selectedId); }),
+    onOpenGiftQr: (g) => setGiftQr(g),
     onOpenGiftPay: (g) => { setPayGiftForm({ token: g.acceptedAssets[0] ?? '', amount: '25' }); setShowPayGift(g); },
     anyModalOpen, symbolFor, decimalsFor,
   };
@@ -1005,6 +1012,7 @@ export function App() {
           {plantStep === 2 ? (
             <fieldset>
               <legend>Allocation (percent, must total 100%)</legend>
+              <StarterMixPicker tokens={stockTokens} percents={plantForm.percents} onPick={(percents) => setPlantForm({ ...plantForm, percents })} />
               {stockTokens.map((t) => (
                 <label key={t.address} className="inline">
                   {t.symbol}
@@ -1189,6 +1197,12 @@ export function App() {
         </Modal>
       ) : null}
 
+      {giftQr ? (
+        <Modal title="Gift link QR code" onClose={() => setGiftQr(null)} txn={txn} explorerUrl={chain?.explorerUrl}>
+          <GiftQrCard url={`${window.location.origin}/gift/${giftQr.id}`} label={giftQr.label} />
+        </Modal>
+      ) : null}
+
       {showMilestone ? (
         <Modal title="Add a chore (allowance milestone)" onClose={() => setShowMilestone(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <label>
@@ -1229,6 +1243,7 @@ export function App() {
         <Modal title="Edit allocation" onClose={() => setShowAllocation(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <fieldset>
             <legend>Percent (must total 100%; zero removes an asset)</legend>
+            <StarterMixPicker tokens={stockTokens} percents={allocationForm.percents} onPick={(percents) => setAllocationForm({ ...allocationForm, percents })} />
             {stockTokens.map((t) => (
               <label key={t.address} className="inline">
                 {t.symbol}
