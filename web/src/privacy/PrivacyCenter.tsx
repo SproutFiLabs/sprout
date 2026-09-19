@@ -315,8 +315,8 @@ export function PrivacyCenter({
               </div>
             ) : null}
             <small>
-              Existing device labels are migrated only after encryption succeeds. Your passphrase or recovery key plus a
-              backup restores access.
+              Keep an encrypted backup and save your recovery key separately. Together, they let you restore your family
+              labels.
             </small>
           </section>
           <section className="privacy-card" data-testid="privacy-invites">
@@ -330,8 +330,8 @@ export function PrivacyCenter({
               No keys to the vault.
             </h2>
             <p>
-              An invitation that opens once. A read-only view with no name or wallet in the link. You can close that
-              window anytime.
+              One invitation. Their own little window. No name or wallet address in the link, and you decide when it
+              closes.
             </p>
             <label className="privacy-field">
               Choose a sprout
@@ -446,7 +446,7 @@ export function PrivacyCenter({
                 <p>A little today. A world of possibilities.</p>
                 <span className="privacy-status is-on">
                   <LockKeyhole size={12} />
-                  No child identity in preview
+                  Their name stays with family
                 </span>
               </div>
             </div>
@@ -474,17 +474,16 @@ export function PrivacyCenter({
         </div>
         <section className="privacy-boundary">
           <div>
-            <span className="privacy-number">THE HONEST BOUNDARY</span>
+            <span className="privacy-number">YOUR PRIVACY, EXPLAINED</span>
             <h2>
-              App privacy is here.
+              Private family details.
               <br />
-              On-chain shielding is next.
+              Public blockchain activity.
             </h2>
             <p>
-              Current contracts publish wallet relationships, balances and transfers. These controls reduce identity
-              exposure in Sprout; they cannot erase blockchain history or guarantee physical safety. Shielded saving,
-              stealth funding and private proofs are unavailable until verified contracts are built and independently
-              reviewed.
+              Names and messages can stay out of public view in Sprout. Wallet relationships, balances and transfers
+              remain visible on the blockchain. These controls reduce identity exposure; they do not hide on-chain
+              wealth or guarantee physical safety.
             </p>
           </div>
           <div className="privacy-readiness">
@@ -495,10 +494,7 @@ export function PrivacyCenter({
               <Check size={16} /> Revocable kid invitations
             </span>
             <span>
-              <Check size={16} /> Browser encryption available
-            </span>
-            <span className="pending">
-              <LockKeyhole size={16} /> On-chain shielding · not connected
+              <Check size={16} /> Encrypted family labels
             </span>
           </div>
         </section>

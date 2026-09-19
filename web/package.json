@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "bun test",
-    "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "dev": "node ../scripts/ensure-fonts.mjs && vite",
+    "build": "node ../scripts/ensure-fonts.mjs && tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

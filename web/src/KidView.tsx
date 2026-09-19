@@ -131,7 +131,7 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
           <span>SPROUT</span>
         </a>
         <span className="kid-badge">
-          <ShieldCheck size={14} /> Your private window · read only
+          <ShieldCheck size={14} /> Your own little window
         </span>
       </header>
       <section className="kid-hero">
@@ -191,7 +191,7 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
               <h2>
                 <LockKeyhole size={20} /> Yours to explore
               </h2>
-              <p className="kid-muted">No wallet connection. No payments. No buttons that move money.</p>
+              <p className="kid-muted">Discover what makes your sprout grow. Your grown-up takes care of the money.</p>
               <p className="kid-highlight">
                 {data.chores} {data.chores === 1 ? 'chore waiting' : 'chores waiting'} for a grown-up’s approval.
               </p>
