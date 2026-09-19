@@ -33,28 +33,35 @@ export interface HolderBouquet {
   tier: TierId;
 }
 
-/** Holder-only one-tap mixes. At most five stocks each (a sprout holds five). */
+/**
+ * Holder-only one-tap mixes, different from the free starter mixes (Big tech,
+ * Space & future, The whole market, Chips, Mostly the S&P 500). At most five
+ * stocks each (a sprout holds five).
+ */
 export const HOLDER_BOUQUETS: HolderBouquet[] = [
-  { id: 'space-ai', label: 'Space & AI', note: 'SpaceX, NVIDIA and Palantir.', weights: { SPCX: 40, NVDA: 30, PLTR: 30 }, tier: 'seedling' },
-  { id: 'big-tech', label: 'Big Tech', note: 'Apple, Microsoft, NVIDIA, Amazon and Google, evenly.', weights: { AAPL: 20, MSFT: 20, NVDA: 20, AMZN: 20, GOOGL: 20 }, tier: 'seedling' },
-  { id: 'chips', label: 'The Chip Garden', note: 'The companies that make the chips: NVIDIA, AMD, TSMC, Micron and ASML.', weights: { NVDA: 30, AMD: 20, TSM: 20, MU: 15, ASML: 15 }, tier: 'seedling' },
-  { id: 'moonshots', label: 'Moonshots', note: 'Tesla, SpaceX, Palantir and AMD. Bigger swings, both ways.', weights: { TSLA: 25, SPCX: 25, PLTR: 25, AMD: 25 }, tier: 'seedling' },
-  { id: 'steady', label: 'Steady Roots', note: 'The S&P 500 and the Nasdaq-100, for a broad start.', weights: { SPY: 60, QQQ: 40 }, tier: 'seedling' },
+  { id: 'moonshots', label: 'Moonshots', note: 'Tesla, SpaceX, Palantir, AMD and Micron. Bigger swings, both ways.', weights: { TSLA: 25, SPCX: 25, PLTR: 20, AMD: 15, MU: 15 }, tier: 'seedling' },
+  { id: 'ai-builders', label: 'AI Builders', note: 'The companies building AI: NVIDIA, Palantir, Microsoft, Meta and TSMC.', weights: { NVDA: 30, PLTR: 20, MSFT: 20, META: 15, TSM: 15 }, tier: 'seedling' },
+  { id: 'brands', label: 'Brands They Know', note: 'Apple, Amazon, Tesla, Meta and Google: names a kid already knows.', weights: { AAPL: 25, AMZN: 25, TSLA: 20, META: 15, GOOGL: 15 }, tier: 'seedling' },
+  { id: 'silver-lining', label: 'Silver Lining', note: 'Silver next to the S&P 500 and the Nasdaq-100.', weights: { SLV: 40, SPY: 40, QQQ: 20 }, tier: 'seedling' },
 ];
 
 /** Bouquets in the shape the mix row takes, with a lock for wallets below the bouquet's tier. */
 export function holderBouquets(holder: Holder, availableSymbols: readonly string[]) {
   if (!holder.perks?.enabled) return [];
   const have = new Set(availableSymbols.map((s) => s.toUpperCase()));
+  let explained = false;
   return HOLDER_BOUQUETS.filter((b) => Object.keys(b.weights).every((s) => have.has(s))).map((b) => {
     const locked = !tierAtLeast(holder.status?.tier, b.tier);
+    // One line explains the locks; the rest keep their own description as a tooltip.
+    const explain = locked && !explained;
+    if (explain) explained = true;
     return {
       id: `bouquet-${b.id}`,
       label: `💐 ${t(b.label)}`,
       note: `${t(b.note)} ${t('Examples, not advice.')}`,
       weights: b.weights,
       locked,
-      lockNote: locked ? t('A holder bouquet: hold SPROUT ({tier}) to use it.', { tier: tierLabel(b.tier) }) : undefined,
+      lockNote: explain ? t('Bouquets marked 💐 are for SPROUT holders ({tier} and up).', { tier: tierLabel(b.tier) }) : undefined,
     };
   });
 }

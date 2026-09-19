@@ -44,6 +44,12 @@ describe('first dibs', () => {
 
 describe('holder bouquets', () => {
   const all = ['AAPL', 'NVDA', 'MSFT', 'SPY', 'TSLA', 'SPCX', 'AMZN', 'GOOGL', 'META', 'PLTR', 'AMD', 'TSM', 'MU', 'ASML', 'INTC', 'SNDK', 'BABA', 'QQQ', 'GME', 'SLV', 'USO'];
+  test('bouquets are not copies of the free starter mixes', async () => {
+    const { STARTER_MIXES } = await import('../src/components/StarterMixes');
+    const key = (w: Record<string, number> | null) => JSON.stringify(Object.entries(w ?? {}).sort());
+    const free = new Set(STARTER_MIXES.map((m) => key(m.weights)));
+    for (const b of HOLDER_BOUQUETS) expect(free.has(key(b.weights))).toBe(false);
+  });
   test('each bouquet has at most five stocks and adds up to 100', () => {
     for (const b of HOLDER_BOUQUETS) {
       expect(Object.keys(b.weights).length).toBeLessThanOrEqual(5);
@@ -56,7 +62,9 @@ describe('holder bouquets', () => {
     expect(holderBouquets(holder('seedling'), all).length).toBe(HOLDER_BOUQUETS.length);
   });
   test('locked for non-holders, open for holders, hidden when perks are off', () => {
-    expect(holderBouquets(holder(null), all).every((b) => b.locked && b.lockNote)).toBe(true);
+    const locked = holderBouquets(holder(null), all);
+    expect(locked.every((b) => b.locked)).toBe(true);
+    expect(locked.filter((b) => b.lockNote).length).toBe(1);
     expect(holderBouquets(holder('seedling'), all).every((b) => !b.locked && !b.lockNote)).toBe(true);
     expect(holderBouquets(holder('bloom', perks({ enabled: false })), all)).toEqual([]);
   });

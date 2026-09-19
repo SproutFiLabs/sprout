@@ -54,15 +54,13 @@ export const zh: Record<string, string> = {
 
   // Picker locks and bouquets
   'SPROUT holders ({tier} and up) get {symbol} first, until {date}.': 'SPROUT 持有者（{tier}及以上）可抢先购买 {symbol}，截至 {date}。',
-  'A holder bouquet: hold SPROUT ({tier}) to use it.': '持有者专属花束：持有 SPROUT（{tier}）即可使用。',
-  'Space & AI': '太空与 AI',
-  'SpaceX, NVIDIA and Palantir.': 'SpaceX、NVIDIA 和 Palantir。',
-  'Big Tech': '科技巨头',
-  'Apple, Microsoft, NVIDIA, Amazon and Google, evenly.': 'Apple、Microsoft、NVIDIA、Amazon 和 Google，平均分配。',
-  'The Chip Garden': '芯片花园',
-  'The companies that make the chips: NVIDIA, AMD, TSMC, Micron and ASML.': '制造芯片的公司：NVIDIA、AMD、台积电、Micron 和 ASML。',
+  'Bouquets marked 💐 are for SPROUT holders ({tier} and up).': '标有 💐 的花束仅限 SPROUT 持有者（{tier}及以上）使用。',
   Moonshots: '登月计划',
-  'Tesla, SpaceX, Palantir and AMD. Bigger swings, both ways.': 'Tesla、SpaceX、Palantir 和 AMD。涨跌起伏都更大。',
-  'Steady Roots': '稳稳扎根',
-  'The S&P 500 and the Nasdaq-100, for a broad start.': '标普 500 和纳斯达克 100，从更广泛的市场起步。',
+  'Tesla, SpaceX, Palantir, AMD and Micron. Bigger swings, both ways.': 'Tesla、SpaceX、Palantir、AMD 和 Micron。涨跌起伏都更大。',
+  'AI Builders': 'AI 建造者',
+  'The companies building AI: NVIDIA, Palantir, Microsoft, Meta and TSMC.': '正在打造 AI 的公司：NVIDIA、Palantir、Microsoft、Meta 和台积电。',
+  'Brands They Know': '孩子认识的品牌',
+  'Apple, Amazon, Tesla, Meta and Google: names a kid already knows.': 'Apple、Amazon、Tesla、Meta 和 Google：孩子早就听说过的名字。',
+  'Silver Lining': '一线银光',
+  'Silver next to the S&P 500 and the Nasdaq-100.': '白银，加上标普 500 和纳斯达克 100。',
 };
