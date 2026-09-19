@@ -267,7 +267,7 @@ describe("Sprout Spend", () => {
       ).order.status,
     ).toBe("delivered");
   });
-  test("production provider requires business credentials plus curated products", () => {
+  test("provider requires credentials plus curated products", () => {
     expect(bitrefillProvider({})).toBeUndefined();
     expect(
       bitrefillProvider({
@@ -275,6 +275,34 @@ describe("Sprout Spend", () => {
         BITREFILL_API_KEY: "personal",
       }),
     ).toBeUndefined();
+  });
+  test("personal API keys use server-side Bearer authentication", async () => {
+    const authorizations: Array<string | null> = [];
+    const provider = bitrefillProvider(
+      {
+        SPROUT_SPEND_ENABLED: "true",
+        BITREFILL_API_KEY: " test-personal-key ",
+        SPROUT_SPEND_PRODUCT_IDS: product.id,
+      },
+      (async (_url: string, init: RequestInit) => {
+        authorizations.push(new Headers(init.headers).get("authorization"));
+        return Response.json({
+          data: {
+            id: product.id,
+            name: product.name,
+            country_code: "US",
+            currency: "USD",
+            in_stock: true,
+            recipient_type: "none",
+            packages: [{ id: "p25", value: "25" }],
+          },
+        });
+      }) as typeof fetch,
+    )!;
+    const catalog = await provider.catalog("US");
+    expect(authorizations[0]).toBe("Bearer test-personal-key");
+    expect(catalog[0]?.values).toEqual([25]);
+    expect(JSON.stringify(catalog)).not.toContain("test-personal-key");
   });
   test("provider never uses balance payments and verifies invoice currency", async () => {
     const calls: Array<{ url: string; body: any }> = [];

@@ -7,10 +7,10 @@
 Purchasing is disabled by default. There is no production fixture mode or fake success path. Configure the following on the server only:
 
 - `SPROUT_SPEND_ENABLED=true`
-- `BITREFILL_API_ID` / `BITREFILL_API_SECRET`: approved **Business API** credentials
+- `BITREFILL_API_KEY`: personal account Bearer key; or `BITREFILL_API_ID` / `BITREFILL_API_SECRET` for Business API Basic authentication. The Bearer key takes precedence when both are set.
 - `SPROUT_SPEND_PRODUCT_IDS`: comma-separated, vetted product IDs
 
-Products must be in stock, US-region, USD-denominated, require no recipient data and have supported whole-dollar denominations at or below $100. The initial catalog is deliberately curated; unsuitable categories should never enter this allowlist. A personal API key is insufficient for this multi-customer reseller integration. Provider account signup, business approval and a controlled real end-to-end purchase remain outstanding. The public docs have inconsistencies (for example package arrays vs objects and redemption string vs object); the adapter supports the documented guide shape and fails closed on unrecognized payloads. Verify actual Business API payloads before activation.
+Products must be in stock, US-region, USD-denominated, require no recipient data and have supported whole-dollar denominations at or below $100. The initial catalog is deliberately curated; unsuitable categories should never enter this allowlist. Personal keys support account purchases and catalog access. Bitrefill recommends Business API access for platforms/resellers; successful authentication alone does not establish approval for public resale. Account signup and email verification are complete; a controlled real end-to-end purchase and the public fulfillment arrangement remain outstanding. The public docs have inconsistencies (for example package arrays vs objects and redemption string vs object); the adapter supports the documented guide shape and fails closed on unrecognized payloads. The personal key was verified against `/ping` and live US Steam/Nintendo product responses on 2026-09-19. Invoice and redemption payloads still require end-to-end verification before public activation. Local development can load the ignored, owner-only `.env.spend.local` with `bun --env-file=.env.spend.local server/src/index.ts`. Never use a `VITE_` variable for this key.
 
 Provider references consulted 2026-09-19:
 - https://docs.bitrefill.com/docs/api-overview

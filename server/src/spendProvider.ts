@@ -51,23 +51,23 @@ export class SpendProviderError extends Error {
     super(message);
   }
 }
-/** Business API only. No platform-balance payments, provider credentials or customer emails reach the browser. */
+/** Server-only REST credentials. No platform-balance payments or credentials reach the browser. */
 export function bitrefillProvider(
   env: Record<string, string | undefined>,
   request: typeof fetch = fetch,
 ): SpendProvider | undefined {
-  if (
-    env.SPROUT_SPEND_ENABLED !== "true" ||
-    !env.BITREFILL_API_ID ||
-    !env.BITREFILL_API_SECRET
-  )
-    return;
+  if (env.SPROUT_SPEND_ENABLED !== "true") return;
+  const apiKey = env.BITREFILL_API_KEY?.trim();
+  const businessCredentials = env.BITREFILL_API_ID && env.BITREFILL_API_SECRET;
+  if (!apiKey && !businessCredentials) return;
   const allowlist = (env.SPROUT_SPEND_PRODUCT_IDS ?? "")
     .split(",")
     .map((x) => x.trim())
     .filter(Boolean);
   if (!allowlist.length) return;
-  const authorization = `Basic ${Buffer.from(`${env.BITREFILL_API_ID}:${env.BITREFILL_API_SECRET}`).toString("base64")}`;
+  const authorization = apiKey
+    ? `Bearer ${apiKey}`
+    : `Basic ${Buffer.from(`${env.BITREFILL_API_ID}:${env.BITREFILL_API_SECRET}`).toString("base64")}`;
   const call = async (path: string, body?: unknown) => {
     const response = await request(`https://api.bitrefill.com/v2${path}`, {
       method: body ? "POST" : "GET",
