@@ -24,6 +24,7 @@ import {
   type IntelligenceMessage,
 } from "@sprout/shared";
 import { ThemeToggle } from "../theme/ThemeSettings";
+import { AnswerText } from "./AnswerText";
 import {
   intelligenceChat,
   intelligenceConfig,
@@ -443,7 +444,13 @@ export function IntelligencePage() {
                           ? "You"
                           : "SPROUT Intelligence"}
                       </span>
-                      <div>{message.content}</div>
+                      <div>
+                        {message.role === "assistant" ? (
+                          <AnswerText text={message.content} />
+                        ) : (
+                          message.content
+                        )}
+                      </div>
                     </article>
                   ))}
                   {busy && (
