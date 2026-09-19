@@ -1,9 +1,10 @@
 import { ArrowLeft, BookOpen, Moon } from 'lucide-react';
 import { ThemeSettings, ThemeToggle } from './theme/ThemeSettings';
+import { LanguageToggle } from './i18n/LanguageToggle';
 
 export function AppearancePage() {
   return <main className="appearance-page knowledge-root">
-    <header className="appearance-header"><a className="appearance-brand" href="/"><img src="/brand/sprout-logo.png" alt="" /><span>SPROUT</span></a><nav aria-label="Settings navigation"><a href="/guide">Guide</a><a href="/docs">Docs</a><ThemeToggle /></nav></header>
+    <header className="appearance-header"><a className="appearance-brand" href="/"><img src="/brand/sprout-logo.png" alt="" /><span>SPROUT</span></a><nav aria-label="Settings navigation"><a href="/guide">Guide</a><a href="/docs">Docs</a><ThemeToggle /><LanguageToggle /></nav></header>
     <div className="appearance-content"><a className="appearance-back" href="/dashboard"><ArrowLeft size={16} />Back to the garden</a>
       <span className="appearance-eyebrow">Make yourself at home</span><h1>A garden for every hour.</h1><p className="appearance-intro">Daylight, moonlight, or a little of both. Choose what feels comfortable for you.</p>
       <ThemeSettings />

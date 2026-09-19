@@ -6,6 +6,7 @@ import { BloomGarden } from './garden/BloomGarden';
 import { holdingSharesText } from './garden/format';
 import { getMilestoneTitle, getNickname } from './localStore';
 import { ThemeToggle } from './theme/ThemeSettings';
+import { LanguageToggle } from './i18n/LanguageToggle';
 import { KidLearn } from './kid/KidLearn';
 import { findLesson, lessonForSymbol } from './kid/lessons';
 
@@ -182,6 +183,7 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
         <a className="garden-brand" href="/"><span className="garden-brand-mark"><img src="/brand/sprout-logo.png" alt="" /></span><span>SPROUT</span></a>
         <span className="kid-badge">Just looking · nothing here moves money</span>
         <ThemeToggle />
+        <LanguageToggle />
       </header>
 
       <section className="kid-hero">

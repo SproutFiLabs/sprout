@@ -18,6 +18,7 @@ import { formatRunDateTime } from './dates';
 import { cadenceLabel, choreRewardText, holdingSharesText } from './garden/format';
 import { growthSummary, putInSteps } from './garden/growthSummary';
 import { ThemeToggle } from './theme/ThemeSettings';
+import { LanguageToggle } from './i18n/LanguageToggle';
 import { CampaignProgress, GiftNotesList, giftAmountLabel } from './components/Campaign';
 import { ResourcesMenu } from './components/ResourcesMenu';
 import { BloomGarden } from './garden/BloomGarden';
@@ -640,6 +641,7 @@ export function DashboardShell(props: DashboardShellProps) {
       <div className="garden-toprow-right">
         {isSample ? null : <PublicCa variant="dashboard" />}
         <ThemeToggle />
+        <LanguageToggle />
         {isSample ? (
           <details className="garden-sample" data-testid="sample-menu">
             <summary data-testid="sample-badge" className="garden-sample-badge">

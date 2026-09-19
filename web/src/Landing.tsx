@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ThemeToggle } from './theme/ThemeSettings';
+import { LanguageToggle } from './i18n/LanguageToggle';
 import { api } from './api';
 import { useAutomationEnabled } from './automationStatus';
 import { BloomGarden } from './garden/BloomGarden';
@@ -290,6 +291,7 @@ export function Landing() {
             ) : null}
           </div>
           <ThemeToggle />
+          <LanguageToggle />
           <a className="nav-signin" href={DASHBOARD}>Dashboard</a>
           <a className="btn button-primary" href={`${DASHBOARD}?new=1`}>Plant a sprout</a>
         </div>

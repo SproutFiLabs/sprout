@@ -9,6 +9,7 @@ import { KnowledgePage } from './knowledge/KnowledgePages';
 import { AppearancePage } from './AppearancePage';
 import { KidView, parseKidPath } from './KidView';
 import { initializeTheme } from './theme/ThemeSettings';
+import { initializeLocale, useLocale } from './i18n';
 import './app.css';
 import './reference/landing.css';
 import './reference/dashboard.css';
@@ -22,12 +23,14 @@ import './knowledge/knowledge.css';
 import './theme/theme.css';
 
 initializeTheme();
+initializeLocale();
 
 function currentPath(): string {
   return window.location.pathname.replace(/\/+$/, '') || '/';
 }
 
 function Root() {
+  useLocale(); // the whole tree re-renders in the new language
   const path = currentPath();
   if (path === '/' || path === '/index.html') return <Landing />;
   if (path === '/gift') return <GiftLanding />;
