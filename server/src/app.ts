@@ -1,6 +1,7 @@
 import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
 import { registerHarvestRoutes, type HarvestRuntime } from './harvest';
 import { registerZkRoutes } from './zk';
+import type { RecurringBurnRuntime } from './recurringBurnRuntime';
 import { marketAvailability } from './marketAvailability';
 import { registerStockPriceRoutes } from './stockPrices';
 import { registerPrivacyPackRoutes } from './privacyPack';
@@ -97,6 +98,7 @@ export interface AppDeps {
   holders?: HolderChecker;
   /** Buy & burn (burns.ts); built from the environment when not given, off unless configured. */
   burns?: BurnService;
+  recurringBurn?: RecurringBurnRuntime;
   runExclusive?: <T>(fn: () => Promise<T>) => Promise<T>;
   serveWeb?: boolean;
   webDistPath?: string;
@@ -378,6 +380,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const root = await publicRoot(holders, { afterBlock: afterBlockOf(c) });
     return c.json({ ...publicPerks(holders.config), ...(root ? { root } : {}) });
   });
+  app.get('/api/burns/recurring', (c) => c.json(deps.recurringBurn?.view() ?? {enabled:false}));
   app.get('/api/markets', async (c) => {
     try { return c.json(await marketAvailability(deps.chain, process.env.SPROUT_QUOTER_ADDRESS)); }
     catch { throw new HttpError(503, 'Market status is temporarily unavailable.'); }

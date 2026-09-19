@@ -50,3 +50,5 @@ html[data-appearance="dark"] .burn-note { background: #3a2417; border-color: #6d
 html[data-appearance="dark"] .burn-chip.is-on { background: #3a2417; color: #f6d9c2; border-color: #d98b5a; }
 html[data-appearance="dark"] .burn-custom-input { background: #10221a; color: #f5efe3; }
 html[data-appearance="dark"] .burn-step--error { color: #f4a37b; }
+
+.recurring-burn { padding: 1rem 1.25rem; border: 1px solid var(--border, #d5decf); border-radius: 16px; margin: 1rem 0 1.5rem; background: var(--surface, #f6f7ef); }

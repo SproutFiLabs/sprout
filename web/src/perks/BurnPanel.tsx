@@ -3,6 +3,7 @@ import { Flame, Loader2, Wallet } from 'lucide-react';
 import { dateLocale, t } from '../i18n';
 import type { WalletState } from '../wallet';
 import { burnAmount, fetchBurnQuote, loadBurnConfig, loadBurnSummary, sproutText, usdText, type BurnConfigInfo, type BurnQuoteInfo, type BurnSummaryInfo } from './burn';
+import { RecurringBurn } from './RecurringBurn';
 import { BurnCounter } from './BurnBits';
 import { BurnNote, BurnQuoteLine, BurnStatus, useBurnRunner } from './BurnFlow';
 
@@ -82,6 +83,8 @@ export function BurnPanel({ address, wallet, onConnect }: { address: string | nu
   return (
     <section className="perks-card burn-card" id="burn" aria-labelledby="burn-title" data-testid="burn-panel">
       <h2 id="burn-title">🔥 {t('Buy & burn')}</h2>
+      <RecurringBurn />
+      <h3>{t('Optional one-time burn')}</h3>
       <p>{t('Anyone can spend a little USDG from their own wallet to buy SPROUT on the open market and burn it: it goes to the dead address, where nobody can ever move it again.')}</p>
       <BurnCounter summary={summary} variant="perks" />
       <BurnNote />

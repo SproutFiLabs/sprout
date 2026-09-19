@@ -69,4 +69,16 @@ export const zh: Record<string, string> = {
   'Add your $1 buy & burn?': '要加上你的 $1 买入并销毁吗？',
   'You asked to add a $1 burn to your buys. It spends $1 of USDG from your wallet, never from the sprout, to buy SPROUT and burn it.':
     '你设置了每次买入后加一笔 $1 销毁。它会从你的钱包（绝不是小芽）花 $1 的 USDG 买入 SPROUT 并销毁。',
+  'Daily project buy & burn': '项目每日买入并销毁',
+  'Waiting for project funding': '等待项目注资',
+  'Scheduled': '已安排',
+  'Processing': '处理中',
+  'Paused or checking the transaction': '已暂停或正在检查交易',
+  'The project schedules $5 USDG every 24 hours to buy SPROUT and send it directly to the dead address. It uses a dedicated project wallet, never family sprouts or visitor wallets.': '项目每 24 小时安排使用 5 美元 USDG 买入 SPROUT，并直接发送至销毁地址。资金来自专用项目钱包，不使用家庭 sprout 或访客钱包。',
+  '{count} completed daily burns': '已完成 {count} 次每日销毁',
+  'Next eligible run: {date}': '下次可执行时间：{date}',
+  'Runs pause if funding, gas or quotes are unavailable. Missed days are skipped. The amount of SPROUT burned varies with the price; no price increase is promised.': '资金、Gas 或报价不足时暂停执行。错过的日期不会补执行。销毁的 SPROUT 数量随价格变化，不对价格作任何保证。',
+  'Project burn wallet': '项目销毁钱包',
+  'Latest daily burn': '最近一次每日销毁',
+  'Optional one-time burn': '可选单次销毁',
 };
