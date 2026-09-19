@@ -6,9 +6,12 @@
   "exports": {
     ".": "./src/index.ts",
     "./zk": "./src/zk.ts",
-    "./zk-commitment": "./src/zk-commitment.ts"
+    "./zk-commitment": "./src/zk-commitment.ts",
+    "./privacy-v2": "./src/privacy-v2.ts",
+    "./stealth": "./src/stealth.ts"
   },
   "dependencies": {
+    "@noble/curves": "1.8.1",
     "circomlibjs": "0.1.7",
     "snarkjs": "0.7.6",
     "viem": "^2.21.40",
