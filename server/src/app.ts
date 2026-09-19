@@ -1,5 +1,6 @@
 import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
 import { registerZkRoutes } from './zk';
+import { registerPrivacyV2Routes } from './privacy-v2';
 import { randomBytes, createPublicKey } from 'node:crypto';
 import { join } from 'node:path';
 import { Hono, type Context } from 'hono';
@@ -235,6 +236,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   });
 
   registerZkRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
+  registerPrivacyV2Routes(app);
   registerIntelligenceRoutes(app, { db: deps.db, now: deps.now, runtime: deps.intelligence ?? createIntelligenceRuntime(deps.chain.config.intelligence ?? loadIntelligenceConfig({})) }, (c, purpose) => requireAuth(c, deps, purpose));
 
   app.post('/api/family/gift-key', async (c) => {

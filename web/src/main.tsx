@@ -2,6 +2,7 @@ import { ProofVerifier } from './privacy/ProofVerifier';
 import { StrictMode, lazy, Suspense } from 'react';
 const IntelligencePage=lazy(()=>import('./intelligence/IntelligencePage').then(m=>({default:m.IntelligencePage})));
 const GuardianPage=lazy(()=>import('./guardian/GuardianPage').then(m=>({default:m.GuardianPage})));
+const PrivacyWorkspace=lazy(()=>import('./privacy-v2/Workspace').then(m=>({default:m.PrivacyWorkspace})));
 
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
@@ -41,6 +42,7 @@ function Root() {
   if (path === '/intelligence') return <Suspense fallback={<main style={{padding:'64px'}}>Opening Intelligence…</main>}><IntelligencePage /></Suspense>;
   if (path === '/guardian') return <Suspense fallback={<main style={{padding:'64px',fontFamily:'sans-serif'}}>Opening Guardian…</main>}><GuardianPage /></Suspense>;
   if (path === '/verify') return <ProofVerifier />;
+  if (path === '/privacy-workspace') return <Suspense fallback={<main style={{padding:64}}>Opening your private workspace…</main>}><PrivacyWorkspace /></Suspense>;
   if (path === '/gift') return <GiftLanding />;
   if (path === '/dashboard/preview') return <Preview />;
   if (path === '/docs' || path === '/whitepaper' || path === '/guide' || path === '/faq') {
