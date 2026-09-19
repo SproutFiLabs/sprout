@@ -60,7 +60,7 @@ export function StockGuidePage({ path }: { path: string }) {
         </nav>
         <span className="knowledge-topbar-actions"><LanguageToggle /></span>
       </header>
-      <main className="sg-main">{body}</main>
+      <main className="sg-main"><aside style={{padding:"16px 20px",background:"#faf4e9",borderRadius:6,marginBottom:20,fontSize:13}}>Stock tokens provide economic exposure, not direct share ownership. Robinhood Stock Tokens are unavailable to US persons. <a href="/asset-passports" style={{textDecoration:"underline"}}>Read the Asset Passports →</a></aside>{body}</main>
     </div>
   );
 }

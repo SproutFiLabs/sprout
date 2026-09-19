@@ -1,3 +1,4 @@
+import { rewardCents, type RewardOffer } from '@sprout/shared';
 import { useEffect, useRef, useState } from "react";
 import {
   createWalletClient,
@@ -40,6 +41,8 @@ async function read<T>(url: string, method = "GET"): Promise<T> {
   return data as T;
 }
 export function SpendPage() {
+  const [offer,setOffer]=useState<RewardOffer|null>(null);
+  useEffect(()=>{const id=new URLSearchParams(location.search).get("offer");if(id)void fetch("/api/family-tools/public").then(r=>r.json()).then(d=>setOffer(d.offers?.find((o:RewardOffer)=>o.id===id)??null)).catch(()=>{});},[]);
   const [catalog, setCatalog] = useState<SpendCatalog | null>(null),
     [screen, setScreen] = useState<SpendScreen>("shop"),
     [selected, setSelected] = useState<SpendProduct | null>(null),
@@ -201,6 +204,7 @@ export function SpendPage() {
         product: selected.id,
         value,
         country: "US",
+        ...(offer?.product===selected.id?{rewardOfferId:offer.id}:{}),
       };
       const result = await signedPostJson<{ order: SpendOrder }>(
         wallet,
@@ -318,6 +322,7 @@ export function SpendPage() {
   };
   return (
     <SpendView
+      reward={order?.reward??(offer&&selected?.id===offer.product?{offerId:offer.id,title:offer.title,cents:rewardCents(value,offer.rateBps),rateBps:offer.rateBps,terms:offer.terms}:undefined)}
       catalog={catalog}
       screen={screen}
       products={(catalog?.products ?? []).filter(

@@ -1,5 +1,7 @@
 import { ProofVerifier } from './privacy/ProofVerifier';
 import { StrictMode, lazy, Suspense } from 'react';
+const FamilyToolsPage=lazy(()=>import('./familyTools/FamilyToolsPage').then(m=>({default:m.FamilyToolsPage})));
+const ToolsOperator=lazy(()=>import('./familyTools/ToolsOperator').then(m=>({default:m.ToolsOperator})));
 const SpendPage=lazy(()=>import('./spend/SpendPage').then(m=>({default:m.SpendPage})));
 const IntelligencePage=lazy(()=>import('./intelligence/IntelligencePage').then(m=>({default:m.IntelligencePage})));
 const HarvestPage=lazy(()=>import('./harvest/HarvestPage').then(m=>({default:m.HarvestPage})));
@@ -46,6 +48,9 @@ function Root() {
   useLocale(); // the whole tree re-renders in the new language
   const path = currentPath();
   if (path === '/' || path === '/index.html') return <Landing />;
+  const toolsRoutes = {'/family-tools':'home','/rewards':'rewards','/tax-garden':'tax','/asset-passports':'passports','/family-investing':'investing'} as const;
+  if (path === '/family-tools/operator') return <Suspense fallback={null}><ToolsOperator/></Suspense>;
+  if (path in toolsRoutes) return <Suspense fallback={null}><FamilyToolsPage page={toolsRoutes[path as keyof typeof toolsRoutes]}/></Suspense>;
   if (path === '/spend') return <Suspense fallback={null}><SpendPage/></Suspense>;
   if (path === '/harvest') return <Suspense fallback={<main style={{padding:'64px'}}>{t('Opening Harvest…')}</main>}>{new URLSearchParams(window.location.search).get('demo')==='1'?<HarvestPage/>:<ManualHarvestPage/>}</Suspense>;
   if (path === '/harvest/operator') return <Suspense fallback={<main style={{padding:'64px'}}>{t('Opening operator desk…')}</main>}><HarvestOperator/></Suspense>;

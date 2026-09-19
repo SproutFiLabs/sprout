@@ -1,0 +1,1 @@
+{"name":"sprout-family-film","private":true,"type":"module","dependencies":{"@remotion/bundler":"4.0.525","@remotion/renderer":"4.0.525","remotion":"4.0.525","react":"19.2.0","react-dom":"19.2.0","lucide-react":"1.45.0"}}

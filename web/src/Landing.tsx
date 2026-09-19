@@ -286,6 +286,7 @@ export function Landing() {
               <nav className="resource-menu" aria-label={t('Explore SPROUT')}>
                 <a href="/intelligence">SPROUT Intelligence</a>
                 <a href="/spend">Spend</a>
+                <a href="/family-tools">Family toolkit</a>
                 <a href="/harvest">{t('Harvest')}</a>
                 <a href="/guardian">{t('Guardian wallets')}</a>
                 <a href="#how-it-works" onClick={() => { setResources(false); setMenu(false); }}>{t('How it works')}</a>

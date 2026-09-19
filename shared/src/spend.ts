@@ -9,6 +9,7 @@ export interface SpendProduct {
 }
 export interface SpendRequest {
   key: string;
+  rewardOfferId?: string;
   vault: string;
   product: string;
   value: number;
@@ -26,6 +27,7 @@ export interface SpendOrder {
     | "expired"
     | "attention";
   createdAt: number;
+  reward?: import('./familyTools').RewardQuote;
   paymentStarted?: boolean;
   payment?: {
     address: `0x${string}`;
@@ -50,5 +52,5 @@ export interface SpendCatalog {
 }
 export const SPEND_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const;
 export function spendPurpose(r: SpendRequest) {
-  return `spend:${keccak256(toHex(JSON.stringify([r.key, r.vault.toLowerCase(), r.product, r.value, r.country])))}`;
+  return `spend:${keccak256(toHex(JSON.stringify([r.key, r.vault.toLowerCase(), r.product, r.value, r.country, ...(r.rewardOfferId ? [r.rewardOfferId] : [])])))}`;
 }

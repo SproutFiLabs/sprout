@@ -22,6 +22,7 @@ import {
   LockKeyhole,
 } from "lucide-react";
 import {
+  FAMILY_SOURCES,
   INTELLIGENCE_TOKEN,
   INTELLIGENCE_DISCLAIMER,
   type IntelligenceAccess,
@@ -94,6 +95,9 @@ const TOGGLES: CSSProperties = {
 };
 export function IntelligencePage() {
   const locale = useLocale();
+  const contextParams = new URLSearchParams(window.location.search);
+  const contextKind = contextParams.get("context");
+  const selectedContext = ["asset","ledger","reward"].includes(contextKind??"") && contextParams.get("id") ? {kind:contextKind as "asset"|"ledger"|"reward",id:contextParams.get("id")!.slice(0,100)} : undefined;
   const [config, setConfig] = useState<IntelligenceConfigPublic | null>(null);
   const [verified, setVerified] = useState<Verified | null>(null);
   const [connecting, setConnecting] = useState(false),
@@ -270,6 +274,7 @@ export function IntelligencePage() {
         next,
         verified.token,
         controller.signal,
+        selectedContext,
       );
       if (version !== epoch.current) return;
       setMessages([...next, { role: "assistant", content: result.answer }]);
@@ -399,6 +404,7 @@ export function IntelligencePage() {
         tabIndex={-1}
         aria-label={t("SPROUT Intelligence workspace")}
       >
+        {selectedContext&&<aside className="si-context-note"><strong>Explain this {selectedContext.kind==='asset'?'Asset Passport':selectedContext.kind==='ledger'?'family record':'reward'}</strong><p>Sending your question shares this selected record and dated source notes with the AI. Private records must belong to your verified wallet.</p><div>{FAMILY_SOURCES.filter(s=>selectedContext.kind==='asset'?s.id!=='irs':s.id==='irs').map(s=><a key={s.id} href={s.url} target="_blank" rel="noreferrer">{s.title} · {s.date} ↗</a>)}</div></aside>}
         <header className="si-topbar">
           <div className="si-workspace-title">
             <a

@@ -1,0 +1,9 @@
+import fs from 'node:fs';import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'../..'),out=path.join(root,'output/sprout-family-film');
+for(const d of ['src/product','public/brand','public/art','public/fonts/satoshi','public/audio','out/qa'])fs.mkdirSync(path.join(out,d),{recursive:true});
+for(const [a,b] of [['web/src/familyTools/ToolsView.tsx','src/product/ToolsView.tsx'],['web/src/familyTools/tools.css','src/product/tools.css'],['shared/src/familyTools.ts','src/product/shared.ts'],['web/public/brand/sprout-logo.png','public/brand/sprout-logo.png'],['web/public/art/harvest-bouquet.png','public/art/harvest-bouquet.png'],['web/public/fonts/satoshi/Satoshi-Variable.woff2','public/fonts/satoshi/Satoshi-Variable.woff2']])fs.copyFileSync(path.join(root,a),path.join(out,b));
+const p=path.join(out,'src/product/ToolsView.tsx');fs.writeFileSync(p,fs.readFileSync(p,'utf8').replaceAll('"@sprout/shared"','"./shared"').replaceAll("'@sprout/shared'","'./shared'"));
+for(const f of ['Film.tsx','film.css','index.ts'])fs.copyFileSync(path.join(root,'scripts/family-film/src',f),path.join(out,'src',f));
+fs.copyFileSync(path.join(root,'scripts/family-film/render.mjs'),path.join(out,'render-family.mjs'));
+for (const [file,fontPath] of [['src/product/tools.css','../../public/fonts/satoshi/Satoshi-Variable.woff2'],['src/film.css','../public/fonts/satoshi/Satoshi-Variable.woff2']]){const p=path.join(out,file);fs.writeFileSync(p,fs.readFileSync(p,'utf8').replaceAll('/fonts/satoshi/Satoshi-Variable.woff2',fontPath));}
+if(!fs.existsSync(path.join(out,'package.json')))fs.copyFileSync(path.join(root,'scripts/family-film/package.json'),path.join(out,'package.json'));

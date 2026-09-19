@@ -1,3 +1,4 @@
+import { createRewards, registerFamilyTools, rewardsRail, loadInvestmentProvider, type RewardsRail } from './familyTools';
 import { registerSpendRoutes } from './spend';
 import { bitrefillProvider, type SpendProvider } from './spendProvider';
 import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
@@ -86,6 +87,7 @@ import {
 
 export interface AppDeps {
   spend?: SpendProvider;
+  rewards?: RewardsRail;
   harvest?: HarvestRuntime;
   intelligence?: IntelligenceRuntime;
   db: SproutDb;
@@ -242,11 +244,14 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     }
   });
 
-  registerSpendRoutes(app,{db:deps.db,provider:deps.spend??bitrefillProvider(process.env),now:deps.now,requireAuth:(c,purpose)=>requireAuth(c,deps,purpose)});
+  const rail = deps.rewards ?? rewardsRail(process.env);
+  const rewards = createRewards(deps.db, holders, rail, now);
+  registerFamilyTools(app, { db:deps.db, holders, now:deps.now, rail, assets:deps.chain.config.chain.contracts.stockTokens, chainId:deps.chain.config.chain.chainId, provider:loadInvestmentProvider(process.env,now()), requireAdmin:c=>requireAdmin(c,deps) });
+  registerSpendRoutes(app,{rewards,db:deps.db,provider:deps.spend??bitrefillProvider(process.env),now:deps.now,requireAuth:(c,purpose)=>requireAuth(c,deps,purpose)});
   registerZkRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
   registerPrivacyPackRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
   registerHarvestRoutes(app, {db:deps.db,runtime:deps.harvest,now:deps.now,requireAuth:(c,purpose)=>requireAuth(c,deps,purpose),requireAdmin:c=>requireAdmin(c,deps)});
-  registerIntelligenceRoutes(app, { db: deps.db, now: deps.now, runtime: deps.intelligence ?? createIntelligenceRuntime(deps.chain.config.intelligence ?? loadIntelligenceConfig({})) }, (c, purpose) => requireAuth(c, deps, purpose));
+  registerIntelligenceRoutes(app, { assets: deps.chain.config.chain.contracts.stockTokens, chainId: deps.chain.config.chain.chainId, db: deps.db, now: deps.now, runtime: deps.intelligence ?? createIntelligenceRuntime(deps.chain.config.intelligence ?? loadIntelligenceConfig({})) }, (c, purpose) => requireAuth(c, deps, purpose));
 
   app.post('/api/family/gift-key', async (c) => {
     const signer = (await requireAuth(c, deps, 'family-gift-key')).toLowerCase();

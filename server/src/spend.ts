@@ -1,3 +1,4 @@
+import type { RewardQuote } from '@sprout/shared';
 import { randomUUID } from "node:crypto";
 import type { Hono, Context } from "hono";
 import { z } from "zod";
@@ -12,6 +13,7 @@ import { SpendProviderError, type SpendProvider } from "./spendProvider";
 const requestSchema = z
   .object({
     key: z.string().uuid(),
+    rewardOfferId: z.string().uuid().optional(),
     vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
     product: z.string().min(1).max(150),
     value: z.number().int().min(1).max(100),
@@ -34,6 +36,7 @@ export function registerSpendRoutes(
   deps: {
     db: SproutDb;
     provider?: SpendProvider;
+    rewards?: { quote(owner:string,product:string,value:number,offerId?:string):Promise<RewardQuote|null>; reserve(owner:string,orderId:string,quote:RewardQuote|null):void };
     now?: () => number;
     requireAuth: (c: Context, purpose: string) => Promise<string>;
   },
@@ -113,7 +116,9 @@ export function registerSpendRoutes(
     }
     if (!product)
       return c.json({ error: "This product or amount is unavailable." }, 400);
+    const reward = await deps.rewards?.quote(owner,input.product,input.value,input.rewardOfferId) ?? null;
     const order: SpendOrder = {
+      ...(reward ? {reward} : {}),
       id: randomUUID(),
       product,
       value: input.value,
@@ -142,6 +147,7 @@ export function registerSpendRoutes(
         )
         .get(owner, now() - 86400000)!.total;
       if (used + input.value > 200) return "limit";
+      deps.rewards?.reserve(owner,order.id,reward);
       db.run(
         "INSERT INTO spend_orders(id,owner,request_key,fingerprint,data,created_at,value) VALUES(?,?,?,?,?,?,?)",
         [

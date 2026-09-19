@@ -42,10 +42,11 @@ export const intelligenceChat = (
   messages: IntelligenceMessage[],
   token: string,
   signal: AbortSignal,
+  context?: {kind: "asset"|"ledger"|"reward";id:string},
 ) =>
   request<{ answer: string; access: IntelligenceAccess }>(
     "chat",
-    { messages },
+    { messages, ...(context?{context}:{}) },
     token,
     signal,
   );

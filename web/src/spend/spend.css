@@ -1008,3 +1008,5 @@
     height: 345px;
   }
 }
+
+.spend-reward-note{padding:16px;background:#edf3e5;border-radius:8px;margin:18px 0;font-size:13px}.spend-reward-note p,.spend-reward-note small{font-size:11px}.spend-reward-note a{display:block;margin-top:8px;text-decoration:underline}

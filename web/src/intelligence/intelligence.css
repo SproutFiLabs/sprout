@@ -1298,3 +1298,5 @@ html[data-appearance="dark"] .si-page .si-composer textarea {
   background: transparent !important;
   color: var(--si-text) !important;
 }
+
+.si-context-note{margin:16px 24px 0;padding:16px 22px;border-radius:9px;background:#f1f4e9;font-size:12px;color:#354532}.si-context-note p{margin:7px 0}.si-context-note>div{display:flex;gap:16px;flex-wrap:wrap}.si-context-note a{color:inherit;text-decoration:underline;font-size:11px}

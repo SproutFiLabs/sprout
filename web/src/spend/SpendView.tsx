@@ -14,6 +14,7 @@ import type { SpendCatalog, SpendOrder, SpendProduct } from "@sprout/shared";
 import "./spend.css";
 export type SpendScreen = "shop" | "review" | "payment" | "receipt" | "orders";
 export interface SpendViewProps {
+  reward?: import("@sprout/shared").RewardQuote;
   catalog: SpendCatalog | null;
   screen: SpendScreen;
   products: SpendProduct[];
@@ -428,6 +429,7 @@ export function SpendView(p: SpendViewProps) {
                           <span>Daily checkout limit</span>
                           <strong>${p.catalog?.dailyLimit ?? 200}</strong>
                         </div>
+                        {p.reward&&<aside className="spend-reward-note"><b>{p.reward.title} · {money(p.reward.cents/100)} back</b><p>{p.reward.terms}</p><small>Verified holder access required. Confirm delivery in Rewards; manual payout follows. Funds are not escrowed.</small><a href="/rewards">Your reward trail ↗</a></aside>}
                         <div className="spend-total">
                           <span>Gift-card value</span>
                           <strong>{money(p.value)}</strong>
@@ -547,7 +549,8 @@ export function SpendView(p: SpendViewProps) {
                               <span>Gift-card value</span>
                               <strong>{money(order?.value ?? 0)}</strong>
                             </div>
-                            <div className="spend-total">
+                            {p.reward&&<aside className="spend-reward-note"><b>{p.reward.title} · {money(p.reward.cents/100)} back</b><p>{p.reward.terms}</p><small>Verified holder access required. Confirm delivery in Rewards; manual payout follows. Funds are not escrowed.</small><a href="/rewards">Your reward trail ↗</a></aside>}
+                        <div className="spend-total">
                               <span>Amount to pay</span>
                               <strong>
                                 {order?.payment?.amount ?? "—"}{" "}
