@@ -1,10 +1,6 @@
 /** Simplified Chinese for automatic weekly investing as a SPROUT holder perk, keyed by the English source text. */
 export const zh: Record<string, string> = {
   // Holder tier names (web/src/perks/autoInvest.ts)
-  'Seedling': '幼苗',
-  'Sapling': '小树',
-  'Bloom': '繁花',
-  'Grove': '树林',
 
   // Dashboard weekly plan (DashboardShell.tsx)
   'Automatic weekly investing is a perk for SPROUT holders ({tier} and up). Your plan is saved: run it any time with Invest now.':

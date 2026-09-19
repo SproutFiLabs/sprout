@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { loadAutomation } from '../automationStatus';
 import { t } from '../i18n';
+import { tierName, TIER_ORDER, type TierId } from './holder';
+
+export { tierName };
+
+export type { TierId };
 
 /**
  * Automatic weekly investing as a SPROUT holder perk. When /api/health reports
@@ -9,18 +14,11 @@ import { t } from '../i18n';
  * The server decides; this only says so.
  */
 
-export type TierId = 'seedling' | 'sapling' | 'bloom' | 'grove';
-const TIER_ORDER: readonly TierId[] = ['seedling', 'sapling', 'bloom', 'grove'];
-const TIER_NAMES: Record<TierId, string> = { seedling: 'Seedling', sapling: 'Sapling', bloom: 'Bloom', grove: 'Grove' };
 
 type Automation = { enabled: boolean; autoInvestTier?: string | null } | null | undefined;
 
 export function asTier(value: unknown): TierId | null {
   return typeof value === 'string' && (TIER_ORDER as readonly string[]).includes(value) ? (value as TierId) : null;
-}
-
-export function tierName(tier: TierId): string {
-  return t(TIER_NAMES[tier]);
 }
 
 /** The tier automatic investing needs, or null when it is off or open to everyone. */

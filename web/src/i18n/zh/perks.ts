@@ -4,7 +4,7 @@ export const zh: Record<string, string> = {
   Seedling: '幼苗',
   Sapling: '小树',
   Bloom: '花开',
-  Grove: '森林',
+  Grove: '树林',
   'SPROUT tier': 'SPROUT 等级',
   'See holder perks': '查看持有者权益',
   'Checking…': '查询中…',

@@ -6,11 +6,7 @@ export const zh: Record<string, string> = {
   'Votes by tier: Seedling {seedling}, Sapling {sapling}, Bloom {bloom}, Grove {grove}.':
     '各等级的票数：幼苗 {seedling} 票，小树 {sapling} 票，花开 {bloom} 票，树林 {grove} 票。',
 
-  // Holder tiers, shown inside sentences
-  'Seedling': '幼苗',
-  'Sapling': '小树',
-  'Bloom': '花开',
-  'Grove': '树林',
+  // Tier names (Seedling, Sapling, Bloom, Grove) are in zh/perks.ts.
 
   // The viewer's standing
   'Connect the wallet that holds your SPROUT to vote.': '连接持有 SPROUT 的钱包即可投票。',
