@@ -155,7 +155,8 @@ describe('cached holdings', () => {
     // Second read: only the three balances are fetched again.
     expect(t.total() - first).toBe(3);
     expect(t.calls.settlementToken).toBe(1);
-    expect(t.calls.decimals).toBe(3); // settlement + two feeds, once each
+    // Settlement, the two stock tokens (valued by their own decimals) and the two feeds, once each.
+    expect(t.calls.decimals).toBe(5);
   });
 
   test('afterBlock skips a cached response from an earlier block', async () => {

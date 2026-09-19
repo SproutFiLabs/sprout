@@ -4,6 +4,8 @@ export const zh: Record<string, string> = {
   'FAQ': '常见问题',
   'Docs': '开发文档',
   'Whitepaper': '白皮书',
+  'Tokenomics': '代币经济',
+  'Supply, utility, locks and burns': '供应量、用途、锁定与销毁',
   'Guide': '使用指南',
   'Settings': '设置',
   'Sample mode': '示例体验',

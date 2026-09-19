@@ -84,6 +84,9 @@ function liveCtx(env: Record<string, string> = liveEnv(), extra: Record<string, 
           return admitted[address]?.assets ?? [];
         case 'totalSprouts':
           return address === NEW_FACTORY ? 2n : address === OLD_FACTORY ? 5n : 0n;
+        case 'decimals':
+          // The stock tokens are 18-decimal, as SPROUT_STOCK_TOKENS says.
+          return address === SETTLEMENT ? 6 : 18;
         default:
           throw new Error(`unexpected readContract ${call.functionName}`);
       }

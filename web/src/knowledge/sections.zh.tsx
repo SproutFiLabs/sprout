@@ -43,9 +43,11 @@ export function AutomationStatus() {
 
 /**
  * What a family needs to reach a sprout without this website
- * (docs/EXIT-WITHOUT-SPROUT.md): the cash token and every stock token a sprout
- * can hold, from config/stocks.json (web/test/stocks.test.ts keeps them in step).
- * Sprouts planted before the list grew hold only USDG, AAPL, NVDA, MSFT and SPY.
+ * (docs/EXIT-WITHOUT-SPROUT.md): the cash token and every stock and crypto
+ * token a sprout can hold, from config/stocks.json (web/test/stocks.test.ts
+ * keeps them in step). The first sprouts hold only USDG, AAPL, NVDA, MSFT and
+ * SPY; sprouts from the second factory, the first 21 below. CBBTC has 8
+ * decimals, not 18.
  */
 export const EXIT_TOKENS: ReadonlyArray<{ symbol: string; address: string; decimals: number }> = [
   { symbol: 'USDG', address: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', decimals: 6 },
@@ -70,6 +72,10 @@ export const EXIT_TOKENS: ReadonlyArray<{ symbol: string; address: string; decim
   { symbol: 'GME', address: '0x1b0E319c6A659F002271B69dB8A7df2F911c153E', decimals: 18 },
   { symbol: 'SLV', address: '0x411eFb0E7f985935DAec3D4C3ebaEa0d0AD7D89f', decimals: 18 },
   { symbol: 'USO', address: '0xa30FA36Db767ad9eD3f7a60fC79526fB4d56D344', decimals: 18 },
+  { symbol: 'WETH', address: '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73', decimals: 18 },
+  { symbol: 'CBBTC', address: '0xCEC185eB182c47d1bA1EFc84e6959e18cd620Be4', decimals: 8 },
+  { symbol: 'CRCL', address: '0xdF0992E440dD0be65BD8439b609d6D4366bf1CB5', decimals: 18 },
+  { symbol: 'SGOV', address: '0x92FD66527192E3e61d4DDd13322Aa222DE86F9B5', decimals: 18 },
 ];
 
 /** A compact table (symbol and name, address, decimals) that fits a phone without sideways scrolling. */
@@ -93,6 +99,7 @@ export function ExitTokens() {
         </tbody>
       </table>
       <p>{t('For example, $5 of USDG is 5000000, and 0.5 of a stock token is 500000000000000000.')}</p>
+      <p>{t('CBBTC (Bitcoin) has 8 decimals: 0.001 CBBTC is 100000. Wallets show it as cbBTC and WETH as WETH.')}</p>
     </>
   );
 }
@@ -128,7 +135,7 @@ export const guideSections: Section[] = [
 ];
 
 export const faqSections: Section[] = [
-  { id: 'what', eyebrow: '基础知识', title: '什么是小芽？', body: <><p>小芽是为孩子准备的储蓄金库。它是 Robinhood Chain 上一个独立的智能合约，按你选择的配比，持有追踪苹果、特斯拉、SpaceX、英伟达等公司，以及标普 500 等基金的代币。新种下的小芽可以从 21 只股票中最多选 5 只；在股票名单扩充之前种下的小芽，只能在最初的四个选项中选择：苹果、英伟达、微软和标普 500。亲友可以通过礼物链接往里存钱；到了你选定的交接日，它就归孩子所有。</p></> },
+  { id: 'what', eyebrow: '基础知识', title: '什么是小芽？', body: <><p>小芽是为孩子准备的储蓄金库。它是 Robinhood Chain 上一个独立的智能合约，按你选择的配比，持有追踪苹果、特斯拉、SpaceX、英伟达等公司，以及标普 500 等基金的代币。新种下的小芽可以从 25 只股票、基金和加密货币（包括比特币和以太坊）中最多选 5 只。小芽会一直沿用种下时的名单：最早的小芽只能在最初的四个选项中选择（苹果、英伟达、微软和标普 500）；在比特币、以太坊、Circle 和美国短期国债加入之前种下的小芽，可以从另外 21 只中选择。亲友可以通过礼物链接往里存钱；到了你选定的交接日，它就归孩子所有。</p></> },
   { id: 'custody', eyebrow: '安全', title: '钱由谁保管？', body: <><p>由小芽自己的合约保管。Sprout 网站从不托管资金，也无法转移资金：服务器只读取链上数据，用来显示余额和历史记录。对小芽的每一次改动，都是一笔在你钱包里签名的交易。</p><Callout tone="orange"><b>Sprout 目前是测试版。</b>合约尚未经过独立审计。主网交易使用真实资金且无法撤销，所以请只投入你能承受损失的钱。</Callout></> },
   { id: 'risks', eyebrow: '安全', title: '有哪些风险？', body: <><p><b>Sprout 目前还是测试版，涉及的是真实资金。</b>请只投入你能承受损失的钱。</p><RiskList /></> },
   { id: 'withdraw', eyebrow: '取出资金', title: '我可以提前取钱吗？', body: <><p>不可以。在交接日之前，任何人都不能从小芽中提取，包括种下它的家长。这正是它的意义所在：它更像一份信托，而不是一个活期账户。</p><p>资金提前流出的唯一途径是家务奖励：你预留一笔金额，在家务完成后批准发放，孩子再把它领取到自己的钱包。到了交接日，孩子的钱包可以提取全部资金。</p></> },
@@ -136,10 +143,10 @@ export const faqSections: Section[] = [
   { id: 'without-site', eyebrow: '取出资金', title: '如果网站打不开，我怎么取钱？', body: <><p>用 Remix 这类免费的合约工具，加上你的小芽地址就可以。交接日之前，由家长发放奖励，孩子把奖励领取到自己的钱包。从交接日起，孩子可以提取全部资金。<a href="/guide#without-sprout">家庭指南</a>里有具体步骤、代币地址和单位。请在需要之前，先保存一份指南和你的小芽地址。</p></> },
   { id: 'funding', eyebrow: '存入资金', title: '用什么存钱？', body: <><p>用 USDG，它是 Robinhood Chain 上的一种美元稳定币。在投资之前，小芽持有的就是这种代币。你也可以直接存入支持的股票代币。你需要一个连接到 Robinhood Chain 的钱包，并在这条链上准备少量 ETH 来支付网络手续费。</p></> },
   { id: 'buying', eyebrow: '投资', title: '钱是怎么变成股票的？', body: <><p>你存入的钱以 USDG 的形式到账，在小芽里等待投资。在控制台使用<b>立即买入</b>，用你自己的钱包按小芽的配比买入。每次买入都遵循小芽的股票配比，并会与市场价格源进行核对；如果交易池给出的价格比该价格差 1% 以上，买入就会被拒绝。</p><AutomationStatus /></> },
-  { id: 'closed', eyebrow: '投资', title: '为什么价格显示“暂不可用”？', body: <><p>Sprout 只使用过去一天内更新过的股票价格。在周末和市场休市的节假日，价格源可能停止更新，因此 Sprout 会把相应的价值显示为“暂不可用”，并暂缓买入，直到价格更新，而不是去猜一个价格。如果“立即买入”是因为这个原因无法买入，它会告诉你。</p></> },
+  { id: 'closed', eyebrow: '投资', title: '为什么价格显示“暂不可用”？', body: <><p>Sprout 只使用过去一天内更新过的股票价格。在周末和市场休市的节假日，价格源可能停止更新，因此 Sprout 会把相应的价值显示为“暂不可用”，并暂缓买入，直到价格更新，而不是去猜一个价格。如果“立即买入”是因为这个原因无法买入，它会告诉你。</p><p>加密货币（比特币和以太坊）的价格全天候更新，周末也不例外，所以即使股票价格暂不可用，它们通常也能正常显示。</p></> },
   { id: 'fees', eyebrow: '费用', title: '要花多少钱？', body: <><p>Sprout 的合约不收取任何费用。你签署的每笔交易都要支付网络手续费（以 Robinhood Chain 上的 ETH 支付）；买入时还要支付交易池的手续费，这部分已包含在你得到的价格中。</p></> },
   { id: 'gifts', eyebrow: '亲友', title: '礼物链接怎么用？', body: <><p>在“礼物”页面创建一个链接并分享出去。任何拿到链接的人都可以用自己的钱包往这株小芽里存钱。礼物一旦送出就无法收回，而且这个链接不会让任何人获得对小芽的任何控制权。</p></> },
-  { id: 'site', eyebrow: '安全', title: '如果 Sprout 关闭了怎么办？', body: <><p>你的小芽会继续运作。它是 Robinhood Chain 上一个独立的合约，没有所有者，也没有管理员密钥，所以 Sprout 的任何人都无法转走、冻结或退还这笔钱，它的一切也都不依赖这个网站或我们的服务器。</p><p>交接日之前，钱只能以家长发放的奖励的形式流出，由孩子领取到自己的钱包。如果要提前全部取出，就把全部余额作为奖励发放。从交接日起，孩子的钱包可以把全部资金提取到任意地址。</p><p>没有这个网站时，可以用任何能调用合约的工具（例如 Remix），配合你的小芽地址来操作（在控制台顶部打开钱包菜单，复制“这株小芽”）。每株小芽运行的代码都已在 <a href="https://repo.sourcify.dev/4663/0x789ca950BAE92f4c18f5eBf776d54d85a0fF9A59" target="_blank" rel="noopener noreferrer">Sourcify</a> 上公开并通过验证。请记下这个地址，保管好孩子的钱包，具体步骤见<a href="/guide#without-sprout">不通过 Sprout 取出资金</a>。</p><Callout tone="orange">有些事情不在 Sprout 的掌控之内：股票代币和 USDG 依赖发行它们的公司，买入依赖交易池。如果交易池停止交易，提取和领取奖励仍然可以正常进行。</Callout></> },
+  { id: 'site', eyebrow: '安全', title: '如果 Sprout 关闭了怎么办？', body: <><p>你的小芽会继续运作。它是 Robinhood Chain 上一个独立的合约，没有所有者，也没有管理员密钥，所以 Sprout 的任何人都无法转走、冻结或退还这笔钱，它的一切也都不依赖这个网站或我们的服务器。</p><p>交接日之前，钱只能以家长发放的奖励的形式流出，由孩子领取到自己的钱包。如果要提前全部取出，就把全部余额作为奖励发放。从交接日起，孩子的钱包可以把全部资金提取到任意地址。</p><p>没有这个网站时，可以用任何能调用合约的工具（例如 Remix），配合你的小芽地址来操作（在控制台顶部打开钱包菜单，复制“这株小芽”）。每株小芽运行的代码都已在 <a href="https://repo.sourcify.dev/4663/0x789ca950BAE92f4c18f5eBf776d54d85a0fF9A59" target="_blank" rel="noopener noreferrer">Sourcify</a> 上公开并通过验证。请记下这个地址，保管好孩子的钱包，具体步骤见<a href="/guide#without-sprout">不通过 Sprout 取出资金</a>。</p><Callout tone="orange">有些事情不在 Sprout 的掌控之内：股票代币和 USDG 依赖发行它们的公司，小芽里的比特币（cbBTC）依赖 Coinbase 以及把它转到 Robinhood Chain 的跨链桥，买入依赖交易池。如果交易池停止交易，提取和领取奖励仍然可以正常进行。</Callout></> },
   { id: 'privacy', eyebrow: '隐私', title: '你们会保存我家的哪些信息？', body: <><p>昵称和家务名称保存在你的浏览器里。服务器会保存钱包地址、小芽的合约地址、你给礼物链接起的标签，以及它索引的链上事件。除了礼物标签之外，这些信息本来就公开在链上。任何知道小芽合约地址的人都能看到它的余额，和链上的其他账户一样。</p></> },
   { id: 'eligibility', eyebrow: '开始之前', title: '我可以使用 Sprout 吗？', body: <><p>Robinhood 的股票代币并非在所有地区都可以获得。种下小芽之前，请先确认你所在的地区允许你持有这些代币。本网站的任何内容都不构成投资、税务或法律建议。</p></> },
 ];

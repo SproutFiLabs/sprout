@@ -7,6 +7,8 @@ import { holderAutoInvestGate, runDueJobs } from './jobs';
 import { createRootedHolderChecker } from './roots';
 import { purgeExpiredNonces } from './repo';
 import { createMutex } from './lock';
+import { createBurnService, loadBurnConfig } from './burns';
+import { createRecurringBurnRuntime } from './recurringBurnRuntime';
 
 export interface SproutServer {
   config: ServerConfig;
@@ -24,7 +26,11 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
   // Shared by the API and the keeper loop, so both see the same tiers (and cache).
   // Rooted (locked) SPROUT counts toward tiers when SPROUT_ROOT_LOCK_ADDRESS is set.
   const holders = createRootedHolderChecker(chain.publicClient, process.env);
+  const burns = createBurnService({db,client:chain.publicClient,config:loadBurnConfig(process.env,config.chain.chainId)});
+  const recurringBurn = createRecurringBurnRuntime(chain,burns,process.env);
   const app = createApp({
+    burns,
+    recurringBurn,
     db,
     chain,
     holders,
@@ -72,6 +78,7 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
       } catch (error) {
         console.warn('snapshot failed', error instanceof Error ? error.message : error);
       }
+      await recurringBurn.tick();
       // Always run: with no keeper/budget this reconciles any in-flight tx and
       // marks schedules unavailable rather than leaving them looking active.
       try {
@@ -96,6 +103,7 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
   const stop = async (): Promise<void> => {
     clearInterval(interval);
     await server.stop(true);
+    recurringBurn.close();
     db.close();
   };
 

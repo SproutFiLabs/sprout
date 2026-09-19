@@ -1,4 +1,4 @@
-import { formatUnits } from '@sprout/shared';
+import { formatQuantity, formatUnits } from '@sprout/shared';
 import { t } from '../i18n';
 
 /**
@@ -9,7 +9,8 @@ import { t } from '../i18n';
 export function choreRewardText(args: { amount: string; isSample: boolean; decimals: number; symbol: string }): string {
   let quantity: string;
   try {
-    quantity = formatUnits(BigInt(args.amount), args.decimals, 2);
+    // Enough digits for a small crypto reward (CBBTC has 8 decimals); dollars keep two.
+    quantity = args.isSample ? formatUnits(BigInt(args.amount), args.decimals, 2) : formatQuantity(BigInt(args.amount), args.decimals, 2);
   } catch {
     quantity = '—';
   }
@@ -32,7 +33,8 @@ export function holdingSharesText(args: {
 }): string {
   const value = args.shareEquivalent ?? args.rawBalance;
   try {
-    return formatUnits(BigInt(value), args.decimals, args.maxFractionDigits ?? 4);
+    // By the token's own decimals, with enough digits for a small Bitcoin holding.
+    return args.maxFractionDigits === undefined ? formatQuantity(BigInt(value), args.decimals) : formatUnits(BigInt(value), args.decimals, args.maxFractionDigits);
   } catch {
     return '—';
   }

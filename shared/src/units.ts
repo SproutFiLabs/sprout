@@ -46,6 +46,24 @@ export function formatUnits(value: bigint, decimals: number, maxFractionDigits =
   return negative ? `-${out}` : out;
 }
 
+/**
+ * A token quantity for display, by the token's own decimals: at least
+ * `minFractionDigits` decimals, and below one whole token enough decimals to
+ * show `significant` digits (never more than the token has). $10 of Bitcoin
+ * (CBBTC, 8 decimals) is about 0.00012 of a coin: a fixed four decimals would
+ * show 0.0001, and $1 of it would show 0.
+ */
+export function formatQuantity(value: bigint, decimals: number, minFractionDigits = 4, significant = 4): string {
+  const abs = value < 0n ? -value : value;
+  let digits = minFractionDigits;
+  if (abs > 0n && abs < tenPow(decimals)) {
+    const fraction = abs.toString().padStart(decimals, '0');
+    const leadingZeros = fraction.length - fraction.replace(/^0+/, '').length;
+    digits = Math.max(minFractionDigits, leadingZeros + significant);
+  }
+  return formatUnits(value, decimals, Math.min(digits, decimals));
+}
+
 export function formatUsd(value: bigint, feedDecimals = 8, maxFractionDigits = 2): string {
   return `$${formatUnits(value, feedDecimals, maxFractionDigits)}`;
 }

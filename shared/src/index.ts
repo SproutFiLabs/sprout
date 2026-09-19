@@ -1,5 +1,6 @@
 export * from './chain';
 export * from './units';
+export * from './assets';
 export * from './schemas';
 export * from './venue';
 export * from './abis';
@@ -8,3 +9,4 @@ export * from './roots';
 export * from './harvest';
 export * from './spend';
 export * from './familyTools';
+export * from './burn';

@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { parseUnits, type Address } from 'viem';
-import { formatUnits, sproutVaultAbi } from '@sprout/shared';
+import { formatQuantity, formatUnits, isCryptoSymbol, sproutVaultAbi } from '@sprout/shared';
 import { api, type ChainPublic, type InvestQuote } from '../api';
 import { contractWriter, waitForSuccess, type WalletState } from '../wallet';
 import { RiskLine } from './BetaNotice';
 import { rememberOneOffSchedule } from '../localStore';
 import { t, tj, getLocale } from '../i18n';
 import { displayName } from '../stocks';
+import { assetDecimals } from '../assetUnits';
 
 /**
  * "Invest now": the parent buys the sprout's stock mix from its own wallet.
@@ -49,7 +50,7 @@ function writeOneOff(vault: string, amount: bigint | null): void {
  * shown translated. `{symbol}` and `{name}` are read back out of the server's
  * own text; if the server's wording no longer matches, its text is shown as sent.
  */
-const BLOCKER_TEXT: Record<string, string> = {
+const BLOCKER_TEXT: Record<string, string | readonly string[]> = {
   'not-configured': 'Buying is not configured on this server.',
   graduated: 'This sprout has graduated, so it no longer buys anything.',
   'venue-not-allowed': 'This sprout was planted without a trading venue, so it cannot buy stocks.',
@@ -57,24 +58,37 @@ const BLOCKER_TEXT: Record<string, string> = {
   'insufficient-funds': 'That is more than this sprout has available to invest. Add funds first, or choose a smaller amount.',
   'pool-too-far':
     'The trading pool is pricing these stocks too far from the market price right now, so the purchase would be refused. Try again shortly.',
-  'stale-price':
+  // Stock feeds go quiet when US markets close; crypto feeds update around the clock.
+  'stale-price': [
     'The {symbol} price has not updated recently, so buying is paused to protect the price you get. This usually means US markets are closed; try again once they reopen.',
+    'The {symbol} price has not updated recently, so buying is paused to protect the price you get. Crypto prices normally update around the clock, so try again in a little while.',
+  ],
   'price-paused': 'The {symbol} price feed is paused right now, so {symbol} cannot be bought. Try again later.',
   'price-unavailable': 'The {symbol} price could not be read just now. Try again in a minute.',
   unknown: 'The purchase could not be prepared. Try again in a minute.',
 };
 const UNKNOWN_NAMED = 'The purchase could not be prepared ({name}). Try again in a minute.';
 
+/** What the dialog is buying (English source text): stock tokens, crypto tokens, or both. */
+export function buyingLabel(symbols: readonly string[]): string {
+  const crypto = symbols.filter((s) => isCryptoSymbol(s)).length;
+  if (crypto === 0) return 'Buying stock tokens';
+  return crypto === symbols.length ? 'Buying crypto tokens' : 'Buying stock and crypto tokens';
+}
+
 export function blockerText(blocker: { code: string; message: string }): string {
   const symbol = /^The (\S+) price/.exec(blocker.message)?.[1];
   const name = /^The purchase could not be prepared \((.+)\)\./.exec(blocker.message)?.[1];
-  const text = blocker.code === 'unknown' && name ? UNKNOWN_NAMED : BLOCKER_TEXT[blocker.code];
-  if (!text) return blocker.message;
+  const known = blocker.code === 'unknown' && name ? UNKNOWN_NAMED : BLOCKER_TEXT[blocker.code];
+  if (!known) return blocker.message;
   const vars: Record<string, string> = {};
   if (symbol) vars.symbol = symbol;
   if (name) vars.name = name;
-  const english = text.replace(/\{(\w+)\}/g, (whole, key: string) => vars[key] ?? whole);
-  return english === blocker.message ? t(text, vars) : blocker.message;
+  for (const text of typeof known === 'string' ? [known] : known) {
+    const english = text.replace(/\{(\w+)\}/g, (whole, key: string) => vars[key] ?? whole);
+    if (english === blocker.message) return t(text, vars);
+  }
+  return blocker.message;
 }
 
 export interface InvestNowFormProps {
@@ -88,9 +102,11 @@ export interface InvestNowFormProps {
   automationEnabled: boolean | null;
   onDone: () => Promise<void>;
   onClose: () => void;
+  /** Shown once the purchase is done (the opt-in $1 buy & burn offer). */
+  afterDone?: ReactNode;
 }
 
-export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn, automationEnabled, onDone, onClose }: InvestNowFormProps) {
+export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn, automationEnabled, onDone, onClose, afterDone }: InvestNowFormProps) {
   const decimals = chain.contracts.settlementDecimals;
   const ticker = chain.contracts.settlementSymbol ?? t('settlement');
   const [amount, setAmount] = useState(() => {
@@ -208,12 +224,13 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
   };
 
   const fmt = (raw: string, tokenDecimals: number, digits = 4) => formatUnits(BigInt(raw), tokenDecimals, digits);
-  const stockDecimals = (asset: Address) =>
-    chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.decimals ?? 18;
+  // Each token's own decimals: CBBTC has 8, so a small leg needs more digits than a stock's.
+  const quantity = (raw: string, tokenDecimals: number) => formatQuantity(BigInt(raw), tokenDecimals);
+  const stockDecimals = (asset: Address) => assetDecimals(chain.contracts, asset);
 
   return (
     <div className="invest-now" data-testid="invest-now-form">
-      <RiskLine action={t('Buying stock tokens')} />
+      <RiskLine action={t(buyingLabel(legs.map((leg) => leg.symbol)))} />
       {plan ? (
         <p className="invest-now-lead">
           {tj('Runs your plan’s {amount} purchase now instead of waiting for it. The plan keeps its schedule from today.', {
@@ -250,7 +267,7 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
             <li key={leg.asset}>
               <span>{fmt(leg.amountIn, decimals, 2)} {ticker}</span>
               <span aria-hidden>→</span>
-              <b>{t('about {amount} {symbol}', { amount: fmt(leg.expectedOut, stockDecimals(leg.asset)), symbol: leg.symbol })}</b>
+              <b>{t('about {amount} {symbol}', { amount: quantity(leg.expectedOut, stockDecimals(leg.asset)), symbol: leg.symbol })}</b>
               {displayName(leg.symbol) ? <small className="invest-now-leg-name">{displayName(leg.symbol)}</small> : null}
             </li>
           ))}
@@ -295,6 +312,7 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
         </p>
       ) : null}
 
+      {done && afterDone ? afterDone : null}
       {done ? (
         <button className="btn btn--primary" data-testid="invest-now-close" onClick={onClose}>
           {t('Done')}

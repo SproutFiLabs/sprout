@@ -15,6 +15,7 @@ export function ResourcesMenu() {
       <a href="/stocks" data-testid="resources-stock-guide"><Sprout size={17} /><span>{t('Stock guide')}<small>{t('What each stock and fund is')}</small></span></a>
       <a href="/guide"><Compass size={17} /><span>{t('Getting started')}<small>{t('A practical family guide')}</small></span></a>
       <a href="/docs"><BookOpen size={17} /><span>{t('Documentation')}<small>{t('Features and how they work')}</small></span></a>
+      <a href="/tokenomics"><Sprout size={17} /><span>{t('Tokenomics')}<small>{t('Supply, utility, locks and burns')}</small></span></a>
       <a href="/whitepaper"><FileText size={17} /><span>{t('Whitepaper')}<small>{t('Technical design')}</small></span></a>
       <a href="/settings"><Moon size={17} /><span>{t('Appearance')}<small>{t('Light, dark, or your device')}</small></span></a>
     </nav>

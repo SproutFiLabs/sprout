@@ -32,7 +32,8 @@ family can open.
 ## Token addresses and units
 
 Amounts are in each token's smallest unit. Sprouts planted before 2026-09-19 can only hold
-AAPL, NVDA, MSFT and SPY; newer sprouts hold up to 5 of the 21 below.
+AAPL, NVDA, MSFT and SPY; sprouts from the second factory hold up to 5 of the first 21
+below; sprouts from the third factory, up to 5 of all 25. CBBTC has **8** decimals, not 18.
 
 | Token | Address | Decimals | Example |
 | --- | --- | --- | --- |
@@ -58,6 +59,10 @@ AAPL, NVDA, MSFT and SPY; newer sprouts hold up to 5 of the 21 below.
 | GME (GameStop) | `0x1b0E319c6A659F002271B69dB8A7df2F911c153E` | 18 | |
 | SLV (Silver) | `0x411eFb0E7f985935DAec3D4C3ebaEa0d0AD7D89f` | 18 | |
 | USO (Oil) | `0xa30FA36Db767ad9eD3f7a60fC79526fB4d56D344` | 18 | |
+| WETH (Ethereum; wrapped ether) | `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73` | 18 | |
+| CBBTC (Bitcoin; Coinbase's cbBTC, shown as cbBTC in wallets) | `0xCEC185eB182c47d1bA1EFc84e6959e18cd620Be4` | **8** | 0.001 = `100000` |
+| CRCL (Circle) | `0xdF0992E440dD0be65BD8439b609d6D4366bf1CB5` | 18 | |
+| SGOV (US Treasury bills) | `0x92FD66527192E3e61d4DDd13322Aa222DE86F9B5` | 18 | |
 
 To see how much a sprout holds, open its address on the block explorer
 (`https://robinhoodchain.blockscout.com/address/<sprout address>`, Tokens tab), or call
@@ -109,6 +114,8 @@ Command-line users can do the same with Foundry's `cast send`.
 
 | Contract | Address |
 | --- | --- |
+| SproutFactory (third factory, 25 assets incl. WETH, CBBTC, CRCL, SGOV) | pending `deploy:stocks` (see `config/mainnet-deployment-3.json` once deployed) |
+| UniswapV3Adapter (for those sprouts) | pending `deploy:stocks` |
 | SproutFactory (sprouts planted from 2026-09-19, 21 stocks) | `0x10E70171A79c4e13b61CE37e81dc3A63bE3B3a9d` |
 | UniswapV3Adapter (for those sprouts) | `0x78998dEb89E804Aea5c71DdccF3ebd743d7919AD` |
 | SproutFactory (first sprouts, 4 stocks) | `0x399C4cbf1884A958D20259c53f11E81a11dB201d` |

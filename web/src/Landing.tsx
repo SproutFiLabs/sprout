@@ -8,6 +8,7 @@ import { useAutomationEnabled } from './automationStatus';
 import { BloomGarden } from './garden/BloomGarden';
 import { PublicCa } from './components/PublicCa';
 import { LandingRootedCounter } from './perks/RootBits';
+import { LandingBurnCounter } from './perks/BurnBits';
 import {
   ArrowUp, ArrowRight, ArrowLeft, ChevronDown, Menu, X, Play, Pause, Plus, Repeat2, Gift, Check,
   ShieldCheck, Leaf, LayoutGrid, GraduationCap,
@@ -295,7 +296,7 @@ export function Landing() {
                 <a href="/faq">{t('Questions')}</a>
                 <a href="/guide">{t('Getting started')}</a>
                 <a href="/docs">{t('Documentation')}</a>
-                <a href="/whitepaper">{t('Whitepaper')}</a>
+                <a href="/whitepaper">{t('Whitepaper')}</a><a href="/tokenomics">{t('Tokenomics')}</a>
                 <a href="/settings">{t('Appearance')}</a>
               </nav>
             ) : null}
@@ -312,7 +313,7 @@ export function Landing() {
         <div className="reference-hero-copy">
           <a className="hero-news" href={`${DASHBOARD}?new=1`} data-testid="hero-news">
             <b>{t('New')}</b>
-            <span>{t('21 stocks now, including Tesla and SpaceX')}</span>
+            <span>{t('Bitcoin and Ethereum now, plus 23 stocks and funds')}</span>
             <ArrowRight aria-hidden />
           </a>
           <h1>{tj('A little portfolio{br}for their big future', { br: <br /> })}</h1>
@@ -323,6 +324,7 @@ export function Landing() {
           </div>
           <PublicCa variant="landing" />
           <LandingRootedCounter />
+          <LandingBurnCounter />
         </div>
         <div className={'reference-hero-wave ' + (paused ? 'is-paused' : '')}>
           <BloomGarden variant="landing" paused={paused} />
@@ -497,7 +499,7 @@ export function Landing() {
             </div>
             <div className="reference-footer-links">
               <div><span>SPROUT</span><a href={DASHBOARD}>{t('Dashboard')}</a><a href={`${DASHBOARD}?new=1`}>{t('Plant a sprout')}</a><a href="/gift">{t('Gift preview')}</a><a href="/intelligence">Intelligence</a></div>
-              <div><span>{t('Learn')}</span><a href="/faq">{t('Questions')}</a><a href="/guide">{t('Getting started')}</a><a href="/docs">{t('Documentation')}</a><a href="/whitepaper">{t('Whitepaper')}</a><a href="/settings">{t('Appearance')}</a></div>
+              <div><span>{t('Learn')}</span><a href="/faq">{t('Questions')}</a><a href="/guide">{t('Getting started')}</a><a href="/docs">{t('Documentation')}</a><a href="/whitepaper">{t('Whitepaper')}</a><a href="/tokenomics">{t('Tokenomics')}</a><a href="/settings">{t('Appearance')}</a></div>
             </div>
           </footer>
         </div>

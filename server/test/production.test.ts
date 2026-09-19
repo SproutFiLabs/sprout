@@ -49,6 +49,30 @@ describe('production / mainnet mode', () => {
     expect((await app.request('/api/jobs/run', { method: 'POST' })).status).toBe(401);
   });
 
+  test('tokenomics serves indexable content without JavaScript instead of the SPA shell', async () => {
+    const dist = mkdtempSync(join(tmpdir(), 'sprout-tokenomics-'));
+    const html = readFileSync(join(import.meta.dir, '../../web/public/tokenomics.html'), 'utf8');
+    writeFileSync(join(dist, 'tokenomics.html'), html);
+    writeFileSync(join(dist, 'index.html'), '<title>SPA fallback</title>');
+    const db = memoryDb();
+    const app = createApp({ db, chain: testimonialChain(), localDemo: false, serveWeb: true, webDistPath: dist });
+    try {
+      for (const path of ['/tokenomics', '/tokenomics/']) {
+        const res = await app.request(path);
+        expect(res.status).toBe(200);
+        expect(res.headers.get('content-type')).toContain('text/html');
+        expect(res.headers.get('x-robots-tag') ?? '').not.toContain('noindex');
+        const body = await res.text();
+        expect(body).toContain('<title>SPROUT Tokenomics');
+        expect(body).toContain('rel="canonical" href="https://www.sproutfy.tech/tokenomics"');
+        expect(body).toContain('1,000,000,000');
+        expect(body).toContain('0x5ec27c931fb49911128dddf7d914c1754da9f49f');
+        expect(body).toContain('No yield, interest or extra tokens.');
+        expect(body).not.toContain('SPA fallback');
+      }
+    } finally { db.close(); }
+  });
+
   test('same-origin SPA fallback serves the built index for client routes', async () => {
     const dist = mkdtempSync(join(tmpdir(), 'sprout-dist-'));
     mkdirSync(join(dist, 'assets'), { recursive: true });

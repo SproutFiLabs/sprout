@@ -5,7 +5,7 @@ import { requirePrivateLabels, getPrivateLabel, lockLabels } from './localStore'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { erc20Abi, parseUnits } from 'viem';
 import type { Address } from 'viem';
-import { formatUnits, sproutFactoryAbi, sproutVaultAbi } from '@sprout/shared';
+import { formatQuantity, formatUnits, isCryptoSymbol, sproutFactoryAbi, sproutVaultAbi } from '@sprout/shared';
 import {
   api,
   type BeneficiaryState,
@@ -42,6 +42,8 @@ import { MAX_STOCKS, StockMixEditor, initialPicks, pickedTokens } from './compon
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
 import { InvestNowForm } from './components/InvestNow';
+import { BurnOffer } from './perks/BurnFlow';
+import { burnOfferWanted, loadBurnConfig, type BurnConfigInfo } from './perks/burn';
 import { useAutoInvestLock } from './perks/autoInvest';
 import { useHolder } from './perks/holder';
 import { holderBouquets, stockLockFor } from './perks/locks';
@@ -49,6 +51,7 @@ import { GiftPage } from './GiftPage';
 import { GiftQrCard } from './components/GiftQr';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
 import { TITLE_MAX, endOfDayUtc, textProblem } from './components/Campaign';
+import { assetDecimals } from './assetUnits';
 import {
   ArrowRight, ArrowUpRight, Bell, Check, CheckCheck, ChevronRight, GraduationCap, LayoutGrid, Leaf,
   Pause, Play, Plus, Repeat2, Settings2, ShieldCheck, Sprout as SproutIcon, Wallet,
@@ -141,6 +144,8 @@ export function App() {
   const [showFund, setShowFund] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [showInvestNow, setShowInvestNow] = useState(false);
+  // "Add a $1 burn to my buys" (opt-in, per device): the offer after the parent's own deposit or Invest now.
+  const [burnOffer, setBurnOffer] = useState<{ config: BurnConfigInfo; after: 'fund' | 'invest' } | null>(null);
   const [showGift, setShowGift] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
   const [showAllocation, setShowAllocation] = useState(false);
@@ -236,8 +241,8 @@ export function App() {
   const decimalsFor = useCallback(
     (asset: string): number => {
       if (!chain) return 18;
-      if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementDecimals;
-      return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.decimals ?? 18;
+      // Each token's own decimals (CBBTC has 8): every amount typed for a token is parsed with them.
+      return assetDecimals(chain.contracts, asset);
     },
     [chain],
   );
@@ -544,6 +549,7 @@ export function App() {
     showFund ||
     showSchedule ||
     showInvestNow ||
+    burnOffer?.after === 'fund' ||
     showGift ||
     showPayGift !== null ||
     giftQr !== null ||
@@ -650,6 +656,13 @@ export function App() {
     });
   };
 
+  /** Only asks: the offer sends nothing until the parent presses its button and confirms in the wallet. */
+  const offerBurnAfterBuy = async (after: 'fund' | 'invest') => {
+    if (!wallet || !(await burnOfferWanted(wallet.expectedChainId))) return;
+    const config = await loadBurnConfig();
+    if (config) setBurnOffer({ config, after });
+  };
+
   const submitFund = async () => {
     if (!wallet || !selected) return;
     await withTxn(t('Fund sprout'), async () => {
@@ -663,6 +676,7 @@ export function App() {
       await waitForSuccess(wallet.publicClient, hash);
       await loadDetailSynced(selected.id);
       setShowFund(false);
+      void offerBurnAfterBuy('fund');
       return hash;
     });
   };
@@ -1152,7 +1166,7 @@ export function App() {
       ) : null}
 
       {showInvestNow && selected && wallet && chain ? (
-        <Modal title={t('Invest now')} onClose={() => setShowInvestNow(false)} txn={txn} explorerUrl={chain.explorerUrl}>
+        <Modal title={t('Invest now')} onClose={() => { setShowInvestNow(false); setBurnOffer(null); }} txn={txn} explorerUrl={chain.explorerUrl}>
           <InvestNowForm
             wallet={wallet}
             vault={selected.id}
@@ -1160,9 +1174,19 @@ export function App() {
             settlementBalance={holdings?.holdings.find((h) => h.kind === 'settlement')?.rawBalance ?? null}
             runTxn={withTxn}
             automationEnabled={autoInvestLocked ? false : health?.automation.enabled ?? null}
-            onDone={() => loadDetailSynced(selected.id)}
-            onClose={() => setShowInvestNow(false)}
+            onDone={async () => {
+              await loadDetailSynced(selected.id);
+              void offerBurnAfterBuy('invest');
+            }}
+            onClose={() => { setShowInvestNow(false); setBurnOffer(null); }}
+            afterDone={burnOffer?.after === 'invest' ? <BurnOffer wallet={wallet} config={burnOffer.config} onClose={() => setBurnOffer(null)} inline /> : null}
           />
+        </Modal>
+      ) : null}
+
+      {burnOffer?.after === 'fund' && wallet ? (
+        <Modal title={t('Buy & burn 🔥')} onClose={() => setBurnOffer(null)}>
+          <BurnOffer wallet={wallet} config={burnOffer.config} onClose={() => setBurnOffer(null)} />
         </Modal>
       ) : null}
 
@@ -1313,7 +1337,7 @@ export function App() {
               .map((h) => (
                 <li key={h.address} className="gift-row">
                   <span>
-                    {h.symbol}: {formatUnits(BigInt(h.rawBalance), h.decimals, 4)}
+                    {h.symbol}: {formatQuantity(BigInt(h.rawBalance), h.decimals)}
                   </span>
                   <button data-testid={`withdraw-all-${h.symbol}`} className="btn btn--small" onClick={() => void withdraw(h.address, BigInt(h.rawBalance))} disabled={!chainReady}>
                     {t('Withdraw all')}
@@ -1411,8 +1435,8 @@ export function App() {
             {h ? (
               <>
                 <div className="review-card">
-                  <b>{h.symbol} · {h.kind === 'settlement' ? t('settlement') : t('stock token')}</b>
-                  <p>{t('Balance {amount} · value {value}', { amount: formatUnits(BigInt(h.rawBalance), h.decimals, 4), value: h.valueUsd ? usd(h.valueUsd, h.feedDecimals) : t('unavailable') })}</p>
+                  <b>{h.symbol} · {h.kind === 'settlement' ? t('settlement') : isCryptoSymbol(h.symbol) ? t('crypto token') : t('stock token')}</b>
+                  <p>{t('Balance {amount} · value {value}', { amount: formatQuantity(BigInt(h.rawBalance), h.decimals), value: h.valueUsd ? usd(h.valueUsd, h.feedDecimals) : t('unavailable') })}</p>
                   <p>{t('Valuation status: {status}', { status: t(h.status) })}</p>
                 </div>
                 <p className="fine-print">

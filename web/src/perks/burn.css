@@ -1,0 +1,54 @@
+/* "Buy & burn" on /perks (perks/BurnPanel.tsx) and the $1 offer after a buy (BurnFlow.tsx).
+   Garden tokens with light fallbacks, like the root panel. */
+.burn-card { gap: 14px; }
+.burn-note {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fbf1e8;
+  border: 1px solid #ecc9a8;
+  color: #6e3413;
+  font-weight: 600;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.burn-form { display: grid; gap: 14px; padding-top: 4px; }
+.burn-amounts { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; border-radius: 0; min-width: 0; }
+.burn-amounts legend { padding: 0; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+.burn-chip { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 76px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--garden-line, #d9d3c5); color: var(--garden-ink, #1d1d1b); cursor: pointer; }
+.burn-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.burn-chip b { font-size: 15px; font-weight: 600; }
+.burn-chip.is-on { border-color: #b4541f; box-shadow: 0 0 0 2px rgba(180, 84, 31, .18); background: #fbf1e8; color: #5b2a0e; }
+.burn-chip:focus-within { outline: 2px solid #b4541f; outline-offset: 2px; }
+.burn-custom { display: grid; gap: 6px; font-weight: 600; font-size: 14px; color: var(--garden-ink, #1d1d1b); max-width: 420px; }
+.burn-custom small { font-weight: 400; }
+.burn-custom-input { display: flex; align-items: center; gap: 6px; padding: 0 0 0 14px; border-radius: 12px; border: 1px solid var(--garden-line, #d9d3c5); background: #fff; color: #1d1d1b; }
+.burn-custom-input input { flex: 1 1 auto; min-width: 0; padding: 11px 14px 11px 0; border: 0; border-radius: 12px; background: transparent; color: inherit; font: inherit; font-size: 16px; font-weight: 500; }
+.burn-custom-input:has(input[aria-invalid="true"]) { border-color: #c2410c; }
+.burn-quote { display: grid; gap: 4px; padding: 12px 14px; border-radius: 14px; background: var(--garden-side, #faf8f2); border: 1px dashed var(--garden-line, #d9d3c5); }
+.burn-quote-main { font-family: var(--garden-serif, Georgia, serif); font-size: 22px; line-height: 1.2; }
+.burn-connect { display: grid; gap: 10px; }
+.burn-step { display: flex; gap: 6px; align-items: flex-start; font-size: 14px; line-height: 1.5; }
+.burn-step svg { flex: none; margin-top: 3px; }
+.burn-step--done { color: var(--garden-green, #3f7a3a); font-weight: 600; }
+.burn-step--error { color: #b3400b; }
+.burn-step a { color: inherit; text-decoration: underline; }
+.burn-latest { display: grid; gap: 8px; }
+.burn-latest h3 { margin: 6px 0 0; font-size: 16px; }
+.burn-latest ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.burn-latest li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 14px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--garden-line, #ece7dc); font-size: 14px; min-width: 0; }
+.burn-latest a { color: inherit; }
+
+/* The offer after a buy, inside the dashboard's dialogs. */
+.burn-offer { display: grid; gap: 10px; }
+.burn-offer h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 17px; }
+.burn-offer p { margin: 0; line-height: 1.5; }
+.burn-offer .burn-quote-main { font-size: 19px; }
+.burn-offer-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.burn-offer-stop { margin-left: auto; }
+
+html[data-appearance="dark"] .burn-note { background: #3a2417; border-color: #6d4128; color: #f6d9c2; }
+html[data-appearance="dark"] .burn-chip.is-on { background: #3a2417; color: #f6d9c2; border-color: #d98b5a; }
+html[data-appearance="dark"] .burn-custom-input { background: #10221a; color: #f5efe3; }
+html[data-appearance="dark"] .burn-step--error { color: #f4a37b; }
+
+.recurring-burn { padding: 1rem 1.25rem; border: 1px solid var(--border, #d5decf); border-radius: 16px; margin: 1rem 0 1.5rem; background: var(--surface, #f6f7ef); }

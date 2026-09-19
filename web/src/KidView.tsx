@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ShieldCheck, EyeOff, Leaf, LockKeyhole } from 'lucide-react';
-import { formatUnits } from '@sprout/shared';
+import { formatUnits, isCryptoSymbol } from '@sprout/shared';
 import { kidRequest, type KidSummary } from './api';
 import { BloomGarden } from './garden/BloomGarden';
 import { LanguageToggle } from './i18n/LanguageToggle';
@@ -202,7 +202,7 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
                     <li key={symbol}>
                       <b>{symbol}</b>
                       {company ? <span>{t('a little piece of {company}', { company: tc('holding', company) })}</span> : null}
-                      <span>{t('Learn what makes this company grow')}</span>
+                      <span>{isCryptoSymbol(symbol) ? t('Learn what moves this coin’s price') : t('Learn what makes this company grow')}</span>
                     </li>
                   );
                 })}

@@ -4,6 +4,8 @@ import { bitrefillProvider, type SpendProvider } from './spendProvider';
 import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
 import { registerHarvestRoutes, type HarvestRuntime } from './harvest';
 import { registerZkRoutes } from './zk';
+import type { RecurringBurnRuntime } from './recurringBurnRuntime';
+import { marketAvailability } from './marketAvailability';
 import { registerStockPriceRoutes } from './stockPrices';
 import { registerPrivacyPackRoutes } from './privacyPack';
 import { randomBytes, createPublicKey } from 'node:crypto';
@@ -22,6 +24,7 @@ import {
   decodeReceiptLogs,
   getBeneficiaryState,
   getSettlementDecimals,
+  tokenDecimals,
   invalidateChainReads,
   isGraduated,
   verifySproutCreated,
@@ -47,6 +50,7 @@ import {
 import { createMutex } from './lock';
 import { publicPerks, type HolderChecker } from './holders';
 import { createRootedHolderChecker, publicRoot, type RootedHolderChecker } from './roots';
+import { createBurnService, loadBurnConfig, registerBurnRoutes, type BurnService } from './burns';
 import { DEFAULT_PUBLIC_ORIGIN, giftPreviewHtml } from './sharePreview';
 import {
   CAMPAIGN_MAX_DAYS,
@@ -97,6 +101,9 @@ export interface AppDeps {
   now?: () => number;
   /** SPROUT holder tiers; built from the environment when not given. */
   holders?: HolderChecker;
+  /** Buy & burn (burns.ts); built from the environment when not given, off unless configured. */
+  burns?: BurnService;
+  recurringBurn?: RecurringBurnRuntime;
   runExclusive?: <T>(fn: () => Promise<T>) => Promise<T>;
   serveWeb?: boolean;
   webDistPath?: string;
@@ -382,8 +389,21 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const root = await publicRoot(holders, { afterBlock: afterBlockOf(c) });
     return c.json({ ...publicPerks(holders.config), ...(root ? { root } : {}) });
   });
+  app.get('/api/burns/recurring', (c) => c.json(deps.recurringBurn?.view() ?? {enabled:false}));
+  app.get('/api/markets', async (c) => {
+    try { return c.json(await marketAvailability(deps.chain, process.env.SPROUT_QUOTER_ADDRESS)); }
+    catch { throw new HttpError(503, 'Market status is temporarily unavailable.'); }
+  });
   // Stock guide price history, from the stocks' own price feeds (see stockPrices.ts).
   registerStockPriceRoutes(app, deps, logger);
+  // Buy & burn: the route, quotes, verified burns and the public counter (see burns.ts).
+  registerBurnRoutes(app, {
+    service:
+      deps.burns ??
+      createBurnService({ db: deps.db, client: deps.chain.publicClient, config: loadBurnConfig(process.env, deps.chain.config.chain.chainId), now: deps.now }),
+    explorerUrl: deps.chain.config.chain.explorerUrl,
+    now: deps.now,
+  });
   app.get('/api/holders/:address', async (c) => {
     const address = c.req.param('address');
     if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new HttpError(400, 'invalid address');
@@ -1025,12 +1045,29 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       }
     }
     checks.venuesAdmitted = venuesAdmitted;
+    // Every stock token's configured decimals must be its own (CBBTC has 8, not
+    // 18): the web parses typed amounts with them. A wrong SPROUT_STOCK_TOKENS
+    // entry keeps the service unready, so that deploy never goes live.
+    let stockDecimalsMatch = false;
+    if (rpcReachable && chainIdMatch && checks.configured === true) {
+      const tokens = deps.chain.config.chain.contracts.stockTokens;
+      try {
+        const onChain = await Promise.all(tokens.map((t) => tokenDecimals(deps.chain, t.address)));
+        const wrong = tokens.flatMap((t, i) => (onChain[i] === t.decimals ? [] : [{ symbol: t.symbol, configured: t.decimals, onChain: onChain[i] }]));
+        if (wrong.length > 0) checks.stockDecimalsMismatch = wrong;
+        stockDecimalsMatch = wrong.length === 0;
+      } catch {
+        stockDecimalsMatch = false;
+      }
+    }
+    checks.stockDecimalsMatch = stockDecimalsMatch;
     const ready =
       checks.configured === true &&
       rpcReachable &&
       chainIdMatch &&
       checks.startBlockConfigured === true &&
-      venuesAdmitted;
+      venuesAdmitted &&
+      stockDecimalsMatch;
     return c.json({ ready, checks }, ready ? 200 : 503);
   });
 
@@ -1091,7 +1128,9 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       const path = new URL(c.req.url).pathname;
       if (path.startsWith('/api')) return c.json({ error: 'not found' }, 404);
       const safe = path.replace(/\.\./g, '');
-      const candidate = Bun.file(join(dist, safe === '/' ? 'index.html' : safe));
+      // Serve tokenomics as complete HTML so crawlers need no JavaScript or wallet.
+      const filePath = /^\/tokenomics\/?$/.test(safe) ? 'tokenomics.html' : safe === '/' ? 'index.html' : safe;
+      const candidate = Bun.file(join(dist, filePath));
       if (await candidate.exists()) return new Response(candidate);
       // A child's page is for the family, not for search engines.
       if (/^\/kid\//.test(path)) {

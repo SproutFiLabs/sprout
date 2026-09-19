@@ -23,6 +23,9 @@ output/
 # contracts import. Keep them tracked so a fresh clone builds.
 !contracts/lib/openzeppelin-contracts/token/
 
+# Public token reference, not a credential file.
+!web/public/tokenomics.html
+
 # Download directly from Fontshare for local serving; see the bundled FFL.
 web/public/fonts/satoshi/*.woff2
 web/public/fonts/satoshi/*.tmp

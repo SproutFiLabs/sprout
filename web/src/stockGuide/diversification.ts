@@ -55,6 +55,8 @@ export const SPREAD_REASONS = {
   qqqShare: '{pct}% is in QQQ, which holds about 100 companies, many of them in tech.',
   oneCommodity: 'Everything follows the price of one commodity.',
   oneCompany: 'Everything is in one company.',
+  oneCoin: 'Everything is in one crypto coin.',
+  oneTbillFund: 'Everything is in US Treasury bills: short loans to one borrower, the US government.',
   allOneTheme: 'All in one theme: {theme}.',
   oneTheme: '{pct}% is in one theme: {theme}.',
   allTech: 'All in tech companies: chips, software or big tech.',
@@ -107,6 +109,8 @@ export function spreadReading(picks: readonly MixPick[]): SpreadReading | null {
     const kind = profiles[0]!.kind;
     if (qqq > 0) return reading(2, SPREAD_REASONS.qqqAlone);
     if (kind === 'commodity-fund') return reading(0, SPREAD_REASONS.oneCommodity);
+    if (kind === 'crypto') return reading(0, SPREAD_REASONS.oneCoin);
+    if (kind === 'bond-fund') return reading(0, SPREAD_REASONS.oneTbillFund);
     return reading(0, SPREAD_REASONS.oneCompany);
   }
   if (spy > 0) return reading(2, SPREAD_REASONS.spyShare, { pct: pct(spy) });

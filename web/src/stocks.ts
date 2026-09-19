@@ -16,10 +16,16 @@ import { t } from './i18n';
 /** Most stocks one sprout can hold (SproutVault.MAX_ASSETS). */
 export const MAX_STOCKS = 5;
 
-export type StockCategory = 'Whole market' | 'Tech' | 'Space & future' | 'Chips' | 'Commodities' | 'Fun' | 'Other';
+export type StockCategory = 'Whole market' | 'Tech' | 'Space & future' | 'Chips' | 'Crypto' | 'Commodities' | 'Cash-like' | 'Fun' | 'Other';
 
 /** Display order of the groups in the stock picker. */
-export const STOCK_CATEGORIES: readonly StockCategory[] = ['Whole market', 'Tech', 'Space & future', 'Chips', 'Commodities', 'Fun', 'Other'];
+export const STOCK_CATEGORIES: readonly StockCategory[] = ['Whole market', 'Tech', 'Space & future', 'Chips', 'Crypto', 'Commodities', 'Cash-like', 'Fun', 'Other'];
+
+/**
+ * The newest assets (the third factory's batch). Sprouts planted before they
+ * were added cannot hold them: a factory's admitted list never changes.
+ */
+export const NEWEST_SYMBOLS: readonly string[] = ['WETH', 'CBBTC', 'CRCL', 'SGOV'];
 
 export interface StockInfo {
   symbol: string;
@@ -62,6 +68,13 @@ const CATALOGUE: Record<string, Entry> = {
 
   SLV: { name: 'Silver', description: 'A fund that follows the price of silver', category: 'Commodities', kidName: 'a silver fund' },
   USO: { name: 'Oil', description: 'A fund that follows the price of oil', category: 'Commodities', kidName: 'an oil fund' },
+
+  // Crypto: WETH and CBBTC are coins (held as tokens on Robinhood Chain); Circle is a company's stock token.
+  WETH: { name: 'Ethereum', description: 'Ether, the coin of the Ethereum network', category: 'Crypto' },
+  CBBTC: { name: 'Bitcoin', description: 'Bitcoin, held as Coinbase’s cbBTC token', category: 'Crypto' },
+  CRCL: { name: 'Circle', description: 'The company behind the USDC digital dollar', category: 'Crypto' },
+
+  SGOV: { name: 'US Treasury bills', description: 'A fund of short-term loans to the US government', category: 'Cash-like', kidName: 'a fund that lends to the US government' },
 
   GME: { name: 'GameStop', description: 'Video game shops', category: 'Fun' },
 };
