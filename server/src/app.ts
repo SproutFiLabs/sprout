@@ -1,3 +1,5 @@
+import { registerSpendRoutes } from './spend';
+import { bitrefillProvider, type SpendProvider } from './spendProvider';
 import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
 import { registerHarvestRoutes, type HarvestRuntime } from './harvest';
 import { registerZkRoutes } from './zk';
@@ -83,6 +85,7 @@ import {
 } from './repo';
 
 export interface AppDeps {
+  spend?: SpendProvider;
   harvest?: HarvestRuntime;
   intelligence?: IntelligenceRuntime;
   db: SproutDb;
@@ -239,6 +242,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     }
   });
 
+  registerSpendRoutes(app,{db:deps.db,provider:deps.spend??bitrefillProvider(process.env),now:deps.now,requireAuth:(c,purpose)=>requireAuth(c,deps,purpose)});
   registerZkRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
   registerPrivacyPackRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
   registerHarvestRoutes(app, {db:deps.db,runtime:deps.harvest,now:deps.now,requireAuth:(c,purpose)=>requireAuth(c,deps,purpose),requireAdmin:c=>requireAdmin(c,deps)});

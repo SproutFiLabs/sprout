@@ -1297,6 +1297,7 @@ export function DashboardShell(props: DashboardShellProps) {
           {onOpenOnboarding ? <button className="garden-side-link" data-testid="onboarding-open" onClick={onOpenOnboarding}><SproutIcon size={22} />{t('How SPROUT works')}</button> : null}
           <PerksSideLink />
           <a className="garden-side-link" href="/intelligence"><Leaf size={22} />Intelligence</a>
+          <a className="garden-side-link" href="/spend"><Leaf size={22} />Spend</a>
           <ResourcesMenu />
           <button className="garden-side-link" data-testid="settings-open" onClick={() => { setDrawerOpen(false); onOpenSettings(); }}><Settings size={22} />{t('Family settings')}</button>
           <button className="garden-side-link" data-testid="help-open" onClick={() => { setDrawerOpen(false); (onOpenHelp ?? onOpenNotifications)(); }}><HelpCircle size={22} />{t('Help')}</button>
