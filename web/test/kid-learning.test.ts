@@ -189,7 +189,7 @@ describe('badges', () => {
 });
 
 describe('lesson addresses', () => {
-  const vault = '0x00000000000000000000000000000000000000a1';
+  const vault = 'a1'.repeat(16);
 
   test('parse the kid view with and without a lesson', () => {
     expect(parseKidPath(`/kid/${vault}`)).toEqual({ vault, lessonId: null });
@@ -198,12 +198,12 @@ describe('lesson addresses', () => {
     expect(parseKidPath(`/kid/${vault}/learn/%E0%A4%A`)).toEqual({ vault, lessonId: null });
     expect(parseKidPath(`/kid/${vault}/learn`)).toBeNull();
     expect(parseKidPath(`/kid/${vault}/learn/a/b`)).toBeNull();
-    expect(parseKidPath('/kid/0x123')).toBeNull();
+    expect(parseKidPath('/kid/0x123')).toEqual({ vault: 'expired', lessonId: null });
   });
 
-  test('build lesson links that keep the name', () => {
-    expect(kidLessonPath(vault, 'aapl', '?name=Maya')).toBe(`/kid/${vault}/learn/aapl?name=Maya`);
-    expect(kidLessonPath(vault, null, '?name=Maya')).toBe(`/kid/${vault}?name=Maya`);
+  test('build lesson links that discard identity queries', () => {
+    expect(kidLessonPath(vault, 'aapl', '?name=Maya')).toBe(`/kid/${vault}/learn/aapl`);
+    expect(kidLessonPath(vault, null, '?name=Maya')).toBe(`/kid/${vault}`);
     expect(kidLessonPath(vault, 'share')).toBe(`/kid/${vault}/learn/share`);
   });
 });

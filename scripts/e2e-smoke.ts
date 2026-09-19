@@ -1,3 +1,4 @@
+import { createGiftKeys, encryptGift, decryptGift } from '../web/src/privacy/crypto';
 import { randomBytes } from 'node:crypto';
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -12,7 +13,7 @@ import {
   accountClient,
   beneficiaryAccount,
   gifterAccount,
-  getJson,
+  getJson as publicGetJson,
   parentAccount,
   post,
   rpcClients,
@@ -22,6 +23,20 @@ import {
 import { deployLocal } from './deploy-local';
 import { LOCAL_MULTICALL_ENV } from './lib/multicall3';
 
+// Exercise the same signed read-session exchange as the browser.
+const readTokens = new Map<string, string>();
+async function getJson<T>(base: string, path: string): Promise<T> {
+  if (!path.startsWith('/api/sprouts') && !path.startsWith('/api/jobs')) return publicGetJson<T>(base, path);
+  const signer = path.includes(`beneficiary=${beneficiaryAccount.address}`) ? beneficiaryAccount : parentAccount;
+  let token = readTokens.get(signer.address);
+  if (!token) {
+    const session = await signedPost<{ token: string }>(base, '/api/family/session', signer, 'family-session', {});
+    token = session.token; readTokens.set(signer.address, token);
+  }
+  const res = await fetch(base + path, { headers: { authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`${path}: ${res.status} ${await res.text()}`);
+  return await res.json() as T;
+}
 // Isolated from any running preview (RPC 18545) so the gate never touches it.
 const RPC_PORT = 28546;
 const rpcUrl = `http://127.0.0.1:${RPC_PORT}`;
@@ -285,7 +300,7 @@ async function main(): Promise<void> {
     );
     // No /api/gifts/:id/payments call here: the indexer must recover it alone.
     await reconcile();
-    const giftView = await getJson<{ paymentCount: number; totals: Record<string, string> }>(base, `/api/gifts/${giftId}`);
+    const giftView = (await getJson<{ gifts: Array<{ paymentCount: number; totals: Record<string, string> }> }>(base, `/api/sprouts/${vault}`)).gifts[0]!;
     check('gift payment indexed without a browser callback', giftView.paymentCount === 1, giftView);
     const totalKey = Object.keys(giftView.totals).find((k) => k.toLowerCase() === deployment.settlement.toLowerCase());
     check('gift total matches on-chain amount', !!totalKey && giftView.totals[totalKey] === '5000000', giftView.totals);
@@ -299,8 +314,20 @@ async function main(): Promise<void> {
       { txHash: giftHash },
     );
     check('repeated gift callback cannot duplicate a payment', duplicate.duplicate === true, duplicate);
-    const giftAfter = await getJson<{ paymentCount: number }>(base, `/api/gifts/${giftId}`);
+    const giftAfter = (await getJson<{ gifts: Array<{ paymentCount: number }> }>(base, `/api/sprouts/${vault}`)).gifts[0]!;
     check('gift payment count stays at one', giftAfter.paymentCount === 1, giftAfter);
+
+    const messageKeys = await createGiftKeys();
+    await signedPost(base, '/api/family/gift-key', parentAccount, 'family-gift-key', { publicKey: messageKeys.publicKey });
+    const encryptedNote = await encryptGift(messageKeys.publicKey, giftId, { name: 'Sample giver', note: 'A private wish' });
+    await signedPost(base, `/api/gifts/${giftId}/payments`, gifterAccount, 'gift-pay', { txHash: giftHash, encryptedNote });
+    const privateNotes = await signedPost<{ notes: Array<{ note: string; logIndex: number }> }>(base, `/api/gifts/${giftId}/notes`, parentAccount, 'gift-notes', {});
+    check('verified gift message is stored as ciphertext', privateNotes.notes[0]?.note === encryptedNote);
+    const opened = await decryptGift(messageKeys.privateKey, giftId, privateNotes.notes[0]!.note);
+    check('recipient can open encrypted gift message', opened.note === 'A private wish');
+    const publicGift = await publicGetJson<Record<string, unknown>>(base, `/api/gifts/${giftId}`);
+    check('public gift omits identity, balance and notes', !('vaultId' in publicGift) && !('notes' in publicGift) && !('totals' in publicGift));
+    await signedPost(base, `/api/gifts/${giftId}/notes/visibility`, parentAccount, 'gift-note-visibility', { txHash: giftHash, logIndex: privateNotes.notes[0]!.logIndex, hidden: true });
 
     // 5. Milestone derived from receipt, released, allowance claimed
     const milestoneId = `0x${randomBytes(32).toString('hex')}` as `0x${string}`;

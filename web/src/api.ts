@@ -1,5 +1,7 @@
 import type { Address } from 'viem';
 import { sign, type WalletState } from './wallet';
+import { encryptGift, decryptGift } from './privacy/crypto';
+import { lockLabels, privateEpoch, setFamilyOwner, getPrivateLabel, setPrivateLabel, requirePrivateLabels, flushPrivateLabels } from './localStore';
 
 export interface StockTokenPublic {
   symbol: string;
@@ -221,13 +223,56 @@ export interface PublicStats {
   asOf: number;
 }
 
+let readSession: { token: string; expiresAt: number; address: string } | null = null;
+let sessionVersion = 0;
+let sessionTimer: ReturnType<typeof setTimeout> | undefined;
+export function clearFamilySession() { readSession = null; sessionVersion++; clearTimeout(sessionTimer); lockLabels(); }
+export async function authorizeFamily(wallet: WalletState) {
+  if (readSession?.address === wallet.address && readSession.expiresAt > Date.now()) return;
+  clearFamilySession();
+  const version = sessionVersion;
+  const result = await signedPostJson<{ token: string; expiresAt: number }>(wallet, '/api/family/session', 'family-session', {});
+  if (version !== sessionVersion) throw new Error('Account changed during sign-in.');
+  readSession = { ...result, address: wallet.address };
+  setFamilyOwner(wallet.address);
+  sessionTimer = setTimeout(() => { clearFamilySession(); window.dispatchEvent(new Event('sprout-family-session-ended')); }, Math.max(0, result.expiresAt - Date.now()));
+}
+export async function lockFamilySession() {
+  try { await fetch('/api/family/lock', { method: 'POST', headers: familyHeaders() }); } finally { clearFamilySession(); }
+}
+function familyHeaders(): Record<string, string> { return readSession ? { authorization: `Bearer ${readSession.token}` } : {}; }
+export async function decodeGiftNotes(id: string, notes: GiftNote[]) {
+  const epoch = privateEpoch();
+  const version = sessionVersion;
+  const hidden = (n: GiftNote) => ({ ...n, name: null, note: 'Encrypted message · unlock Family privacy to read' });
+  const decoded = await Promise.all(notes.map(async n => {
+    if (!n.note?.startsWith('encrypted:v1:')) return n;
+    const key = getPrivateLabel('gift.privateKey');
+    if (!key) return hidden(n);
+    try { const message = await decryptGift(key, id, n.note); return { ...n, name: message.name ?? null, note: message.note ?? null }; }
+    catch { return { ...n, name: null, note: 'This encrypted message could not be opened.' }; }
+  }));
+  if (version !== sessionVersion) throw new Error('Family session changed.');
+  return epoch === privateEpoch() ? decoded : notes.map(hidden);
+}
+export interface KidInvitation { id: string; expiresAt: number; redeemed: number; revoked: number; showBalance: number }
+export interface KidSummary { symbols: string[]; balance: { valueUsd: string | null; feedDecimals: number } | null; chores: number; expiresAt: number }
+export async function kidRequest<T>(path: string, token: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, { method: body ? 'POST' : 'GET', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  if (!res.ok) throw new Error('This invitation has ended. Ask a grown-up for a new one.');
+  return await res.json() as T;
+}
 async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+  const version = sessionVersion;
+  const res = await fetch(url, { headers: familyHeaders(), cache: 'no-store' });
   if (!res.ok) {
+    if (res.status === 401 && /^\/api\/(sprouts|family|jobs)/.test(url)) { clearFamilySession(); window.dispatchEvent(new Event('sprout-family-session-ended')); }
     const text = await res.text();
     throw new Error(`${res.status} ${text}`);
   }
-  return (await res.json()) as T;
+  const result = await res.json() as T;
+  if (/^\/api\/(sprouts|family|jobs)/.test(url) && version !== sessionVersion) throw new Error('Family session changed.');
+  return result;
 }
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
@@ -242,6 +287,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 async function signedPostJson<T>(wallet: WalletState, url: string, purpose: string, body: unknown): Promise<T> {
+  const version = sessionVersion;
   const challenge = await postJson<{ nonce: string; message: string }>('/api/auth/nonce', {
     address: wallet.address,
     purpose,
@@ -259,10 +305,16 @@ async function signedPostJson<T>(wallet: WalletState, url: string, purpose: stri
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`${res.status} ${text}`);
+  if (version !== sessionVersion) throw new Error('Family session changed.');
   return JSON.parse(text) as T;
 }
 
 export const api = {
+  kidInvites: (vault: string) => getJson<{ invites: KidInvitation[] }>(`/api/family/invites/${vault}`),
+  createKidInvite: (wallet: WalletState, vault: string, showBalance: boolean) => signedPostJson<{ id: string; token: string; expiresAt: number }>(wallet, `/api/family/invites/${vault}`, `kid-invite:${vault.toLowerCase()}`, { showBalance }),
+  revokeKidInvite: (wallet: WalletState, id: string) => signedPostJson(wallet, `/api/family/invites/${id}/revoke`, `kid-revoke:${id}`, {}),
+  giftCheckout: (wallet: WalletState, id: string) => signedPostJson<{ vaultId: Address }>(wallet, `/api/gifts/${id}/checkout`, 'gift-checkout', {}),
+  registerGiftKey: (wallet: WalletState, publicKey: string) => signedPostJson(wallet, '/api/family/gift-key', 'family-gift-key', { publicKey }),
   health: () => getJson<Health>('/api/health'),
   stats: () => getJson<PublicStats>('/api/stats'),
   config: () => getJson<{ chain: ChainPublic }>('/api/config'),
@@ -284,7 +336,7 @@ export const api = {
         paymentCount: number;
         totals: Record<string, string>;
       }>;
-    }>(`/api/sprouts/${id}`),
+    }>(`/api/sprouts/${id}`).then(async detail => ({ ...detail, gifts: await Promise.all(detail.gifts.map(async g => ({ ...g, notes: await decodeGiftNotes(g.id, (g as GiftSummary).notes ?? []), label: getPrivateLabel(`gift.label.${g.id}`) ?? 'A gift for the future', ...((g as GiftSummary).campaign ? { campaign: { ...(g as GiftSummary).campaign!, title: getPrivateLabel(`gift.title.${g.id}`) ?? 'Family gift' } } : {}) }))) })),
   holdings: (id: string, afterBlock = 0) =>
     getJson<Holdings>(`/api/sprouts/${id}/holdings${afterBlock > 0 ? `?after=${afterBlock}` : ''}`),
   investQuote: (id: string, amount: bigint, afterBlock = 0) =>
@@ -292,7 +344,7 @@ export const api = {
   growth: (id: string) => getJson<Growth>(`/api/sprouts/${id}/growth`),
   events: (id: string) => getJson<{ events: ChainEvent[] }>(`/api/sprouts/${id}/events`),
   beneficiaryState: (id: string) => getJson<BeneficiaryState>(`/api/sprouts/${id}/beneficiary`),
-  gift: (id: string) => getJson<GiftSummary>(`/api/gifts/${id}`),
+  gift: (id: string) => getJson<Pick<GiftSummary, 'id' | 'label' | 'acceptedAssets' | 'status'> & { publicKey: string | null }>(`/api/gifts/${id}`),
   registerSprout: (wallet: WalletState, txHash: string) =>
     signedPostJson<{ sprout: Sprout }>(wallet, '/api/sprouts', 'plant', { txHash }),
   createGift: (
@@ -301,24 +353,32 @@ export const api = {
     label: string,
     acceptedAssets: string[],
     campaign?: { title: string; goalDollars: number; endsAt: number },
-  ) =>
-    signedPostJson<{
-      gift: { id: string; vaultId: Address; label: string | null; acceptedAssets: Address[]; campaign?: GiftCampaign | null };
-    }>(wallet, '/api/gifts', 'gift-create', { vaultId, label, acceptedAssets, ...(campaign ? { campaign } : {}) }),
-  recordGiftPayment: (wallet: WalletState, giftId: string, txHash: string, message?: { name?: string; note?: string }) =>
-    signedPostJson<{ accepted: boolean; duplicate: boolean }>(wallet, `/api/gifts/${giftId}/payments`, 'gift-pay', {
-      txHash,
-      ...(message?.name ? { name: message.name } : {}),
-      ...(message?.note ? { note: message.note } : {}),
-    }),
+  ) => {
+    requirePrivateLabels(label || campaign?.title || '');
+    return signedPostJson<{ gift: GiftSummary }>(wallet, '/api/gifts', 'gift-create', { vaultId, label: 'A gift for the future', acceptedAssets, ...(campaign ? { campaign: { ...campaign, title: 'Family gift' } } : {}) }).then(async result => {
+      setPrivateLabel(`gift.label.${result.gift.id}`, label);
+      if (campaign) setPrivateLabel(`gift.title.${result.gift.id}`, campaign.title);
+      await flushPrivateLabels();
+      return { gift: { ...result.gift, label, campaign: result.gift.campaign ? { ...result.gift.campaign, title: campaign?.title ?? 'Family gift' } : null } };
+    });
+  },
+  recordGiftPayment: async (wallet: WalletState, giftId: string, txHash: string, message?: { name?: string; note?: string }) => {
+    let encryptedNote: string | undefined;
+    if (message?.name || message?.note) {
+      const gift = await api.gift(giftId);
+      if (!gift.publicKey) throw new Error('This family has not enabled encrypted messages.');
+      encryptedNote = await encryptGift(gift.publicKey, giftId, message);
+    }
+    return signedPostJson<{ accepted: boolean; duplicate: boolean }>(wallet, `/api/gifts/${giftId}/payments`, 'gift-pay', { txHash, ...(encryptedNote ? { encryptedNote } : {}) });
+  },
   giftNotes: (wallet: WalletState, giftId: string) =>
-    signedPostJson<{ notes: GiftNote[] }>(wallet, `/api/gifts/${giftId}/notes`, 'gift-notes', {}),
+    signedPostJson<{ notes: GiftNote[] }>(wallet, `/api/gifts/${giftId}/notes`, 'gift-notes', {}).then(async r => ({ notes: await decodeGiftNotes(giftId, r.notes) })),
   setGiftNoteHidden: (wallet: WalletState, giftId: string, note: { txHash: string; logIndex: number }, hidden: boolean) =>
     signedPostJson<{ notes: GiftNote[] }>(wallet, `/api/gifts/${giftId}/notes/visibility`, 'gift-note-visibility', {
       txHash: note.txHash,
       logIndex: note.logIndex,
       hidden,
-    }),
+    }).then(async r => ({ notes: await decodeGiftNotes(giftId, r.notes) })),
   createMilestone: (wallet: WalletState, vaultId: string, body: { milestoneId: string; txHash: string; descriptionHash?: string }) =>
     signedPostJson<{ milestone: Milestone }>(wallet, `/api/sprouts/${vaultId}/milestones`, 'milestone-create', body),
   releaseMilestone: (wallet: WalletState, vaultId: string, milestoneId: string, txHash: string) =>

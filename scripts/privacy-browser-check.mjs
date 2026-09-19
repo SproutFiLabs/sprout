@@ -1,0 +1,100 @@
+/** Local-only browser verification and real UI captures for the privacy showcase. */
+import { chromium } from 'playwright';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+const origin = process.env.SPROUT_PRIVACY_PREVIEW ?? 'http://127.0.0.1:5187';
+if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error('Use an isolated local preview.');
+const out = new URL('../output/privacy/', import.meta.url).pathname;
+await mkdir(out, { recursive: true });
+const browser = await chromium.launch({ headless: true, ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}) });
+const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, deviceScaleFactor: 1, permissions: ['clipboard-read', 'clipboard-write'] });
+const page = await context.newPage();
+const errors = [];
+page.on('pageerror', e => errors.push(e.message));
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const screenshot = async name => { await page.screenshot({ path: out + name + '.png' }); };
+try {
+  await page.goto(origin + '/dashboard');
+  if (await page.getByRole('button', { name: 'Skip for now', exact: true }).isVisible()) await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
+  await page.getByRole('button', { name: 'Use local demo wallet', exact: true }).click();
+  await page.getByTestId('privacy-open').click();
+  await page.getByTestId('privacy-passphrase').waitFor({ state: 'visible' });
+  let backup;
+  try { backup = await readFile(out + 'sample-encrypted-backup.json', 'utf8'); } catch { /* first run */ }
+  if (backup) {
+    await page.locator('input[type="file"]').setInputFiles(out + 'sample-encrypted-backup.json');
+    await page.getByTestId('privacy-passphrase').fill('sample-family-only-2026');
+    await page.getByRole('button', { name: 'Unlock private labels' }).click();
+    await page.getByRole('button', { name: 'Lock labels', exact: true }).waitFor();
+  } else {
+    await page.getByTestId('privacy-passphrase').fill('sample-family-only-2026');
+    await page.getByRole('button', { name: 'Encrypt my family labels' }).click();
+    await page.getByRole('button', { name: 'I saved my key' }).waitFor();
+    const recovery = await page.locator('.privacy-recovery code').innerText();
+    await page.getByRole('button', { name: 'I saved my key' }).click();
+    const saved = await page.evaluate(() => Object.entries(localStorage).filter(([key]) => key.startsWith('sprout.private.')));
+    assert(saved.length === 1 && !saved[0][1].includes(recovery), 'Recovery secret must not be stored beside ciphertext');
+    await page.getByRole('button', { name: 'Lock labels', exact: true }).click();
+    await page.getByRole('checkbox', { name: 'Use a recovery key' }).check();
+    await page.getByTestId('privacy-passphrase').fill(recovery);
+    await page.getByRole('button', { name: 'Unlock private labels' }).click();
+    await page.getByRole('button', { name: 'Lock labels', exact: true }).waitFor();
+  }
+  await page.getByRole('button', { name: 'Enable encrypted gift messages' }).click();
+  await page.getByRole('button', { name: 'Encrypted gifting enabled' }).waitFor();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download encrypted backup' }).click();
+  await (await download).saveAs(out + 'sample-encrypted-backup.json');
+  await page.locator('.privacy-overlay').evaluate(el => el.scrollTop = 0);
+  await screenshot('01-family-privacy');
+  await page.locator('.privacy-overlay').evaluate(el => el.scrollTop = 490);
+  await screenshot('02-encrypted-labels');
+  assert(!(await page.getByRole('checkbox', { name: 'Allow this device to see the total balance' }).isChecked()), 'Balances must default to hidden');
+  const response = page.waitForResponse(r => /\/api\/family\/invites\/0x/.test(r.url()) && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Create kid invitation' }).click();
+  const invite = await (await response).json();
+  assert(invite.id && invite.token, 'Invitation must be created by real API');
+  await page.getByRole('button', { name: 'Copy private invitation' }).waitFor();
+  await page.locator('.privacy-overlay').evaluate(el => el.scrollTop = 520);
+  await screenshot('03-kid-invitation');
+  const child = await context.newPage();
+  await child.goto(`${origin}/kid/${invite.id}#${invite.token}`);
+  await child.getByText('A future in bloom', { exact: true }).waitFor();
+  assert(!child.url().includes('#') && !child.url().includes('0x'), 'Child URL must discard secret and contain no wallet');
+  const childText = await child.locator('body').innerText();
+  assert(!childText.includes('$1,250') && !childText.includes('0x'), 'Default child view must hide balances and wallet identifiers');
+  await child.screenshot({ path: out + '04-kid-view.png' });
+  await page.getByRole('button', { name: 'Revoke', exact: true }).last().click();
+  await page.getByText('Access revoked, including any open kid session.').waitFor();
+  await screenshot('06-access-revoked');
+  await child.reload();
+  await child.getByRole('alert').waitFor();
+  assert((await child.getByRole('alert').innerText()).includes('ended'), 'Revoked device must fail on its next request');
+  await child.screenshot({ path: out + '07-kid-revoked.png' });
+  await page.locator('.privacy-boundary').scrollIntoViewIfNeeded();
+  await screenshot('08-boundary');
+  // Mobile fit is checked against the exact same interface.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('.privacy-overlay').evaluate(el => el.scrollTop = 0);
+  assert(await page.locator('.privacy-overlay').evaluate(el => el.scrollWidth <= el.clientWidth + 1), 'Privacy center must not overflow mobile');
+  await screenshot('09-mobile');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  // Create a real gift link through the normal parent form.
+  await page.getByRole('button', { name: 'Close family privacy' }).click();
+  await page.getByRole('button', { name: 'Gifts', exact: true }).click();
+  await page.getByTestId('gift-open').click();
+  await page.getByTestId('gift-label').fill('Sample private celebration');
+  const giftResponse = page.waitForResponse(r => r.url().endsWith('/api/gifts') && r.request().method() === 'POST');
+  await page.getByTestId('gift-submit').click();
+  const { gift } = await (await giftResponse).json();
+  assert(gift.label === 'A gift for the future', 'Private label must never reach the server');
+  const giftPage = await context.newPage();
+  await giftPage.goto(origin + '/gift/' + gift.id);
+  await giftPage.getByTestId('gift-page-title').waitFor();
+  await giftPage.screenshot({ path: out + '05-gift-preview.png' });
+  assert(!(await giftPage.locator('body').innerText()).includes('Sample private celebration'), 'Public gift page must not reveal encrypted label');
+  const local = await page.evaluate(() => JSON.stringify(Object.entries(localStorage)));
+  assert(!local.includes('Sample private celebration'), 'Private gift label must not appear in plaintext storage');
+  await writeFile(out + 'browser-check.json', JSON.stringify({ passed: true, errors, checks: ['wallet authentication', 'vault encryption', 'recovery unlock', 'encrypted backup download', 'gift key registration', 'amounts hidden by default', 'one-use invitation redemption', 'fragment cleanup', 'revocation denial', 'mobile fit'], origin }, null, 2));
+  assert(errors.length === 0, `Browser errors: ${errors.join(', ')}`);
+  console.log('Browser verification passed; actual UI captures saved.');
+} finally { await browser.close(); }

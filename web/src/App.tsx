@@ -1,3 +1,6 @@
+import { PrivacyCenter } from './privacy/PrivacyCenter';
+import { authorizeFamily, clearFamilySession } from './api';
+import { requirePrivateLabels, getPrivateLabel, lockLabels } from './localStore';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { erc20Abi, parseUnits } from 'viem';
 import type { Address } from 'viem';
@@ -87,6 +90,19 @@ export function App() {
   const [health, setHealth] = useState<Health | null>(null);
   const [chain, setChain] = useState<ChainPublic | null>(null);
   const [fatal, setFatal] = useState<string | null>(null);
+  const closePrivacy = useCallback(() => setShowPrivacy(false), []);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [, refreshPrivacy] = useState(0);
+  useEffect(() => {
+    const show = () => setShowPrivacy(true);
+    const changed = () => refreshPrivacy(v => v + 1);
+    window.addEventListener('sprout-open-privacy', show);
+    window.addEventListener('sprout-privacy-change', changed);
+    let hiddenTimer: ReturnType<typeof setTimeout> | undefined;
+    const visibility = () => { clearTimeout(hiddenTimer); if (document.hidden) hiddenTimer = setTimeout(() => lockLabels(), 5 * 60_000); };
+    document.addEventListener('visibilitychange', visibility);
+    return () => { clearTimeout(hiddenTimer); window.removeEventListener('sprout-open-privacy', show); window.removeEventListener('sprout-privacy-change', changed); document.removeEventListener('visibilitychange', visibility); };
+  }, []);
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [connecting, setConnecting] = useState(false);
 
@@ -178,6 +194,7 @@ export function App() {
     } catch {
       nickname = '';
     }
+    try { sessionStorage.removeItem('sprout-pending-nickname'); } catch { /* unavailable */ }
     if (nickname) setPlantForm((prev) => ({ ...prev, nickname }));
     setPendingNew(true);
   }, []);
@@ -224,6 +241,7 @@ export function App() {
 
   const refreshSprouts = useCallback(
     async (activeWallet: WalletState, selectFirst = false): Promise<string | null> => {
+      await authorizeFamily(activeWallet);
       const [asParent, asBeneficiary] = await Promise.all([
         api.sproutsByParent(activeWallet.address),
         api.sproutsByBeneficiary(activeWallet.address),
@@ -277,6 +295,19 @@ export function App() {
   useEffect(() => {
     if (selectedId) void loadDetail(selectedId);
   }, [selectedId, loadDetail]);
+
+  useEffect(() => {
+    const ended = () => { setWallet(null); setDetail(null); setParentSprouts([]); setBeneficiarySprouts([]); setSelectedId(null); setHoldings(null); setGrowth(null); setEvents([]); setAllGiftNotes({}); };
+    const changed = () => {
+      if (!getPrivateLabel('gift.privateKey')) {
+        setAllGiftNotes({});
+        setDetail(prev => prev ? { ...prev, gifts: prev.gifts.map(g => ({ ...g, label: 'A gift for the future', campaign: g.campaign ? { ...g.campaign, title: 'Family gift' } : null, notes: [] })) } : prev);
+      }
+    };
+    window.addEventListener('sprout-family-session-ended', ended);
+    window.addEventListener('sprout-privacy-change', changed);
+    return () => { window.removeEventListener('sprout-family-session-ended', ended); window.removeEventListener('sprout-privacy-change', changed); };
+  }, []);
 
   // A vault write is indexed a moment after it confirms, so the first detail
   // load can still show the prior verified snapshot. Reload (bounded) until the
@@ -424,6 +455,7 @@ export function App() {
     const onAccounts = (...args: unknown[]) => {
       const accounts = (args[0] as string[]) ?? [];
       if (!accounts.some((a) => a.toLowerCase() === wallet.address.toLowerCase())) {
+        clearFamilySession();
         setWallet(null);
         setDetail(null);
         setParentSprouts([]);
@@ -433,6 +465,7 @@ export function App() {
       }
     };
     const onChain = () => {
+      clearFamilySession();
       setWallet(null);
       setDetail(null);
       setTxn({ label: 'Wallet', status: 'failed', error: 'Network changed. Reconnect on the configured chain.' });
@@ -538,6 +571,7 @@ export function App() {
     const venue = chain?.contracts.venue;
     if (!wallet || !chain || !factory || !settlementToken) return;
     await withTxn('Plant sprout', async () => {
+      requirePrivateLabels(plantForm.nickname);
       const tokenAddrs = stockTokens.map((t) => t.address);
       const weights = tokenAddrs.map((addr) => percentToBps(plantForm.percents[addr] ?? '0'));
       const sum = weights.reduce((a, b) => a + b, 0);
@@ -698,6 +732,7 @@ export function App() {
   const submitMilestone = async () => {
     if (!wallet || !selected) return;
     await withTxn('Create milestone', async () => {
+      requirePrivateLabels(milestoneForm.title);
       const id = randomBytes32();
       const token = (milestoneForm.token || settlementToken) as Address;
       const amount = parseUnits(milestoneForm.amount || '0', decimalsFor(token));
@@ -722,6 +757,7 @@ export function App() {
   const createChore = async () => {
     if (!wallet || !selected || !chain) return;
     await withTxn('Create chore', async () => {
+      requirePrivateLabels(choreForm.title);
       const id = randomBytes32();
       const token = (settlementToken ?? milestoneForm.token) as Address;
       const amount = parseUnits(choreForm.amount || '0', decimalsFor(token));
@@ -935,7 +971,9 @@ export function App() {
 
   return (
     <main className="garden-root">
-      <DashboardShell {...shell} />
+      <div ref={el => { if (el) el.inert = showPrivacy; }} aria-hidden={showPrivacy || undefined}><DashboardShell {...shell} />
+      <button className="privacy-launch" onClick={() => setShowPrivacy(true)} data-testid="privacy-open">◈ Family privacy</button></div>
+      {showPrivacy ? <PrivacyCenter wallet={wallet} sprouts={parentSprouts} onClose={closePrivacy} onConnect={() => void connect()} onLocked={() => { setWallet(null); setDetail(null); setParentSprouts([]); setBeneficiarySprouts([]); setSelectedId(null); setHoldings(null); setGrowth(null); setEvents([]); setShowPrivacy(false); }} /> : null}
 
       {!giftRouteMatch ? <OnboardingIntro open={onboardingOpen} connected={Boolean(wallet)} canConnect={Boolean(chain)} onClose={closeOnboarding} onConnect={continueOnboarding} onPlant={continueOnboarding} /> : null}
       <WelcomeSprout open={welcomeOpen} address={selectedId} onClose={() => setWelcomeOpen(false)} onFund={() => { setFundForm({ token: settlementToken ?? '', amount: '10' }); setShowFund(true); }} />
@@ -1111,8 +1149,7 @@ export function App() {
                 <input data-testid="campaign-ends" type="date" value={giftForm.ends} onChange={(e) => setGiftForm({ ...giftForm, ends: e.target.value })} />
               </label>
               <p className="muted">
-                Family open the link, see the goal and how close it is, and can leave a short note with their gift. Gifts
-                still arrive after the end date; the page just stops counting down. The title is shown to anyone with the link.
+                Goals stay in your family dashboard. Gift links use a generic preview; your title is encrypted on this device. Enable encrypted gift messages in Family privacy.
               </p>
             </>
           ) : (
@@ -1258,7 +1295,7 @@ export function App() {
         <Modal title="Family settings" onClose={() => setShowSettings(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <div className="review-card">
             <b>{sprouts.length} sprout(s) in this workspace</b>
-            <p>Nicknames and chore titles are stored on this device only. Balances, roles and graduation live on-chain.</p>
+            <p>Nicknames and chore titles are encrypted on this device. Manage keys and kid invitations in Family privacy. Balances, roles and graduation live on-chain.</p>
           </div>
           <p className="muted">
             Family co-parent accounts and notification delivery are not implemented in the backend. Nothing is faked here.

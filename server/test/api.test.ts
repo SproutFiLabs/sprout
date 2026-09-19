@@ -1,3 +1,4 @@
+import { readHeaders } from './helpers';
 import { describe, expect, test } from 'bun:test';
 import { issueNonce } from '../src/auth';
 import { insertChainEvent, insertGift, upsertMilestone, upsertSprout } from '../src/repo';
@@ -101,8 +102,8 @@ describe('public gift reads do not leak family records', () => {
     expect(text).not.toContain(BENEFICIARY);
     expect(text).not.toContain('parent');
     const body = JSON.parse(text) as { vaultId: string; paymentCount: number };
-    expect(body.vaultId).toBe(VAULT);
-    expect(body.paymentCount).toBe(0);
+    expect(body.vaultId).toBeUndefined();
+    expect(body.paymentCount).toBeUndefined();
   });
 
   test('sprout detail includes vaultId on gift summaries', async () => {
@@ -110,7 +111,7 @@ describe('public gift reads do not leak family records', () => {
     seedSprout(db);
     insertGift(db, { id: '0x' + 'ab'.repeat(32), vaultId: VAULT, label: null, acceptedAssets: [TOKEN], status: 'open' });
     const app = testApp(db, testimonialChain());
-    const res = await app.request(`/api/sprouts/${VAULT}`);
+    const res = await app.request(`/api/sprouts/${VAULT}`, { headers: readHeaders(db) });
     const body = (await res.json()) as { gifts: Array<{ vaultId: string }> };
     expect(body.gifts[0]?.vaultId).toBe(VAULT);
   });
@@ -172,7 +173,7 @@ describe('per-vault authorization', () => {
       releasedTxHash: null,
     });
     const app = testApp(db, testimonialChain());
-    const res = await app.request(`/api/sprouts/${VAULT}/milestones`);
+    const res = await app.request(`/api/sprouts/${VAULT}/milestones`, { headers: readHeaders(db) });
     const body = (await res.json()) as { milestones: unknown[] };
     expect(body.milestones).toHaveLength(0);
   });
@@ -183,7 +184,7 @@ describe('growth history honesty', () => {
     const db = memoryDb();
     seedSprout(db);
     const app = testApp(db, testimonialChain());
-    const res = await app.request(`/api/sprouts/${VAULT}/growth`);
+    const res = await app.request(`/api/sprouts/${VAULT}/growth`, { headers: readHeaders(db) });
     const body = (await res.json()) as { available: boolean; reason?: string };
     expect(body.available).toBe(false);
     expect(body.reason).toContain('no verified growth history');

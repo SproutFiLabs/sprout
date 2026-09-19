@@ -3,6 +3,16 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS family_gift_keys (address TEXT PRIMARY KEY, public_key TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS family_sessions (token_hash TEXT PRIMARY KEY, address TEXT NOT NULL, expires_at INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_family_session_address ON family_sessions(address);
+CREATE TABLE IF NOT EXISTS kid_invites (
+ id TEXT PRIMARY KEY, vault_id TEXT NOT NULL, secret_hash TEXT NOT NULL,
+ expires_at INTEGER NOT NULL, redeemed INTEGER NOT NULL DEFAULT 0, revoked INTEGER NOT NULL DEFAULT 0,
+ show_balance INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS kid_sessions (token_hash TEXT PRIMARY KEY, invite_id TEXT NOT NULL, expires_at INTEGER NOT NULL);
+
 CREATE TABLE IF NOT EXISTS sprouts (
   id TEXT PRIMARY KEY,
   chain_id INTEGER NOT NULL,

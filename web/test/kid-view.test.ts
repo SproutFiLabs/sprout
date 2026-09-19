@@ -20,9 +20,9 @@ describe('kid view countdown', () => {
 
 describe('kid view link', () => {
   const vault = '0x00000000000000000000000000000000000000a1';
-  test('carries the name only when there is one', () => {
-    expect(kidViewPath(vault, 'Maya Rose')).toBe(`/kid/${vault}?name=Maya%20Rose`);
-    expect(kidViewPath(vault, null)).toBe(`/kid/${vault}`);
-    expect(kidViewPath(vault, '  ')).toBe(`/kid/${vault}`);
+  test('retires wallet-address links and never carries a name', () => {
+    expect(kidViewPath(vault, 'Maya Rose')).toBe('/kid/expired');
+    expect(kidViewPath(vault, null)).toBe('/kid/expired');
+    expect(kidViewPath(vault, '  ')).toBe('/kid/expired');
   });
 });

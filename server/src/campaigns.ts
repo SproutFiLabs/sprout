@@ -17,9 +17,9 @@ import {
  * separately rather than priced.
  *
  * Notes are a gifter's name and a short message, attached only to a gift the
- * server has verified on-chain as coming from the signing wallet. They are
- * public to anyone with the link, so they are plain text, short, and may not
- * contain links; the parent can hide any of them.
+ * server has verified on-chain as coming from the signing wallet. Legacy records can contain plaintext; new messages contain encrypted envelopes.
+ * Notes are returned only through authenticated family routes. The parent can
+ * hide any of them.
  */
 
 export const NOTE_MAX = 140;

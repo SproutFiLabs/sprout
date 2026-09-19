@@ -1,3 +1,4 @@
+import { readHeaders } from './helpers';
 import { describe, expect, test } from 'bun:test';
 import { issueNonce } from '../src/auth';
 import { cleanText, TextRuleError } from '../src/campaigns';
@@ -74,13 +75,13 @@ describe('note text rules', () => {
 });
 
 describe('birthday campaigns', () => {
-  test('a parent creates a campaign and the gift page shows its progress and notes', async () => {
+  test('campaign progress and notes stay inside the authenticated family view', async () => {
     const db = seed();
     const created = await createCampaign(db, { title: 'Maya turns 8', goalDollars: 100, endsAt: NOW_MS / 1000 + 5 * 86400 });
     expect(created.status).toBe(201);
     const { gift } = (await created.json()) as { gift: { id: string; label: string; campaign: { title: string; goalCents: number } } };
-    expect(gift.label).toBe('Maya turns 8');
-    expect(gift.campaign).toMatchObject({ title: 'Maya turns 8', goalCents: 10_000 });
+    expect(gift.label).toBe('A gift for the future');
+    expect(gift.campaign).toMatchObject({ title: 'Family gift', goalCents: 10_000 });
 
     const pay = (n: number, token: string, amount: string) =>
       insertGiftPayment(db, {
@@ -100,11 +101,11 @@ describe('birthday campaigns', () => {
     upsertGiftNote(db, { chainId: 31337, txHash: `0x${'1'.padStart(64, '0')}`, logIndex: 0, giftId: gift.id, gifter: account.address, name: 'Grandma', note: 'Happy birthday!' });
     upsertGiftNote(db, { chainId: 31337, txHash: `0x${'2'.padStart(64, '0')}`, logIndex: 0, giftId: gift.id, gifter: account.address, name: 'Uncle Joe', note: null });
 
-    const view = (await (await app(db).request(`/api/gifts/${gift.id}`)).json()) as {
-      campaign: { raisedCents: number; goalCents: number; ended: boolean; otherGifts: Record<string, string> };
-      notes: Array<{ name: string; note: string | null; amount: string }>;
-      hiddenNotes: number;
-    };
+    const publicView = await (await app(db).request(`/api/gifts/${gift.id}`)).json() as Record<string, unknown>;
+    expect(publicView.notes).toBeUndefined();
+    expect(publicView.campaign).toBeUndefined();
+    const detail = await (await app(db).request(`/api/sprouts/${VAULT}`, { headers: readHeaders(db) })).json() as { gifts: Array<{ campaign: { raisedCents: number; goalCents: number; ended: boolean; otherGifts: Record<string, string> }; notes: Array<{ name: string; note: string | null; amount: string }>; hiddenNotes: number }> };
+    const view = detail.gifts[0]!;
     expect(view.campaign.raisedCents).toBe(3550);
     expect(view.campaign.ended).toBe(false);
     expect(Object.values(view.campaign.otherGifts)).toEqual(['5000000000000000']);
@@ -145,8 +146,8 @@ describe('birthday campaigns', () => {
     expect(((await hidden.json()) as { notes: Array<{ hidden: boolean }> }).notes[0]?.hidden).toBe(true);
 
     const view = (await (await app(db).request(`/api/gifts/${gift.id}`)).json()) as { notes: unknown[]; hiddenNotes: number };
-    expect(view.notes).toHaveLength(0);
-    expect(view.hiddenNotes).toBe(1);
+    expect(view.notes).toBeUndefined();
+    expect(view.hiddenNotes).toBeUndefined();
 
     // A gifter updating their note does not unhide it.
     upsertGiftNote(db, { chainId: 31337, txHash, logIndex: 0, giftId: gift.id, gifter: otherAccount.address, name: 'Spam', note: 'again' });

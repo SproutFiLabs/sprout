@@ -1,3 +1,4 @@
+import { readHeaders } from './helpers';
 import { describe, expect, test } from 'bun:test';
 import { loadChainConfig } from '@sprout/shared';
 import type { ChainContext } from '../src/chain';
@@ -283,7 +284,7 @@ describe('growth endpoint', () => {
     const db = memoryDb();
     seed(db, false);
     const app = testApp(db, mockCtx({ 10: 1_000 }).ctx, { localDemo: false });
-    const body = (await (await app.request(`/api/sprouts/${VAULT}/growth`)).json()) as Record<string, unknown>;
+    const body = (await (await app.request(`/api/sprouts/${VAULT}/growth`, { headers: readHeaders(db, GIFTER) })).json()) as Record<string, unknown>;
     expect(body.available).toBe(false);
     expect(body.reason).toContain('no verified growth history');
     expect(body.snapshots).toEqual([]);
@@ -295,7 +296,7 @@ describe('growth endpoint', () => {
     const db = memoryDb();
     seed(db, true);
     const app = testApp(db, mockCtx({ 10: 1_000 }).ctx, { localDemo: false });
-    const body = (await (await app.request(`/api/sprouts/${VAULT}/growth`)).json()) as {
+    const body = (await (await app.request(`/api/sprouts/${VAULT}/growth`, { headers: readHeaders(db, GIFTER) })).json()) as {
       available: boolean;
       snapshots: Array<{ takenAt: number; valueUsd: string; feedDecimals: number; source: string }>;
       contributions: unknown[];
@@ -318,7 +319,7 @@ describe('growth endpoint', () => {
       { db, chain: mockCtx({}, { failBlocks: true }).ctx, localDemo: false },
       { info: () => undefined, warn: (msg) => warnings.push(msg), error: () => undefined },
     );
-    const res = await app.request(`/api/sprouts/${VAULT}/growth`);
+    const res = await app.request(`/api/sprouts/${VAULT}/growth`, { headers: readHeaders(db, GIFTER) });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { available: boolean; snapshots: unknown[]; contributions: unknown[]; totals: unknown; note?: string };
     expect(body.available).toBe(true);

@@ -263,9 +263,7 @@ export function Landing() {
 
   const plantFromForm = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const nickname = String(new FormData(e.currentTarget).get('nickname') || '').trim();
-    if (!nickname) return;
-    try { sessionStorage.setItem('sprout-pending-nickname', nickname); } catch { /* local only */ }
+    try { sessionStorage.removeItem('sprout-pending-nickname'); } catch { /* local only */ }
     location.href = `${DASHBOARD}?new=1`;
   };
 
@@ -414,7 +412,7 @@ export function Landing() {
                 <div className="create-form"><a className="btn button-primary" href="/gift">Preview a gift</a></div>
               ) : (
                 <form className="create-form" onSubmit={plantFromForm}>
-                  <input name="nickname" aria-label="Your sprout’s nickname" placeholder="Your sprout’s nickname" required maxLength={24} />
+                  <small>Add their private nickname after unlocking your family space.</small>
                   <button type="submit" className="btn button-primary">Plant a sprout</button>
                 </form>
               )}

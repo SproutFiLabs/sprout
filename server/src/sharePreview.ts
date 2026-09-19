@@ -1,12 +1,4 @@
-/**
- * Link previews for gift links.
- *
- * Chat apps and X read Open Graph tags from the served HTML and never run the
- * app, so a gift link would otherwise preview exactly like the home page. For
- * a known gift, the server rewrites the preview tags in index.html before
- * sending it. The gift's label is included because the parent chose it and it
- * already appears on the public gift page; nothing else about the sprout is.
- */
+/** Generic gift unfurls. Family-provided labels never enter public social metadata. */
 
 export const DEFAULT_PUBLIC_ORIGIN = 'https://www.sproutfy.tech';
 
@@ -31,10 +23,8 @@ export interface GiftPreviewInput {
 }
 
 export function giftPreviewHtml(indexHtml: string, gift: GiftPreviewInput, pageUrl: string, origin: string): string {
-  // Labels are capped at 60 characters when a gift link is created; collapse
-  // whitespace so a crafted label cannot break the preview layout.
-  const label = gift.label?.replace(/\s+/g, ' ').trim().slice(0, 60) || null;
-  const title = label ? `${label} · Help a sprout grow` : 'You’re invited to help a sprout grow';
+  // Never publish family-provided text in unfurl previews.
+  const title = 'You’re invited to help a sprout grow';
   const image = `${origin}/og-gift.jpg`;
   const alt = 'You’re invited to help a sprout grow.';
   let html = indexHtml.replace(/<title>[^<]*<\/title>/, `<title>${escapeAttribute(title)}</title>`);

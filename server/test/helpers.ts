@@ -1,3 +1,4 @@
+import { createFamilySession } from '../src/privacy';
 import { privateKeyToAccount } from 'viem/accounts';
 import { loadChainConfig } from '@sprout/shared';
 import { openDb, type SproutDb } from '../src/db';
@@ -38,3 +39,5 @@ export function testimonialChain(): ChainContext {
 export function testApp(db: SproutDb, chain: ChainContext, opts: { localDemo?: boolean; adminToken?: string; now?: () => number } = {}) {
   return createApp({ db, chain, localDemo: opts.localDemo ?? true, adminToken: opts.adminToken, now: opts.now });
 }
+
+export function readHeaders(db: SproutDb, address: string = account.address) { return { authorization: `Bearer ${createFamilySession(db, address, Date.now()).token}` }; }

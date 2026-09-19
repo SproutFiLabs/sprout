@@ -1,3 +1,4 @@
+import { readHeaders } from './helpers';
 import { describe, expect, test } from 'bun:test';
 import type { Hex } from 'viem';
 import type { KeeperBudgetConfig } from '../src/config';
@@ -367,7 +368,7 @@ describe('automation capability (B1)', () => {
     const app = testApp(db, ctx);
     const health = (await (await app.request('/api/health')).json()) as { automation: { enabled: boolean } };
     expect(health.automation.enabled).toBe(false);
-    const detail = (await (await app.request(`/api/sprouts/${VAULT}`)).json()) as { automation: { enabled: boolean }; jobs: unknown[] };
+    const detail = (await (await app.request(`/api/sprouts/${VAULT}`, { headers: readHeaders(db, '0x00000000000000000000000000000000000000d4') })).json()) as { automation: { enabled: boolean }; jobs: unknown[] };
     expect(detail.automation.enabled).toBe(false);
     // No key material is ever returned.
     expect(JSON.stringify(detail)).not.toMatch(/rawTx|PRIVATE_KEY|keeperPrivateKey/i);

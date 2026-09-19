@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createPublicKey } from 'node:crypto';
 import { join } from 'node:path';
 import { Hono, type Context } from 'hono';
 import { getAddress, type Address, type Hex } from 'viem';
@@ -20,6 +20,7 @@ import {
 } from './chain';
 import { contributionHistory, type ContributionHistory } from './contributions';
 import { AuthError, authenticate, issueNonce } from './auth';
+import { createFamilySession, familySession, authorizeVault, childSession, digest, secret, CHILD_TTL, type KidInvite } from './privacy';
 import { reconcile, snapshotAll } from './indexer';
 import { automationCapability, runDueJobs } from './jobs';
 import { investQuote } from './invest';
@@ -180,12 +181,121 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   };
 
   app.onError((err, c) => {
-    if (err instanceof AuthError) return c.json({ error: err.message }, 401);
+    if (err instanceof AuthError) return c.json({ error: err.message }, err.status as 401);
     if (err instanceof HttpError) return c.json({ error: err.message }, err.status as 400);
     if (err instanceof LocalWalletError) return c.json({ error: err.message }, err.status as 400);
     if (err instanceof ChainConfigError) return c.json({ error: err.message }, 503);
-    logger.error('unhandled request error', err);
+    logger.error('unhandled request error'); // Never log request bodies, secrets or family metadata.
     return c.json({ error: 'internal error' }, 500);
+  });
+
+  const now = () => deps.now?.() ?? Date.now();
+  app.use('*', async (c, next) => {
+    c.header('Referrer-Policy', 'no-referrer');
+    c.header('X-Content-Type-Options', 'nosniff');
+    c.header('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
+    c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    if (/^\/(api|kid|dashboard|family|gift)(\/|$)/.test(c.req.path)) {
+      c.header('Cache-Control', 'no-store');
+      c.header('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    }
+    // Every family GET, including nested resources, crosses the same boundary.
+    if (c.req.method === 'GET' && /^\/api\/(sprouts|jobs)(\/|$)/.test(c.req.path)) {
+      const session = familySession(c, deps.db, now());
+      const parts = c.req.path.split('/').map(decodeURIComponent);
+      if (parts[2] === 'sprouts' && parts[3]) authorizeVault(deps.db, parts[3], session.address);
+      else if (parts[2] === 'jobs' && parts[3]) {
+        const job = getJob(deps.db, parts[3]);
+        if (!job) throw new HttpError(403, 'This family view is unavailable.');
+        authorizeVault(deps.db, job.vaultId, session.address);
+      } else {
+        const requested = c.req.query('parent') ?? c.req.query('beneficiary');
+        if (requested?.toLowerCase() !== session.address) throw new HttpError(403, 'Only your own family can be listed.');
+      }
+    }
+    await next();
+    c.res.headers.set('Referrer-Policy', 'no-referrer');
+    c.res.headers.set('X-Content-Type-Options', 'nosniff');
+    c.res.headers.set('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
+    c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    if (/^\/(api|kid|dashboard|family|gift)(\/|$)/.test(c.req.path)) {
+      c.res.headers.set('Cache-Control', 'no-store');
+      c.res.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    }
+  });
+
+  app.post('/api/family/gift-key', async (c) => {
+    const signer = (await requireAuth(c, deps, 'family-gift-key')).toLowerCase();
+    const body = await readJson(c, z.object({ publicKey: z.string().min(100).max(1200) }).strict());
+    try {
+      const publicKey = createPublicKey({ key: Buffer.from(body.publicKey, 'base64'), type: 'spki', format: 'der' });
+      if (publicKey.asymmetricKeyType !== 'rsa' || publicKey.asymmetricKeyDetails?.modulusLength !== 3072) throw new Error();
+    } catch { throw new HttpError(400, 'Invalid gift encryption key.'); }
+    const existing = deps.db.query<{ public_key: string }, [string]>('SELECT public_key FROM family_gift_keys WHERE address=?').get(signer);
+    if (existing && existing.public_key !== body.publicKey) throw new HttpError(409, 'Restore your original encrypted vault; its gift key is already registered.');
+    deps.db.run('INSERT OR IGNORE INTO family_gift_keys VALUES (?,?)', [signer, body.publicKey]);
+    return c.json({ registered: true });
+  });
+  app.post('/api/family/session', async (c) => {
+    const address = await requireAuth(c, deps, 'family-session');
+    return c.json(createFamilySession(deps.db, address, now()));
+  });
+  app.post('/api/family/lock', (c) => {
+    const session = familySession(c, deps.db, now());
+    deps.db.run('DELETE FROM family_sessions WHERE address=?', [session.address]);
+    return c.json({ locked: true });
+  });
+  app.get('/api/family/invites/:vault', (c) => {
+    const session = familySession(c, deps.db, now());
+    const vault = authorizeVault(deps.db, c.req.param('vault'), session.address, true);
+    const invites = deps.db.query('SELECT id, expires_at AS expiresAt, redeemed, revoked, show_balance AS showBalance FROM kid_invites WHERE lower(vault_id)=? ORDER BY expires_at DESC').all(vault.id.toLowerCase());
+    return c.json({ invites });
+  });
+  app.post('/api/family/invites/:vault', async (c) => {
+    const vaultId = c.req.param('vault');
+    const signer = await requireAuth(c, deps, `kid-invite:${vaultId.toLowerCase()}`);
+    const vault = authorizeVault(deps.db, vaultId, signer, true);
+    const body = await readJson(c, z.object({ showBalance: z.boolean().default(false) }).strict());
+    const id = randomBytes(16).toString('hex');
+    const token = secret();
+    const expiresAt = now() + 7 * 24 * 60 * 60_000;
+    deps.db.run('INSERT INTO kid_invites (id,vault_id,secret_hash,expires_at,show_balance) VALUES (?,?,?,?,?)', [id, vault.id, digest(token), expiresAt, Number(body.showBalance)]);
+    return c.json({ id, token, expiresAt }, 201);
+  });
+  app.post('/api/family/invites/:id/revoke', async (c) => {
+    const id = c.req.param('id');
+    const signer = await requireAuth(c, deps, `kid-revoke:${id}`);
+    const invite = deps.db.query<KidInvite, [string]>('SELECT * FROM kid_invites WHERE id=?').get(id);
+    if (!invite) throw new HttpError(404, 'Invitation unavailable.');
+    authorizeVault(deps.db, invite.vault_id, signer, true);
+    deps.db.run('UPDATE kid_invites SET revoked=1 WHERE id=?', [id]);
+    return c.json({ revoked: true });
+  });
+  app.post('/api/kid/redeem', async (c) => {
+    const body = await readJson(c, z.object({ id: z.string().regex(/^[a-f0-9]{32}$/), token: z.string().regex(/^[\w-]{43}$/) }).strict());
+    const token = secret();
+    const result = deps.db.transaction(() => {
+      const invite = deps.db.query<KidInvite, [string, string, number]>('SELECT * FROM kid_invites WHERE id=? AND secret_hash=? AND expires_at>? AND revoked=0 AND redeemed=0').get(body.id, digest(body.token), now());
+      if (!invite) throw new AuthError('Invitation unavailable. Ask a grown-up for a new one.');
+      deps.db.run('UPDATE kid_invites SET redeemed=1 WHERE id=?', [invite.id]);
+      const expiresAt = Math.min(invite.expires_at, now() + CHILD_TTL);
+      deps.db.run('INSERT INTO kid_sessions VALUES (?,?,?)', [digest(token), invite.id, expiresAt]);
+      return { token, expiresAt };
+    })();
+    return c.json(result);
+  });
+  app.get('/api/kid/view', async (c) => {
+    const invite = childSession(c, deps.db, now());
+    const sprout = getSprout(deps.db, invite.vault_id);
+    if (!sprout) throw new HttpError(404, 'View unavailable.');
+    // No wallet addresses, transaction hashes, names, birth/graduation dates or gift messages.
+    const symbols = deps.chain.config.chain.contracts.stockTokens.filter(t => sprout.assets.some(a => a.toLowerCase() === t.address.toLowerCase())).map(t => t.symbol);
+    let balance: { valueUsd: string | null; feedDecimals: number } | null = null;
+    if (invite.show_balance) {
+      const holdings = await cachedHoldings(deps.chain, sprout.id as Address);
+      if (holdings.available) balance = { valueUsd: holdings.totalValueUsd, feedDecimals: holdings.feedDecimals };
+    }
+    return c.json({ symbols, balance, chores: listMilestonesByVault(deps.db, sprout.chainId, sprout.id).filter(m => m.status === 'created').length, expiresAt: invite.expires_at });
   });
 
   app.get('/api/health', (c) =>
@@ -339,7 +449,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   app.post('/api/sprouts', async (c) => {
     const signer = await requireAuth(c, deps, 'plant');
     requireConfigured(deps);
-    const body = await readJson(c, z.object({ txHash: hashSchema, nickname: z.string().max(40).optional() }));
+    const body = await readJson(c, z.object({ txHash: hashSchema }).strict());
     const created = await verifySproutCreated(deps.chain, body.txHash as Hex);
     if (getAddress(created.parent) !== getAddress(signer)) {
       throw new HttpError(403, 'transaction parent does not match authenticated wallet');
@@ -517,14 +627,14 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       if (body.campaign.endsAt > nowSeconds + CAMPAIGN_MAX_DAYS * 86400) {
         throw new HttpError(400, `A campaign can run for at most ${CAMPAIGN_MAX_DAYS} days`);
       }
-      campaign = { title, goalCents: body.campaign.goalDollars * 100, endsAt: body.campaign.endsAt };
+      campaign = { title: 'Family gift', goalCents: body.campaign.goalDollars * 100, endsAt: body.campaign.endsAt };
     }
     const id = `0x${randomBytes(32).toString('hex')}` as Hex;
     deps.db.transaction(() => {
       insertGift(deps.db, {
         id,
         vaultId: getAddress(body.vaultId),
-        label: body.label ?? campaign?.title ?? null,
+        label: 'A gift for the future',
         acceptedAssets: body.acceptedAssets.map(getAddress),
         status: 'open',
       });
@@ -536,22 +646,15 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   app.get('/api/gifts/:id', async (c) => {
     const gift = getGift(deps.db, c.req.param('id'));
     if (!gift) throw new HttpError(404, 'gift not found');
-    const payments = listGiftPayments(deps.db, gift.id);
-    const totalByToken: Record<string, string> = {};
-    for (const p of payments) {
-      totalByToken[p.token] = (BigInt(totalByToken[p.token] ?? '0') + BigInt(p.amount)).toString();
-    }
-    return c.json({
-      id: gift.id,
-      vaultId: gift.vaultId,
-      label: gift.label,
-      acceptedAssets: gift.acceptedAssets,
-      status: gift.status,
-      paymentCount: payments.length,
-      totals: totalByToken,
-      campaign: await giftCampaign(gift.id),
-      ...notesView(deps.db, gift.id),
-    });
+    const parent = getSprout(deps.db, gift.vaultId)?.parent.toLowerCase();
+    const key = deps.db.query<{ public_key: string }, [string]>('SELECT public_key FROM family_gift_keys WHERE address=?').get(parent ?? '');
+    return c.json({ id: gift.id, label: 'A gift for the future', acceptedAssets: gift.acceptedAssets, status: gift.status, publicKey: key?.public_key ?? null });
+  });
+  app.post('/api/gifts/:id/checkout', async (c) => {
+    await requireAuth(c, deps, `gift-checkout`);
+    const gift = getGift(deps.db, c.req.param('id'));
+    if (!gift || gift.status !== 'open') throw new HttpError(404, 'Gift unavailable.');
+    return c.json({ id: gift.id, vaultId: gift.vaultId, acceptedAssets: gift.acceptedAssets, chainVisibility: 'public' });
   });
 
   // The parent's full list of notes for a gift link, hidden ones included.
@@ -582,12 +685,12 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     requireConfigured(deps);
     const body = await readJson(
       c,
-      z.object({ txHash: hashSchema, name: z.string().max(200).optional(), note: z.string().max(1000).optional() }),
+      z.object({ txHash: hashSchema, encryptedNote: z.string().max(6000).startsWith('encrypted:v1:').optional() }).strict(),
     );
     // Check the note before anything is recorded, so a refused note is reported
     // as such rather than half-applied.
-    const name = textRule(() => cleanText(body.name, NAME_MAX, 'Name'));
-    const note = textRule(() => cleanText(body.note, NOTE_MAX, 'Note'));
+    const name = null;
+    const note = body.encryptedNote ?? null;
     const events = await decodeReceiptLogs(deps.chain.publicClient!, sproutVaultAbi, [gift.vaultId as Address], body.txHash as Hex);
     const payment = events.find(
       (e) => e.eventName === 'GiftReceived' && String(e.args.giftRef).toLowerCase() === gift.id.toLowerCase(),
@@ -690,7 +793,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const afterRaw = c.req.query('after');
     const minBlock = afterRaw && /^\d{1,12}$/.test(afterRaw) ? Number(afterRaw) : undefined;
     const amount = BigInt(amountRaw);
-    // Unauthenticated, so share identical requests for a moment.
+    // Family authorization runs before this route; reuse identical chain quotes briefly.
     const quote = await chainCache(deps.chain).get(
       `invest-quote:${sprout.id.toLowerCase()}:${amount}:${minBlock ?? 0}`,
       READ_TTL.investQuote,

@@ -68,13 +68,13 @@ describe('production / mainnet mode', () => {
 
     const kid = await app.request(`/kid/0x${'ab'.repeat(20)}`);
     expect(kid.status).toBe(200);
-    expect(kid.headers.get('x-robots-tag')).toBe('noindex, nofollow');
+    expect(kid.headers.get('x-robots-tag')).toBe('noindex, nofollow, noarchive');
     expect(await kid.text()).toContain('sprout');
     const lesson = await app.request(`/kid/0x${'ab'.repeat(20)}/learn/share`);
     expect(lesson.status).toBe(200);
-    expect(lesson.headers.get('x-robots-tag')).toBe('noindex, nofollow');
+    expect(lesson.headers.get('x-robots-tag')).toBe('noindex, nofollow, noarchive');
     expect(await lesson.text()).toContain('sprout');
-    expect((await app.request('/dashboard')).headers.get('x-robots-tag')).toBeNull();
+    expect((await app.request('/dashboard')).headers.get('x-robots-tag')).toContain('noindex');
 
     const apiMissing = await app.request('/api/does-not-exist');
     expect(apiMissing.status).toBe(404);
@@ -105,16 +105,16 @@ describe('gift link previews', () => {
   const meta = (html: string, key: string) =>
     html.match(new RegExp(`<meta (?:property|name)="${key}" content="([^"]*)"`))?.[1];
 
-  test('a known gift link previews as a gift, with its label', async () => {
+  test('a known gift link previews as a gift, without family labels', async () => {
     const { app, id } = giftApp('Birthday 2026');
     const html = await (await app.request(`/gift/${id}`)).text();
-    expect(meta(html, 'og:title')).toBe('Birthday 2026 · Help a sprout grow');
-    expect(meta(html, 'twitter:title')).toBe('Birthday 2026 · Help a sprout grow');
+    expect(meta(html, 'og:title')).toBe('You’re invited to help a sprout grow');
+    expect(meta(html, 'twitter:title')).toBe('You’re invited to help a sprout grow');
     expect(meta(html, 'og:image')).toBe('https://sprout.example/og-gift.jpg');
     expect(meta(html, 'twitter:image')).toBe('https://sprout.example/og-gift.jpg');
     expect(meta(html, 'og:url')).toBe(`https://sprout.example/gift/${id}`);
     expect(meta(html, 'twitter:card')).toBe('summary_large_image');
-    expect(html).toContain('<title>Birthday 2026 · Help a sprout grow</title>');
+    expect(html).toContain('<title>You’re invited to help a sprout grow</title>');
     // The app itself still loads.
     expect(html).toContain('<div id="root"></div>');
   });
@@ -123,7 +123,7 @@ describe('gift link previews', () => {
     const { app, id } = giftApp('"><script>alert(1)</script>');
     const html = await (await app.request(`/gift/${id}`)).text();
     expect(html).not.toContain('<script>alert(1)</script>');
-    expect(meta(html, 'og:title')).toBe('&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt; · Help a sprout grow');
+    expect(meta(html, 'og:title')).toBe('You’re invited to help a sprout grow');
   });
 
   test('unknown gifts and other routes keep the site-wide preview', async () => {

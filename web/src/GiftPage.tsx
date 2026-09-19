@@ -33,7 +33,7 @@ function short(address: string): string {
 }
 
 export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onConnect, onConnectLocal }: GiftPageProps) {
-  const [gift, setGift] = useState<GiftSummary | null>(null);
+  const [gift, setGift] = useState<Pick<GiftSummary, 'id' | 'label' | 'acceptedAssets' | 'status'> & { publicKey: string | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [txn, setTxn] = useState<TxnState | null>(null);
   const [form, setForm] = useState({ token: '', amount: '25', name: '', note: '' });
@@ -73,11 +73,12 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
       const token = form.token as Address;
       const amount = parseUnits(form.amount || '0', decimalsFor(token));
       if (amount <= 0n) throw new Error('Amount must be positive');
+      const checkout = await api.giftCheckout(wallet, gift.id);
       const write = contractWriter(wallet);
-      const approveHash = await write({ address: token, abi: erc20Abi, functionName: 'approve', args: [gift.vaultId, amount] });
+      const approveHash = await write({ address: token, abi: erc20Abi, functionName: 'approve', args: [checkout.vaultId, amount] });
       await waitForSuccess(wallet.publicClient, approveHash);
       const payHash = await write({
-        address: gift.vaultId,
+        address: checkout.vaultId,
         abi: sproutVaultAbi,
         functionName: 'payGift',
         args: [token, amount, gift.id],
@@ -124,7 +125,7 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
             <img src="/art/dashboard/hero-bouquet.png" alt="" />
           </div>
           <section className="garden-card garden-gift-card">
-            <span className="garden-eyebrow">{gift?.campaign ? 'Birthday campaign' : 'Gift preview'}</span>
+            <span className="garden-eyebrow">Gift invitation</span>
             {error ? (
               <p className="garden-gift-warning" data-testid="gift-error">
                 {error}
@@ -133,26 +134,15 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
             {!gift && !error ? <p className="garden-empty-note">Loading gift…</p> : null}
             {gift ? (
               <>
-                <h1 className="garden-gift-title" data-testid="gift-page-title">{gift.campaign?.title ?? gift.label ?? 'Gift link'}</h1>
-                {gift.campaign ? <CampaignProgress campaign={gift.campaign} nowMs={Date.now()} /> : null}
-                <p className="garden-gift-lead">This link adds funds to one fixed vault. It never grants withdrawal access.</p>
+                <h1 className="garden-gift-title" data-testid="gift-page-title">A gift for the future</h1>
+                <p className="garden-gift-lead">A little today. A world of possibilities. No child identity is shown in this preview.</p>
                 <div className="garden-gift-facts">
                   <div>
                     <small>Accepted assets</small>
                     <b>{gift.acceptedAssets.map(labelFor).join(', ')}</b>
                   </div>
-                  <div>
-                    <small>Gifts received</small>
-                    <b>{gift.paymentCount}</b>
-                  </div>
                 </div>
-
-                {gift.notes && gift.notes.length > 0 ? (
-                  <section className="gift-notes-wall" aria-labelledby="gift-notes-title">
-                    <h2 id="gift-notes-title">Notes from family</h2>
-                    <GiftNotesList notes={gift.notes} tokenLabel={(token, amount) => giftAmountLabel(token, amount, chain.contracts)} />
-                  </section>
-                ) : null}
+                <p className="garden-gift-notice">Payments use a public blockchain. Signing checkout reveals the destination wallet; the payment and gift link can be traced on-chain. This link never grants withdrawal access.</p>
 
                 {!chain.configured ? (
                   <p className="garden-gift-notice">This chain is not configured, so paying is disabled. Nothing is guessed.</p>
@@ -184,7 +174,7 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
                       Amount
                       <input data-testid="gift-page-amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
                     </label>
-                    <label>
+                    {gift.publicKey ? <><label>
                       <span>
                         Your name <span className="garden-muted">(optional)</span>
                       </span>
@@ -209,7 +199,7 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
                         onChange={(e) => setForm({ ...form, note: e.target.value })}
                       />
                     </label>
-                    <p className="garden-muted gift-note-privacy">Your name and note are shown on this page to anyone with the link.</p>
+                    <p className="garden-muted gift-note-privacy">Your message is encrypted in this browser for the family. It never appears on a public wall.</p></> : <p className="garden-muted gift-note-privacy">Private messages are unavailable until this family enables encryption. You can still send a gift.</p>}
                     {noteProblem ? (
                       <p className="garden-gift-warning" role="alert" data-testid="gift-note-problem">
                         {noteProblem}
