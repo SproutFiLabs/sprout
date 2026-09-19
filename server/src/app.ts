@@ -1,6 +1,7 @@
 import { registerIntelligenceRoutes, createIntelligenceRuntime, loadIntelligenceConfig, type IntelligenceRuntime } from './intelligence';
 import { registerHarvestRoutes, type HarvestRuntime } from './harvest';
 import { registerZkRoutes } from './zk';
+import { marketAvailability } from './marketAvailability';
 import { registerStockPriceRoutes } from './stockPrices';
 import { registerPrivacyPackRoutes } from './privacyPack';
 import { randomBytes, createPublicKey } from 'node:crypto';
@@ -19,6 +20,7 @@ import {
   decodeReceiptLogs,
   getBeneficiaryState,
   getSettlementDecimals,
+  tokenDecimals,
   invalidateChainReads,
   isGraduated,
   verifySproutCreated,
@@ -375,6 +377,10 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   app.get('/api/perks', async (c) => {
     const root = await publicRoot(holders, { afterBlock: afterBlockOf(c) });
     return c.json({ ...publicPerks(holders.config), ...(root ? { root } : {}) });
+  });
+  app.get('/api/markets', async (c) => {
+    try { return c.json(await marketAvailability(deps.chain, process.env.SPROUT_QUOTER_ADDRESS)); }
+    catch { throw new HttpError(503, 'Market status is temporarily unavailable.'); }
   });
   // Stock guide price history, from the stocks' own price feeds (see stockPrices.ts).
   registerStockPriceRoutes(app, deps, logger);
@@ -1027,12 +1033,29 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       }
     }
     checks.venuesAdmitted = venuesAdmitted;
+    // Every stock token's configured decimals must be its own (CBBTC has 8, not
+    // 18): the web parses typed amounts with them. A wrong SPROUT_STOCK_TOKENS
+    // entry keeps the service unready, so that deploy never goes live.
+    let stockDecimalsMatch = false;
+    if (rpcReachable && chainIdMatch && checks.configured === true) {
+      const tokens = deps.chain.config.chain.contracts.stockTokens;
+      try {
+        const onChain = await Promise.all(tokens.map((t) => tokenDecimals(deps.chain, t.address)));
+        const wrong = tokens.flatMap((t, i) => (onChain[i] === t.decimals ? [] : [{ symbol: t.symbol, configured: t.decimals, onChain: onChain[i] }]));
+        if (wrong.length > 0) checks.stockDecimalsMismatch = wrong;
+        stockDecimalsMatch = wrong.length === 0;
+      } catch {
+        stockDecimalsMatch = false;
+      }
+    }
+    checks.stockDecimalsMatch = stockDecimalsMatch;
     const ready =
       checks.configured === true &&
       rpcReachable &&
       chainIdMatch &&
       checks.startBlockConfigured === true &&
-      venuesAdmitted;
+      venuesAdmitted &&
+      stockDecimalsMatch;
     return c.json({ ready, checks }, ready ? 200 : 503);
   });
 

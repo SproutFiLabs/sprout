@@ -52,8 +52,8 @@ describe('holder bouquets', () => {
   const key = (w: Record<string, number> | null) => JSON.stringify(Object.entries(w ?? {}).sort());
   const byId = new Map(HOLDER_BOUQUETS.map((b) => [`bouquet-${b.id}`, b]));
 
-  test('the admitted list is the 21 stocks', () => {
-    expect(all.length).toBe(21);
+  test('the admitted list is the 25 assets of the third factory', () => {
+    expect(all.length).toBe(25);
   });
 
   test('bouquets are not copies of the free starter mixes, or of each other', async () => {
@@ -129,9 +129,9 @@ describe('holder bouquets', () => {
         expect([b.id, tier, b.lockNote]).toEqual([b.id, tier, open ? undefined : `For SPROUT holders (${tierLabel(need)} and up).`]);
       }
     }
-    // A Seedling holder has the first four and sees the rest locked at Sapling, Bloom and Grove.
+    // A Seedling holder has the first five and sees the rest locked at Sapling, Bloom and Grove.
     const seedling = holderBouquets(holder('seedling'), all);
-    expect(seedling.filter((b) => !b.locked).map((b) => b.id)).toEqual(['bouquet-moonshots', 'bouquet-ai-builders', 'bouquet-brands', 'bouquet-silver-lining']);
+    expect(seedling.filter((b) => !b.locked).map((b) => b.id)).toEqual(['bouquet-moonshots', 'bouquet-ai-builders', 'bouquet-brands', 'bouquet-crypto-circle', 'bouquet-silver-lining']);
     expect(new Set(seedling.filter((b) => b.locked).map((b) => b.lockNote))).toEqual(
       new Set((['sapling', 'bloom', 'grove'] as const).map((x) => `For SPROUT holders (${tierLabel(x)} and up).`)),
     );

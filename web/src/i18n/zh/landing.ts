@@ -2,6 +2,7 @@
 export const zh: Record<string, string> = {
   'New': '新',
   '21 stocks now, including Tesla and SpaceX': '现在有 21 只股票，包括特斯拉和 SpaceX',
+  'Bitcoin and Ethereum now, plus 23 stocks and funds': '现在有比特币和以太坊，还有 23 只股票和基金',
   // Landing: navigation, header and shared links
   'SPROUT home': 'SPROUT 首页',
   'Explore': '探索',

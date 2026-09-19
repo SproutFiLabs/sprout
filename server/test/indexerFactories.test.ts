@@ -283,7 +283,8 @@ describe('valuation with the full stock list configured', () => {
           case 'settlementToken':
             return SETTLEMENT;
           case 'decimals':
-            return a === SETTLEMENT ? 6 : 8;
+            // USDG 6, the stock tokens 18, the feeds 8.
+            return a === SETTLEMENT ? 6 : a === FEED || a === FEED_STALE ? 8 : 18;
           case 'balanceOf':
             return a === SETTLEMENT ? 2_000_000n : a === STOCK_A ? 10n ** 18n : 0n;
           case 'uiMultiplier':
@@ -325,5 +326,66 @@ describe('valuation with the full stock list configured', () => {
     expect(await snapshotAll(ctx, db, [OLD_VAULT])).toBe(1);
     const stored = listSnapshots(db, OLD_VAULT)[0]!.holdings as Array<{ symbol: string }>;
     expect(stored.map((h) => h.symbol)).toEqual(['SETTLEMENT', 'AAA']);
+  });
+});
+
+describe('three factories: the crypto batch makes a third one current', () => {
+  // The third factory is deployed at 3000; the first (1000) and second (2000) become legacy.
+  const THIRD_FACTORY = '0x00000000000000000000000000000000000000ac';
+  const THIRD_VENUE = '0x00000000000000000000000000000000000000bc';
+  const THIRD_VAULT = '0x0000000000000000000000000000000000000e03';
+  const legacyBoth = `${OLD_FACTORY}:${OLD_VENUE}:1000,${NEW_FACTORY}:${NEW_VENUE}:2000`;
+
+  test('a fresh database reads all three factories, and each vault keeps its own factory', async () => {
+    const db = memoryDb();
+    const logs = [
+      created(OLD_FACTORY, OLD_VAULT, 1100),
+      created(NEW_FACTORY, NEW_VAULT, 2100),
+      created(THIRD_FACTORY, THIRD_VAULT, 3100),
+      funded(THIRD_VAULT, 3200),
+      funded(OLD_VAULT, 3300),
+    ];
+    const { ctx, queries } = chain(env({ factory: THIRD_FACTORY, venue: THIRD_VENUE, start: 3000 }, legacyBoth), logs, 3500);
+    const result = await reconcile(ctx, db, {});
+    expect(result.fromBlock).toBe(1000);
+    expect(result.sproutsIndexed).toBe(3);
+    // Every query for the factories names all three, current first.
+    for (const q of queries.filter((q) => q.addresses.includes(THIRD_FACTORY))) {
+      expect(q.addresses.slice(0, 3)).toEqual([THIRD_FACTORY, OLD_FACTORY, NEW_FACTORY]);
+    }
+    expect([OLD_VAULT, NEW_VAULT, THIRD_VAULT].map((v) => getSprout(db, v)?.factory)).toEqual([OLD_FACTORY, NEW_FACTORY, THIRD_FACTORY]);
+    expect(names(db, THIRD_VAULT)).toEqual(['SproutCreated@3100', 'Funded@3200']);
+    expect(names(db, OLD_VAULT)).toEqual(['SproutCreated@1100', 'Funded@3300']);
+    for (const f of [OLD_FACTORY, NEW_FACTORY, THIRD_FACTORY]) expect(getFactoryCursor(db, 4663, f)).toBe(3500);
+  });
+
+  test('switching from two factories to three backfills only the third, from its own start block', async () => {
+    const db = memoryDb();
+    const logs = [
+      created(OLD_FACTORY, OLD_VAULT, 1100),
+      created(NEW_FACTORY, NEW_VAULT, 2100),
+      // Deployed at 3000 and used before the server switched over at 4000.
+      created(THIRD_FACTORY, THIRD_VAULT, 3100),
+      funded(THIRD_VAULT, 3900),
+      funded(NEW_VAULT, 4100),
+    ];
+    // Indexed up to 4000 with the second factory current and the first legacy.
+    const before = chain(env({ factory: NEW_FACTORY, venue: NEW_VENUE, start: 2000 }, `${OLD_FACTORY}:${OLD_VENUE}:1000`), logs, 4000);
+    await reconcile(before.ctx, db, {});
+    expect(getCursor(db, 4663)).toBe(4000);
+    expect(getSprout(db, THIRD_VAULT)).toBeNull();
+
+    const after = chain(env({ factory: THIRD_FACTORY, venue: THIRD_VENUE, start: 3000 }, legacyBoth), logs, 4200);
+    const result = await reconcile(after.ctx, db, {});
+    expect(result.backfilled).toEqual([{ factory: THIRD_FACTORY, fromBlock: 3000, toBlock: 4000 }]);
+    // Nothing before the shared cursor is read again for the first two factories.
+    for (const q of after.queries.filter((q) => q.from <= 4000)) {
+      expect(q.addresses).not.toContain(OLD_FACTORY);
+      expect(q.addresses).not.toContain(NEW_FACTORY);
+    }
+    expect(getSprout(db, THIRD_VAULT)?.factory).toBe(THIRD_FACTORY);
+    expect(names(db, THIRD_VAULT)).toEqual(['SproutCreated@3100', 'Funded@3900']);
+    expect(names(db, NEW_VAULT)).toEqual(['SproutCreated@2100', 'Funded@4100']);
+    expect(getCursor(db, 4663)).toBe(4200);
   });
 });

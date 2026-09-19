@@ -36,6 +36,8 @@ const D = {
   govRules: 'Government rules for big tech companies',
   aiSpending: 'How much the company spends on AI',
   growthMood: 'How much investors will pay for fast growth',
+  cryptoMood: 'How investors feel about crypto overall',
+  cryptoRules: 'Government rules for crypto',
 } as const;
 
 /** Every shared driver line (for the translation test). */
@@ -152,6 +154,30 @@ export const GUIDE: Record<string, GuideEntry> = {
     kids: 'USO goes up and down with the price of oil, which petrol is made from.',
     inside: 'Futures contracts on US crude oil. No companies.',
     drivers: ['Oil prices', 'How much oil producing countries decide to pump', 'Travel and the world economy', 'Conflicts in oil producing regions'],
+  },
+  WETH: {
+    what: 'Ether (ETH) is the coin of Ethereum, a worldwide network that runs apps and digital money without a company in charge. People pay small fees in ether to use it, and many other tokens and stablecoins live on it. Like Bitcoin, it is not a share in a business: its price is whatever buyers and sellers agree on.',
+    kids: 'Ethereum is a giant shared computer on the internet, and ether is the coin people use to pay for it.',
+    drivers: ['How many people use Ethereum and the apps built on it', D.cryptoMood, D.rates, D.cryptoRules],
+    note: 'WETH is wrapped ether: a token on Robinhood Chain that can be turned back into one ether, the same ETH that pays network fees there. It follows the price of ether one for one.',
+  },
+  CBBTC: {
+    what: 'Bitcoin is the first and largest crypto coin: digital money with a fixed limit of 21 million coins, kept by a worldwide network of computers instead of a bank or a government. It is not a share in a business: its price is whatever buyers and sellers agree on, and it has had big swings both ways.',
+    kids: 'Bitcoin is digital money that no bank runs. There will only ever be 21 million of them.',
+    drivers: [D.cryptoMood, 'Big buyers and sellers, such as funds and companies', D.rates, D.cryptoRules],
+    note: 'In a sprout, Bitcoin is held as {registry} (cbBTC): Coinbase keeps one real bitcoin for every cbBTC, and the token is carried over to Robinhood Chain by Chainlink’s cross-chain bridge. So it relies on Coinbase and on that bridge, as well as on Bitcoin.',
+    registry: 'Coinbase Wrapped BTC',
+  },
+  CRCL: {
+    what: 'Circle issues USDC, one of the biggest stablecoins: a digital dollar meant to always be worth $1, backed by cash and short-term US government bonds. Most of Circle’s money is the interest earned on those reserves, so its income depends on how much USDC is in use and on interest rates. It is a company, not a coin.',
+    kids: 'Circle makes USDC, a digital dollar people use to pay and save on the internet.',
+    drivers: ['How much USDC people hold and use', D.rates, 'Government rules for stablecoins', D.cryptoMood],
+  },
+  SGOV: {
+    what: 'SGOV (the iShares 0-3 Month Treasury Bond ETF) is a fund that holds US Treasury bills: loans to the US government that are paid back within three months. Because the loans are so short and the borrower is the US government, its price moves very little from day to day.',
+    kids: 'SGOV is like lending money to the US government for a few weeks and getting it back with a little extra.',
+    inside: 'US Treasury bills paid back within three months. No companies.',
+    drivers: ['US interest rates', 'Demand for short-term government bonds', 'The fund’s yearly fee'],
   },
 };
 

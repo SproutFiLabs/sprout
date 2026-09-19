@@ -351,7 +351,7 @@ export async function getSettlementDecimals(ctx: ChainContext): Promise<number> 
 }
 
 /** ERC-20 decimals never change, so a successful read is kept for good. */
-function tokenDecimals(ctx: ChainContext, token: Address): Promise<number> {
+export function tokenDecimals(ctx: ChainContext, token: Address): Promise<number> {
   const client = requirePublic(ctx);
   return chainCache(ctx).get(`token:${token.toLowerCase()}:decimals`, FOREVER_MS, async () =>
     Number(await client.readContract({ address: token, abi: erc20Abi, functionName: 'decimals' })),
@@ -605,7 +605,13 @@ async function readStockHolding(
     (error: unknown) => ({ ok: false as const, error }),
   );
 
-  const [onChainMultiplier, paused] = await Promise.all([multiplierRead, pausedRead]);
+  // Each token's OWN decimals (CBBTC has 8, the stock tokens 18), read from the
+  // chain and kept for good; the configured value is only a fallback while the
+  // read fails. A wrong SPROUT_STOCK_TOKENS entry would otherwise misprice a
+  // holding by a power of ten.
+  const decimalsRead = tokenDecimals(ctx, token.address).catch(() => token.decimals);
+
+  const [onChainMultiplier, paused, decimals] = await Promise.all([multiplierRead, pausedRead, decimalsRead]);
   // uiMultiplier is 1e18-scaled; fall back to the configured multiplier when the
   // token does not expose one.
   const multiplier = onChainMultiplier !== null && onChainMultiplier > 0n ? onChainMultiplier : token.multiplier;
@@ -616,7 +622,7 @@ async function readStockHolding(
     address: token.address,
     kind: 'stock',
     rawBalance: rawBalance.toString(),
-    decimals: token.decimals,
+    decimals,
     multiplier: multiplier.toString(),
     price: null,
     feedDecimals: USD_DECIMALS,
@@ -643,7 +649,7 @@ async function readStockHolding(
   else if (answeredInRound < roundId || updatedAt === 0n) status = 'missing-feed';
   else if (Number(updatedAt) > chainNow || chainNow - Number(updatedAt) > heartbeat) status = 'stale';
 
-  const feedValue = (rawBalance * answer) / 10n ** BigInt(token.decimals);
+  const feedValue = (rawBalance * answer) / 10n ** BigInt(decimals);
   return {
     ...base,
     feedDecimals,

@@ -4,8 +4,9 @@
  * fields in, and every value stays editable.
  *
  * A named mix only appears when every stock it names is admitted for the
- * sprout being planted or edited (older sprouts were admitted AAPL, NVDA, MSFT
- * and SPY only), so a mix can never pick a stock the contract would refuse.
+ * sprout being planted or edited (the first sprouts were admitted AAPL, NVDA,
+ * MSFT and SPY only; the second factory's 21 stocks but no crypto, Circle or
+ * Treasury bills), so a mix can never pick a stock the contract would refuse.
  * The even split works on whatever is picked, which is all the local demo's
  * two mock tokens offer.
  */
@@ -23,7 +24,7 @@ export interface MixToken {
  * t() where shown). Baskets are ETF-style bundles of the admitted stocks: the
  * sprout holds the stocks themselves, not a fund.
  */
-export type BasketTheme = 'Market' | 'Tech' | 'AI' | 'Chips' | 'Space' | 'Innovation' | 'Brands' | 'Games' | 'Commodities' | 'Global' | 'Mixed' | 'Speculative';
+export type BasketTheme = 'Market' | 'Tech' | 'AI' | 'Chips' | 'Space' | 'Innovation' | 'Brands' | 'Games' | 'Commodities' | 'Global' | 'Mixed' | 'Speculative' | 'Crypto' | 'Cash-like';
 
 export interface StarterMix {
   /** Also the basket's id: its factsheet lives at /stocks/basket/<id> (see basketHref). */
@@ -91,6 +92,22 @@ export const STARTER_MIXES: StarterMix[] = [
     weights: { SPY: 40, QQQ: 20, NVDA: 15, AMZN: 15, SLV: 10 },
     code: 'SPRT-MIX',
     theme: 'Mixed',
+  },
+  {
+    id: 'bitcoin-ethereum',
+    label: 'Bitcoin & Ethereum',
+    note: 'Half Bitcoin, half Ethereum, the two biggest crypto coins. Crypto prices can swing hard, on any day of the week.',
+    weights: { CBBTC: 50, WETH: 50 },
+    code: 'SPRT-BTC',
+    theme: 'Crypto',
+  },
+  {
+    id: 'cash-like',
+    label: 'Cash-like',
+    note: 'All in SGOV, a fund of short-term US Treasury bills. Its price moves very little; over long stretches it has usually grown more slowly than stocks.',
+    weights: { SGOV: 100 },
+    code: 'SPRT-CASH',
+    theme: 'Cash-like',
   },
 ];
 

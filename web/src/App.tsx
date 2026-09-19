@@ -5,7 +5,7 @@ import { requirePrivateLabels, getPrivateLabel, lockLabels } from './localStore'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { erc20Abi, parseUnits } from 'viem';
 import type { Address } from 'viem';
-import { formatUnits, sproutFactoryAbi, sproutVaultAbi } from '@sprout/shared';
+import { formatQuantity, formatUnits, isCryptoSymbol, sproutFactoryAbi, sproutVaultAbi } from '@sprout/shared';
 import {
   api,
   type BeneficiaryState,
@@ -51,6 +51,7 @@ import { GiftPage } from './GiftPage';
 import { GiftQrCard } from './components/GiftQr';
 import { DashboardShell, type DashboardShellProps } from './DashboardShell';
 import { TITLE_MAX, endOfDayUtc, textProblem } from './components/Campaign';
+import { assetDecimals } from './assetUnits';
 import {
   ArrowRight, ArrowUpRight, Bell, Check, CheckCheck, ChevronRight, GraduationCap, LayoutGrid, Leaf,
   Pause, Play, Plus, Repeat2, Settings2, ShieldCheck, Sprout as SproutIcon, Wallet,
@@ -240,8 +241,8 @@ export function App() {
   const decimalsFor = useCallback(
     (asset: string): number => {
       if (!chain) return 18;
-      if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementDecimals;
-      return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.decimals ?? 18;
+      // Each token's own decimals (CBBTC has 8): every amount typed for a token is parsed with them.
+      return assetDecimals(chain.contracts, asset);
     },
     [chain],
   );
@@ -1336,7 +1337,7 @@ export function App() {
               .map((h) => (
                 <li key={h.address} className="gift-row">
                   <span>
-                    {h.symbol}: {formatUnits(BigInt(h.rawBalance), h.decimals, 4)}
+                    {h.symbol}: {formatQuantity(BigInt(h.rawBalance), h.decimals)}
                   </span>
                   <button data-testid={`withdraw-all-${h.symbol}`} className="btn btn--small" onClick={() => void withdraw(h.address, BigInt(h.rawBalance))} disabled={!chainReady}>
                     {t('Withdraw all')}
@@ -1434,8 +1435,8 @@ export function App() {
             {h ? (
               <>
                 <div className="review-card">
-                  <b>{h.symbol} · {h.kind === 'settlement' ? t('settlement') : t('stock token')}</b>
-                  <p>{t('Balance {amount} · value {value}', { amount: formatUnits(BigInt(h.rawBalance), h.decimals, 4), value: h.valueUsd ? usd(h.valueUsd, h.feedDecimals) : t('unavailable') })}</p>
+                  <b>{h.symbol} · {h.kind === 'settlement' ? t('settlement') : isCryptoSymbol(h.symbol) ? t('crypto token') : t('stock token')}</b>
+                  <p>{t('Balance {amount} · value {value}', { amount: formatQuantity(BigInt(h.rawBalance), h.decimals), value: h.valueUsd ? usd(h.valueUsd, h.feedDecimals) : t('unavailable') })}</p>
                   <p>{t('Valuation status: {status}', { status: t(h.status) })}</p>
                 </div>
                 <p className="fine-print">

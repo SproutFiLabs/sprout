@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Address } from 'viem';
-import { formatUnits } from '@sprout/shared';
+import { formatQuantity, formatUnits } from '@sprout/shared';
 import {
   ArrowUpRight, CalendarDays, ChartColumn, Check, CheckCircle2, ChevronDown, ChevronRight, FlaskConical,
   Gift, HelpCircle, Home, Leaf, Plus, Settings, Sprout as SproutIcon, Wallet,
@@ -430,14 +430,14 @@ export function DashboardShell(props: DashboardShellProps) {
 
   const choreTitle = (m: Milestone): string => {
     if (isSample && sample?.choreLabels[m.id]) return t(sample.choreLabels[m.id]!);
-    return getMilestoneTitle(chain?.chainId ?? 0, m.vaultId, m.id) ?? `${formatUnits(BigInt(m.amount), decimalsFor(m.token), 2)} ${symbolFor(m.token)}`;
+    return getMilestoneTitle(chain?.chainId ?? 0, m.vaultId, m.id) ?? `${formatQuantity(BigInt(m.amount), decimalsFor(m.token), 2)} ${symbolFor(m.token)}`;
   };
   const choreProgress = chores.length ? Math.round((releasedChores.length / chores.length) * 100) : 0;
   const allowances = beneficiaryState?.allowances ?? [];
   const claimable = allowances.filter((a) => BigInt(a.bucket) > 0n);
   const fmtTokenAmount = (raw: string, token: string): string => {
     try {
-      return `${formatUnits(BigInt(raw), decimalsFor(token))} ${symbolFor(token)}`;
+      return `${formatQuantity(BigInt(raw), decimalsFor(token))} ${symbolFor(token)}`;
     } catch {
       return `${symbolFor(token)}`;
     }
@@ -452,7 +452,7 @@ export function DashboardShell(props: DashboardShellProps) {
     const p = (e.payload ?? {}) as Record<string, unknown>;
     const token = String(p.token ?? '');
     const amt = (v: unknown, dec: number) => {
-      try { return formatUnits(BigInt(String(v ?? 0)), dec); } catch { return '—'; }
+      try { return formatQuantity(BigInt(String(v ?? 0)), dec); } catch { return '—'; }
     };
     switch (e.eventName) {
       case 'Funded': return { title: t('Contribution'), sub: fmtTokenAmount(String(p.amount ?? 0), token), kind: 'fund' };
@@ -1087,9 +1087,9 @@ export function DashboardShell(props: DashboardShellProps) {
                   </span>
                   <div className="garden-chores-copy">
                     <b>{choreTitle(m)}</b>
-                    <small>{`${formatUnits(BigInt(m.amount), decimalsFor(m.token), 2)} ${symbolFor(m.token)} · ${status === 'created' ? t('waiting to approve') : t(status)}`}</small>
+                    <small>{`${formatQuantity(BigInt(m.amount), decimalsFor(m.token), 2)} ${symbolFor(m.token)} · ${status === 'created' ? t('waiting to approve') : t(status)}`}</small>
                   </div>
-                  <b className="garden-chores-amount">{formatUnits(BigInt(m.amount), decimalsFor(m.token), 2)}</b>
+                  <b className="garden-chores-amount">{formatQuantity(BigInt(m.amount), decimalsFor(m.token), 2)}</b>
                   {canParentAct && status === 'created' ? (
                     <span className="garden-row-actions">
                       <button data-testid="milestone-release" className="garden-pill garden-pill--dark" onClick={() => onReleaseMilestone(m)} disabled={!chainReady}>{t('Approve & reward')}</button>

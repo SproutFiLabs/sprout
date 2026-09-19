@@ -311,7 +311,7 @@ export function Landing() {
         <div className="reference-hero-copy">
           <a className="hero-news" href={`${DASHBOARD}?new=1`} data-testid="hero-news">
             <b>{t('New')}</b>
-            <span>{t('21 stocks now, including Tesla and SpaceX')}</span>
+            <span>{t('Bitcoin and Ethereum now, plus 23 stocks and funds')}</span>
             <ArrowRight aria-hidden />
           </a>
           <h1>{tj('A little portfolio{br}for their big future', { br: <br /> })}</h1>

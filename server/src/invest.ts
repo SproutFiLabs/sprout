@@ -1,5 +1,5 @@
 import { BaseError, ContractFunctionRevertedError, type Abi, type Address } from 'viem';
-import { sproutVaultAbi, sproutVenueAbi, uniswapV3AdapterAbi } from '@sprout/shared';
+import { isCryptoSymbol, sproutVaultAbi, sproutVenueAbi, uniswapV3AdapterAbi } from '@sprout/shared';
 import { ChainConfigError, chainCache, chainClockAtLeast, requirePublic, type ChainClock, type ChainContext } from './chain';
 import { UnknownFactoryError, resolveVaultVenue } from './deployments';
 import { FOREVER_MS } from './readCache';
@@ -96,14 +96,32 @@ export function revertName(error: unknown): string | null {
   return null;
 }
 
-function priceBlocker(name: string | null, symbol: string, asset: Address): InvestBlocker {
+/**
+ * Whether a simulated purchase failed because a pool pays less than the signed
+ * minimum: the adapter's own Shortfall/Slippage, or the router's
+ * "Too little received" (a pool more than the vault's slippage below the
+ * oracle, e.g. a thin CBBTC pool or a stock pool that moved over a weekend).
+ */
+export function isPoolShortfall(error: unknown): boolean {
+  const name = revertName(error);
+  if (name === 'Shortfall' || name === 'Slippage') return true;
+  if (!(error instanceof BaseError)) return false;
+  const revert = error.walk((e) => e instanceof ContractFunctionRevertedError);
+  return revert instanceof ContractFunctionRevertedError && /too little received/i.test(revert.reason ?? '');
+}
+
+/** The blocker for a price the venue refused (exported for tests). */
+export function priceBlocker(name: string | null, symbol: string, asset: Address): InvestBlocker {
   if (name === 'StalePrice') {
     return {
       code: 'stale-price',
       asset,
       message:
         `The ${symbol} price has not updated recently, so buying is paused to protect the price you get. ` +
-        'This usually means US markets are closed; try again once they reopen.',
+        // Crypto feeds update around the clock, so closed markets are not the reason for them.
+        (isCryptoSymbol(symbol)
+          ? 'Crypto prices normally update around the clock, so try again in a little while.'
+          : 'This usually means US markets are closed; try again once they reopen.'),
     };
   }
   if (name === 'BadPrice') {
@@ -284,7 +302,7 @@ export async function investQuote(
       cache.invalidate('block');
       return investQuote(ctx, vault, amount, { ...options, retries: (options.retries ?? 1) - 1 });
     }
-    if (name === 'Shortfall' || name === 'Slippage') {
+    if (isPoolShortfall(error)) {
       return block({
         code: 'pool-too-far',
         message:

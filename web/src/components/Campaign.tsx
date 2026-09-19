@@ -1,4 +1,4 @@
-import { formatUnits } from '@sprout/shared';
+import { formatQuantity } from '@sprout/shared';
 import type { GiftCampaign, GiftNote } from '../api';
 import { dateLocale, t } from '../i18n';
 
@@ -120,5 +120,5 @@ export function giftAmountLabel(
     return dollars(cents);
   }
   const stock = chain.stockTokens.find((t) => t.address.toLowerCase() === token.toLowerCase());
-  return `${formatUnits(BigInt(amount), stock?.decimals ?? 18, 4)} ${stock?.symbol ?? ''}`.trim();
+  return `${formatQuantity(BigInt(amount), stock?.decimals ?? 18)} ${stock?.symbol ?? ''}`.trim();
 }

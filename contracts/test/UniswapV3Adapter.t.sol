@@ -187,4 +187,50 @@ contract UniswapV3AdapterTest is Test {
         vault.executeInvestment(address(adapter), mins);
         assertEq(settlement.allowance(address(vault), address(adapter)), 0);
     }
+
+    function testStaleSecondLegRollsBackWholeBasketAndFreshOnlyStillBuys() public {
+        address[] memory assets = new address[](2);
+        assets[0] = address(stockA);
+        assets[1] = address(stockB);
+        address[] memory venues = new address[](1);
+        venues[0] = address(adapter);
+        uint16[] memory weights = new uint16[](2);
+        weights[0] = 5000;
+        weights[1] = 5000;
+        SproutVault impl = new SproutVault();
+        SproutFactory factory = new SproutFactory(address(impl), address(settlement), assets, venues);
+        vm.prank(parent);
+        SproutVault mixed = SproutVault(factory.createSprout(beneficiary, address(settlement), assets, weights, uint64(block.timestamp + 365 days), venues));
+        settlement.mint(address(mixed), 100e6);
+        vm.prank(parent);
+        mixed.scheduleInvestment(10e6, 1 days, 0);
+        uint256[] memory mins = new uint256[](2);
+        mins[0] = 0.0495e18;
+        mins[1] = 0.099e18;
+        feedB.setAnswerAt(50e8, block.timestamp - 2 days);
+        uint64 dueBefore = mixed.nextExecution();
+        vm.expectRevert(UniswapV3Adapter.StalePrice.selector);
+        mixed.executeInvestment(address(adapter), mins);
+        assertEq(settlement.balanceOf(address(mixed)), 100e6);
+        assertEq(stockA.balanceOf(address(mixed)), 0);
+        assertEq(stockB.balanceOf(address(mixed)), 0);
+        assertEq(mixed.nextExecution(), dueBefore);
+        assertEq(settlement.allowance(address(mixed), address(adapter)), 0);
+
+        // The same factory/adapter can buy a healthy asset despite another stale feed.
+        address[] memory freshAssets = new address[](1);
+        freshAssets[0] = address(stockA);
+        uint16[] memory freshWeights = new uint16[](1);
+        freshWeights[0] = 10000;
+        vm.prank(parent);
+        SproutVault fresh = SproutVault(factory.createSprout(beneficiary, address(settlement), freshAssets, freshWeights, uint64(block.timestamp + 365 days), venues));
+        settlement.mint(address(fresh), 100e6);
+        vm.prank(parent);
+        fresh.scheduleInvestment(10e6, 1 days, 0);
+        uint256[] memory freshMin = new uint256[](1);
+        freshMin[0] = 0.099e18;
+        fresh.executeInvestment(address(adapter), freshMin);
+        assertEq(stockA.balanceOf(address(fresh)), 0.1e18);
+        assertEq(settlement.balanceOf(address(fresh)), 90e6);
+    }
 }

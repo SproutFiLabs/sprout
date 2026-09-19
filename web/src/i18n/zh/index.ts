@@ -17,6 +17,7 @@ import { zh as root } from './root';
 import { zh as stocksGuide } from './stocks-guide';
 import { zh as privacyPack } from './privacy-pack';
 import { zh as burn } from './burn';
+import { zh as crypto } from './crypto';
 
 /** Every Simplified Chinese string, keyed by its English source text. */
-export const ZH: Record<string, string> = { ...core, ...app, ...dashboard, ...landing, ...kid, ...knowledge, ...components, ...perks, ...votes, ...autoinvest, ...guardian, ...guardianView, ...privacy, ...intelligence, ...harvest, ...root, ...stocksGuide, ...privacyPack, ...burn };
+export const ZH: Record<string, string> = { ...core, ...app, ...dashboard, ...landing, ...kid, ...knowledge, ...components, ...perks, ...votes, ...autoinvest, ...guardian, ...guardianView, ...privacy, ...intelligence, ...harvest, ...root, ...stocksGuide, ...privacyPack, ...burn, ...crypto };

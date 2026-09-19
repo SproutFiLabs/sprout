@@ -32,8 +32,10 @@ describe('theme data', () => {
     const byKind = (kind: string) => Object.entries(PROFILES).filter(([, p]) => p.kind === kind).map(([s]) => s).sort();
     expect(byKind('index-fund')).toEqual(['QQQ', 'SPY']);
     expect(byKind('commodity-fund')).toEqual(['SLV', 'USO']);
-    expect(byKind('company')).toHaveLength(configured.length - 4);
-    for (const s of ['SPY', 'QQQ', 'SLV', 'USO']) expect(GUIDE[s]!.inside?.length).toBeGreaterThan(10);
+    expect(byKind('crypto')).toEqual(['CBBTC', 'WETH']);
+    expect(byKind('bond-fund')).toEqual(['SGOV']);
+    expect(byKind('company')).toHaveLength(configured.length - 7);
+    for (const s of ['SPY', 'QQQ', 'SLV', 'USO', 'SGOV']) expect(GUIDE[s]!.inside?.length).toBeGreaterThan(10);
     expect(PROFILES.SPY!.companies).toBe(500);
     expect(PROFILES.QQQ!.companies).toBe(100);
     for (const [symbol, p] of Object.entries(PROFILES)) if (p.kind !== 'index-fund') expect([symbol, p.companies]).toEqual([symbol, 1]);
@@ -46,6 +48,8 @@ describe('theme data', () => {
     expect(inTheme('space-ev')).toEqual(['SPCX', 'TSLA']);
     expect(inTheme('commodities')).toEqual(['SLV', 'USO']);
     expect(inTheme('broad-market')).toEqual(['SPY']);
+    expect(inTheme('crypto')).toEqual(['CBBTC', 'CRCL', 'WETH']);
+    expect(inTheme('cash-like')).toEqual(['SGOV']);
     expect(profileOf('baba')?.theme).toBe('china');
     expect(profileOf('AAA')).toBeNull();
   });
@@ -62,6 +66,17 @@ describe('theme data', () => {
     const spcx = config.stocks.find((s) => s.symbol === 'SPCX')!;
     expect(GUIDE.SPCX!.registry).toBe(spcx.registryName);
     expect(GUIDE.SPCX!.note).toContain('{registry}');
+  });
+
+  test('Bitcoin says plainly it is Coinbase’s wrapped bitcoin on a bridge, and Ethereum that it is wrapped ether', () => {
+    const cbbtc = config.stocks.find((s) => s.symbol === 'CBBTC')!;
+    expect(GUIDE.CBBTC!.registry).toBe(cbbtc.registryName);
+    expect(GUIDE.CBBTC!.note).toContain('{registry}');
+    expect(GUIDE.CBBTC!.note).toContain('Coinbase keeps one real bitcoin for every cbBTC');
+    expect(GUIDE.CBBTC!.note).toContain('bridge');
+    expect(GUIDE.WETH!.note).toContain('wrapped ether');
+    expect(GUIDE.CRCL!.what).toContain('It is a company, not a coin.');
+    expect(GUIDE.SGOV!.what).toContain('US Treasury bills');
   });
 
   test('the guide makes no predictions or recommendations', () => {

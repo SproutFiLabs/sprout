@@ -8,7 +8,7 @@
  * web/test/stock-guide.test.ts checks every entry and every configured stock).
  */
 
-export type AssetKind = 'company' | 'index-fund' | 'commodity-fund';
+export type AssetKind = 'company' | 'index-fund' | 'commodity-fund' | 'crypto' | 'bond-fund';
 
 export type ThemeId =
   | 'broad-market'
@@ -19,7 +19,9 @@ export type ThemeId =
   | 'space-ev'
   | 'china'
   | 'retail-meme'
-  | 'commodities';
+  | 'commodities'
+  | 'crypto'
+  | 'cash-like';
 
 export interface Theme {
   id: ThemeId;
@@ -41,6 +43,8 @@ export const THEMES: Record<ThemeId, Theme> = {
   china: { id: 'china', label: 'China', lower: 'China', tech: false },
   'retail-meme': { id: 'retail-meme', label: 'Retail & meme stocks', lower: 'retail and meme stocks', tech: false },
   commodities: { id: 'commodities', label: 'Commodities', lower: 'commodities', tech: false },
+  crypto: { id: 'crypto', label: 'Crypto', lower: 'crypto', tech: false },
+  'cash-like': { id: 'cash-like', label: 'Cash-like', lower: 'cash-like Treasury bills', tech: false },
 };
 
 export interface AssetProfile {
@@ -48,7 +52,8 @@ export interface AssetProfile {
   theme: ThemeId;
   /**
    * About how many companies one token spreads across: 1 for a company (and
-   * for a commodity fund, which holds one commodity, not companies).
+   * for a commodity fund, which holds one commodity, not companies; a coin; and
+   * a Treasury bill fund, whose one borrower is the US government).
    */
   companies: number;
 }
@@ -82,12 +87,21 @@ export const PROFILES: Record<string, AssetProfile> = {
 
   SLV: { kind: 'commodity-fund', theme: 'commodities', companies: 1 },
   USO: { kind: 'commodity-fund', theme: 'commodities', companies: 1 },
+
+  WETH: { kind: 'crypto', theme: 'crypto', companies: 1 },
+  CBBTC: { kind: 'crypto', theme: 'crypto', companies: 1 },
+  // A company, but one whose business rises and falls with crypto (USDC).
+  CRCL: { kind: 'company', theme: 'crypto', companies: 1 },
+
+  SGOV: { kind: 'bond-fund', theme: 'cash-like', companies: 1 },
 };
 
 export const KIND_LABEL: Record<AssetKind, string> = {
   company: 'Single company',
   'index-fund': 'Index fund',
   'commodity-fund': 'Commodity fund',
+  crypto: 'Crypto coin',
+  'bond-fund': 'Treasury bill fund',
 };
 
 /** The guide's group headings and one-line introductions. */
@@ -95,16 +109,20 @@ export const KIND_HEADING: Record<AssetKind, string> = {
   company: 'Company stocks',
   'index-fund': 'Index funds',
   'commodity-fund': 'Commodity funds',
+  crypto: 'Crypto',
+  'bond-fund': 'Cash-like funds',
 };
 
 export const KIND_INTRO: Record<AssetKind, string> = {
   company: 'A piece of one company. When that company has a great year or a hard one, you feel all of it.',
   'index-fund': 'One token that holds many companies at once.',
   'commodity-fund': 'One token that follows the price of one raw material.',
+  crypto: 'Digital coins that live on blockchains, not pieces of a company. Their prices can swing hard, on any day of the week.',
+  'bond-fund': 'One token that holds short-term loans to the US government. Its price moves very little.',
 };
 
 /** Display order of the guide's groups. */
-export const KIND_ORDER: readonly AssetKind[] = ['company', 'index-fund', 'commodity-fund'];
+export const KIND_ORDER: readonly AssetKind[] = ['company', 'index-fund', 'commodity-fund', 'crypto', 'bond-fund'];
 
 export function profileOf(symbol: string): AssetProfile | null {
   return PROFILES[symbol.trim().toUpperCase()] ?? null;

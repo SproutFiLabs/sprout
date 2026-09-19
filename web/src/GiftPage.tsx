@@ -9,6 +9,7 @@ import { CampaignProgress, GiftNotesList, NAME_MAX, NOTE_MAX, giftAmountLabel, t
 import { t, tj } from './i18n';
 import { LanguageToggle } from './i18n/LanguageToggle';
 import { displayLabel } from './stocks';
+import { assetDecimals } from './assetUnits';
 
 interface GiftPageProps {
   giftId: string;
@@ -56,10 +57,7 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
     void load();
   }, [load]);
 
-  const decimalsFor = (asset: string): number => {
-    if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementDecimals;
-    return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.decimals ?? 18;
-  };
+  const decimalsFor = (asset: string): number => assetDecimals(chain.contracts, asset);
   // "Tesla (TSLA)" for a stock the catalogue knows, so family see a company rather than a ticker.
   const labelFor = (asset: string): string => {
     if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementSymbol ?? t('Settlement');

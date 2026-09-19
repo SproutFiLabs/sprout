@@ -3,11 +3,13 @@
  * parent edits the mix later.
  *
  * A sprout holds at most five stocks (the vault's MAX_ASSETS), picked from the
- * ones its factory admitted: every configured token for a new sprout, the
- * original four for a sprout planted before the list grew. Parents search or
- * browse by theme, pick up to five, then set a percentage for each pick.
+ * ones its factory admitted: every configured token for a new sprout; for an
+ * older one, the original four (first factory) or the 21 stocks without the
+ * crypto batch (second factory). Parents search or browse by theme, pick up to
+ * five, then set a percentage for each pick.
  */
 
+import { MarketNotice } from './MarketNotice';
 import { useState } from 'react';
 import { Check, Search, X } from 'lucide-react';
 import { t } from '../i18n';
@@ -109,6 +111,7 @@ export function StockMixEditor({
 
   return (
     <div className="stock-mix-editor">
+      <MarketNotice />
       <StarterMixPicker
         admitted={candidates}
         selected={picked}

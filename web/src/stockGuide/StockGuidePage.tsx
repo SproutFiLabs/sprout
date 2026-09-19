@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Building2, Compass, Layers, RefreshCw, Sprout } from 'lucide-react';
+import { isCryptoSymbol } from '@sprout/shared';
 import { t, tj } from '../i18n';
 import { LanguageToggle } from '../i18n/LanguageToggle';
-import { KNOWN_SYMBOLS, displayDescription, displayName } from '../stocks';
+import { KNOWN_SYMBOLS, NEWEST_SYMBOLS, displayDescription, displayName } from '../stocks';
 import { tierLabel, tierName, type TierId } from '../perks/holder';
 import { KIND_HEADING, KIND_INTRO, KIND_LABEL, KIND_ORDER, THEMES, profileOf, themeOf } from './profiles';
 import { parseGuidePath } from './routes';
@@ -157,7 +158,7 @@ function EtfExplainer() {
   return (
     <section className="sg-section sg-explainer" id="etf-or-stock" aria-labelledby="etf-title">
       <h2 id="etf-title">{t('ETF or single stock?')}</h2>
-      <p className="sg-section-intro">{t('Everything a sprout can hold is one of two kinds.')}</p>
+      <p className="sg-section-intro">{t('Most of what a sprout can hold is one of two kinds.')}</p>
       <div className="sg-two">
         <article className="sg-panel">
           <h3><Building2 size={18} aria-hidden /> {t('A single stock')}</h3>
@@ -170,6 +171,7 @@ function EtfExplainer() {
       </div>
       <KidsLine text={t('A single stock is one apple tree. A fund is a whole orchard: one sick tree matters less, but a big storm still reaches every tree.')} />
       <p>{t('Commodity funds like SLV (silver) and USO (oil) are ETFs too, but they hold one raw material instead of many companies, so they aren’t spread out the same way.')}</p>
+      <p>{t('SGOV is an ETF of short-term loans to the US government, so its price barely moves. Bitcoin and Ethereum are neither stocks nor funds: they are crypto coins, with no company behind them, and their prices can swing hard on any day of the week.')}</p>
       <p className="sg-fine">{t('This explains how they work. It isn’t advice.')}</p>
     </section>
   );
@@ -265,14 +267,16 @@ function StockPage({ symbol }: { symbol: string }) {
             {entry ? <KidsLine text={t(entry.kids)} /> : null}
           </section>
 
-          {profile.kind !== 'company' ? (
+          {profile.kind !== 'company' && profile.kind !== 'crypto' ? (
             <section className="sg-block" aria-labelledby="inside-title">
               <h2 id="inside-title">{t('What’s inside')}</h2>
               {entry?.inside ? <p>{t(entry.inside)}</p> : null}
               <p>
                 {profile.kind === 'index-fund'
                   ? t('Because one token holds many companies, one company’s bad news is a small part of the whole. When most companies fall together, the fund falls too.')
-                  : t('A commodity fund holds one raw material, not companies, so it isn’t spread out the way an index fund is. Its price can move quite differently from company stocks.')}
+                  : profile.kind === 'bond-fund'
+                    ? t('A Treasury bill fund lends to one borrower, the US government, a few weeks at a time, so its price barely moves. It holds no companies, so it doesn’t rise when stocks rise.')
+                    : t('A commodity fund holds one raw material, not companies, so it isn’t spread out the way an index fund is. Its price can move quite differently from company stocks.')}
               </p>
             </section>
           ) : null}
@@ -313,7 +317,11 @@ function StockPage({ symbol }: { symbol: string }) {
       <section className="sg-block sg-actions" aria-labelledby="plant-title">
         <h2 id="plant-title">{t('Plant it')}</h2>
         <p>{t('Plant a sprout and pick {symbol} in step 2, or search for it by name.', { symbol })}</p>
-        <p className="sg-fine">{t('Already have a sprout? Open Portfolio and choose Edit allocation. Sprouts planted before the list grew can only hold Apple, NVIDIA, Microsoft and the S&P 500.')}</p>
+        <p className="sg-fine">
+          {NEWEST_SYMBOLS.includes(symbol)
+            ? t('Already have a sprout? Open Portfolio and choose Edit allocation. Sprouts planted before Bitcoin, Ethereum, Circle and US Treasury bills were added can’t hold {symbol}: plant a new sprout for it.', { symbol })
+            : t('Already have a sprout? Open Portfolio and choose Edit allocation. Sprouts planted before the list grew can only hold Apple, NVIDIA, Microsoft and the S&P 500.')}
+        </p>
         <div className="sg-buttons">
           <a className="perks-button" href="/dashboard?new=1" data-testid="guide-plant"><Sprout size={16} aria-hidden /> {t('Plant a sprout')}</a>
           <a className="perks-button perks-button--light" href="/dashboard" data-testid="guide-add">{t('Add to a sprout')} <ArrowRight size={15} aria-hidden /></a>
@@ -327,7 +335,9 @@ function StockPage({ symbol }: { symbol: string }) {
         <p>
           {profile.kind === 'company'
             ? t('In a sprout, {symbol} is a stock token made by Robinhood that follows the price of the company’s shares. It isn’t the same as owning the shares yourself: for example, it gives no vote at company meetings.', { symbol })
-            : t('In a sprout, {symbol} is a stock token made by Robinhood that follows the price of the fund’s shares. It isn’t the same as owning the fund’s shares yourself.', { symbol })}
+            : profile.kind === 'crypto'
+              ? t('In a sprout, {symbol} is a token on Robinhood Chain that stands for the coin one for one. It isn’t a stock: no company’s shares are behind it, and it pays no interest or dividends.', { symbol })
+              : t('In a sprout, {symbol} is a stock token made by Robinhood that follows the price of the fund’s shares. It isn’t the same as owning the fund’s shares yourself.', { symbol })}
         </p>
         <p>{t('Nothing here is financial advice.')}</p>
       </footer>
@@ -461,7 +471,13 @@ function BasketPage({ basket }: { basket: Basket }) {
         <h1>{basket.source === 'holder' ? '💐 ' : ''}{basket.code ?? label}</h1>
         {basket.code ? <p className="sg-subtitle">{label}</p> : null}
         <div className="sg-badges">
-          <span className="sg-chip sg-chip--kind">{t('Basket of {count} stock tokens', { count: basket.weights.length })}</span>
+          <span className="sg-chip sg-chip--kind">
+            {basket.weights.length === 1
+              ? t('Basket of 1 token')
+              : basket.weights.some((w) => isCryptoSymbol(w.symbol))
+                ? t('Basket of {count} tokens', { count: basket.weights.length })
+                : t('Basket of {count} stock tokens', { count: basket.weights.length })}
+          </span>
           <ThemeChip text={theme ? t(theme.text) : t('Mixed themes')} />
           {basket.source === 'holder' && tier ? <span className="sg-chip sg-chip--holder" data-testid="guide-basket-tier">{t('💐 {tier} and up', { tier: tierName(tier) })}</span> : null}
         </div>
@@ -469,7 +485,9 @@ function BasketPage({ basket }: { basket: Basket }) {
       </header>
 
       <p className="sg-note" data-testid="guide-basket-note">
-        {t('A basket is a mix of separate stock tokens held directly in your sprout, not a fund of its own. Each holding keeps its own price, and you can change the mix later.')}{' '}
+        {basket.weights.some((w) => isCryptoSymbol(w.symbol))
+          ? t('A basket is a mix of separate tokens held directly in your sprout, not a fund of its own. Each holding keeps its own price, and you can change the mix later.')
+          : t('A basket is a mix of separate stock tokens held directly in your sprout, not a fund of its own. Each holding keeps its own price, and you can change the mix later.')}{' '}
         <b>{t('Examples, not advice.')}</b>
       </p>
 
