@@ -13,6 +13,8 @@ import {
   ChevronRight,
   RefreshCw,
   ExternalLink,
+  Leaf,
+  Gift,
 } from "lucide-react";
 import {
   ledgerSummary,
@@ -76,6 +78,7 @@ export interface ToolsViewProps {
   onDownloadPlan: () => void;
   onProvider: () => void;
   assetUrl?: (s: string) => string;
+  garden?: ReactNode;
 }
 const intro: Record<
   ToolPage,
@@ -85,12 +88,13 @@ const intro: Record<
     label: "THE SPROUT TOOLKIT",
     title: (
       <>
-        A little clarity.
+        A little help
         <br />
-        <em>A lot more possibility.</em>
+        for your everyday.
       </>
     ),
-    body: "Useful things for everyday family life. Understand what you own, keep your records together, and make room for what comes next.",
+    body: `Thoughtful tools for the family you’re growing.
+A little clarity, every step of the way.`,
   },
   rewards: {
     label: "SPROUT REWARDS",
@@ -142,7 +146,7 @@ export function ToolsView(p: ToolsViewProps) {
     hero = intro[p.page];
   const summary = ledgerSummary(p.data.entries);
   return (
-    <div className="ft-root">
+    <div className={`ft-root ft-page-${p.page}`}>
       <a className="ft-skip" href="#tool-content">
         Skip to content
       </a>
@@ -152,6 +156,7 @@ export function ToolsView(p: ToolsViewProps) {
           SPROUT
         </a>
         <nav aria-label="Main navigation">
+          <a href="/">Home</a>
           <a href="/dashboard">Your garden</a>
           <a href="/spend">Spend</a>
           <a href="/intelligence">Intelligence</a>
@@ -169,27 +174,56 @@ export function ToolsView(p: ToolsViewProps) {
       </header>
       <main id="tool-content" className="ft-main">
         <section
-          className={`ft-hero ${p.page === "home" ? "ft-hero-home" : ""}`}
+          className={`ft-hero ${p.page === "home" ? "ft-hero-home" : "ft-hero-tool"}`}
         >
-          <div>
-            <div className="ft-eyebrow">
-              <i />
-              {hero.label}
-            </div>
+          <div className="ft-hero-copy">
+            <span className="ft-hero-tag">
+              {p.page === "home"
+                ? "For all the little things"
+                : hero.label.replace("SPROUT ", "").toLowerCase()}
+            </span>
             <h1>{hero.title}</h1>
             <p>{hero.body}</p>
             {p.page === "home" && (
-              <a className="ft-primary" href="/asset-passports">
-                Take a look around <ArrowUpRight size={18} />
-              </a>
+              <div className="ft-hero-actions">
+                <a className="ft-primary" href="#discover-tools">
+                  <Leaf size={16} /> Explore the toolkit
+                </a>
+                <a className="ft-secondary" href="/intelligence">
+                  Meet Intelligence <ArrowUpRight size={16} />
+                </a>
+              </div>
             )}
           </div>
-          <div className="ft-hero-art">
-            <img src={asset("/art/harvest-bouquet.png")} alt="" />
-            <span className="ft-art-caption">Good things take root.</span>
-          </div>
+          {p.page === "home" ? (
+            <div className="ft-meadow">
+              {p.garden ?? (
+                <img src={asset("/art/dashboard/hero-bouquet.png")} alt="" />
+              )}
+            </div>
+          ) : (
+            <div className="ft-tool-art" aria-hidden="true">
+              <img
+                src={asset(
+                  `/art/${p.page === "tax" || p.page === "rewards" ? "card-orange.png" : p.page === "passports" ? "card-lavender.png" : "hero-botanical-white.png"}`,
+                )}
+                alt=""
+              />
+              <span>
+                {p.page === "tax" ? (
+                  <FileText />
+                ) : p.page === "rewards" ? (
+                  <Gift />
+                ) : p.page === "passports" ? (
+                  <Search />
+                ) : (
+                  <Leaf />
+                )}
+              </span>
+            </div>
+          )}
         </section>
-        <nav className="ft-tabs" aria-label="Family tools">
+        <nav className="ft-tabs" aria-label="Family tools" id="discover-tools">
           {links.map(([key, label]) => (
             <a
               href={TOOL_PATHS[key]}
@@ -197,6 +231,7 @@ export function ToolsView(p: ToolsViewProps) {
               key={key}
             >
               {label}
+              <ArrowUpRight size={14} />
             </a>
           ))}
         </nav>
@@ -217,70 +252,7 @@ export function ToolsView(p: ToolsViewProps) {
             Working on that…
           </div>
         )}
-        {p.page === "home" && (
-          <div className="ft-home-grid">
-            <section className="ft-feature ft-feature-green">
-              <span className="ft-eyebrow">01 / UNDERSTAND</span>
-              <h2>
-                A clearer picture
-                <br />
-                of what you own.
-              </h2>
-              <p>
-                Every asset has a story. Start with its rights, its issuer, and
-                where it is available.
-              </p>
-              <a href="/asset-passports">
-                Open Asset Passports <ArrowUpRight size={22} />
-              </a>
-              <div className="ft-passport-mini">
-                <span>THE DETAILS MATTER</span>
-                <strong>
-                  Economic exposure ≠<br />
-                  share ownership.
-                </strong>
-                <small>Issuer terms, explained.</small>
-              </div>
-            </section>
-            <div className="ft-home-list">
-              {[
-                [
-                  "02",
-                  "Rewards",
-                  "Everyday offers. Clear terms. A receipt for each reward.",
-                  "/rewards",
-                ],
-                [
-                  "03",
-                  "Tax Garden",
-                  "Put scattered records in their place.",
-                  "/tax-garden",
-                ],
-                [
-                  "04",
-                  "Family Investing",
-                  "A thoughtful start for a future goal.",
-                  "/family-investing",
-                ],
-                [
-                  "05",
-                  "Intelligence",
-                  "Ask a question about the record in front of you.",
-                  "/intelligence",
-                ],
-              ].map(([n, title, body, url]) => (
-                <a href={url} key={n}>
-                  <span>{n}</span>
-                  <div>
-                    <h3>{title}</h3>
-                    <p>{body}</p>
-                  </div>
-                  <ArrowUpRight size={24} />
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
+        {p.page === "home" && <ToolkitHome asset={asset} />}
         {p.page === "rewards" && (
           <>
             <div className="ft-section-head">
@@ -682,6 +654,277 @@ export function ToolsView(p: ToolsViewProps) {
           <small>For education and information. Not financial advice.</small>
         </footer>
       </main>
+    </div>
+  );
+}
+function ToolkitHome({ asset }: { asset: (s: string) => string }) {
+  return (
+    <div className="ft-discover">
+      <section className="ft-welcome">
+        <h2>
+          Life has a lot of moving parts.
+          <br />
+          Let’s give them a little room.
+        </h2>
+        <p>
+          From understanding a token to keeping a family record, find a useful
+          next step. Start wherever you are.
+        </p>
+      </section>
+      <section className="ft-editorial ft-editorial-orange">
+        <div className="ft-editorial-art">
+          <img
+            className="ft-editorial-background"
+            src={asset("/art/card-orange.png")}
+            alt=""
+          />
+          <div className="ft-paper-scene ft-record-scene">
+            <div className="ft-scene-heading">
+              <span>
+                <FileText size={16} />
+              </span>{" "}
+              Your family records
+            </div>
+            <h3>
+              A place for
+              <br />
+              every little detail.
+            </h3>
+            <div className="ft-scene-line">
+              <span>Purchases & gifts</span>
+              <Check size={15} />
+            </div>
+            <div className="ft-scene-line">
+              <span>Values & cost basis</span>
+              <span className="ft-scene-tag">Review together</span>
+            </div>
+            <div className="ft-scene-line">
+              <span>A copy for your accountant</span>
+              <Download size={15} />
+            </div>
+            <small>Organized by you. Ready when you are.</small>
+          </div>
+          <span className="ft-scene-caption">A little less scattered.</span>
+        </div>
+        <div className="ft-editorial-copy">
+          <span className="ft-hero-tag">Tax Garden</span>
+          <h2>
+            All those little details.
+            <br />
+            One less thing to juggle.
+          </h2>
+          <p>
+            Bring your records together, fill in what’s missing, and take a
+            clear copy to your accountant.
+          </p>
+          <ul>
+            <li>Add or import your activity</li>
+            <li>Review values and missing cost basis</li>
+            <li>Export your records when you need them</li>
+          </ul>
+          <a className="ft-primary" href="/tax-garden">
+            Open Tax Garden <ArrowUpRight size={16} />
+          </a>
+          <small>A record organizer. Tax filing is not included.</small>
+        </div>
+      </section>
+      <section className="ft-editorial ft-editorial-reverse ft-editorial-lavender">
+        <div className="ft-editorial-art">
+          <img
+            className="ft-editorial-background"
+            src={asset("/art/card-lavender.png")}
+            alt=""
+          />
+          <div className="ft-paper-scene ft-passport-scene">
+            <div className="ft-scene-heading">
+              <span>
+                <Leaf size={16} />
+              </span>{" "}
+              Asset Passport
+            </div>
+            <h3>
+              Know what’s
+              <br />
+              behind the name.
+            </h3>
+            <div className="ft-passport-seal">
+              <Leaf size={34} />
+              <span>
+                THE DETAILS
+                <br />
+                MATTER
+              </span>
+            </div>
+            <div className="ft-scene-line">
+              <span>The issuer</span>
+              <ArrowRight size={14} />
+            </div>
+            <div className="ft-scene-line">
+              <span>Your rights</span>
+              <ArrowRight size={14} />
+            </div>
+            <div className="ft-scene-line">
+              <span>Where it’s available</span>
+              <ArrowRight size={14} />
+            </div>
+            <small>Source links. Clear terms. Room to learn.</small>
+          </div>
+        </div>
+        <div className="ft-editorial-copy">
+          <span className="ft-hero-tag">Asset Passports</span>
+          <h2>
+            A familiar name.
+            <br />A fuller picture.
+          </h2>
+          <p>
+            What does a token actually represent? Meet the issuer, understand
+            the rights, and read the terms that matter.
+          </p>
+          <ul>
+            <li>See what you own</li>
+            <li>Understand availability and restrictions</li>
+            <li>Go straight to the original sources</li>
+          </ul>
+          <a className="ft-primary" href="/asset-passports">
+            Explore the passports <ArrowUpRight size={16} />
+          </a>
+          <small>
+            Educational information. US stock-token purchases are unavailable.
+          </small>
+        </div>
+      </section>
+      <section className="ft-editorial ft-editorial-green">
+        <div className="ft-editorial-art">
+          <img
+            className="ft-editorial-background"
+            src={asset("/art/hero-botanical-white.png")}
+            alt=""
+          />
+          <div className="ft-paper-scene ft-plan-scene">
+            <div className="ft-scene-heading">
+              <span>
+                <Leaf size={16} />
+              </span>{" "}
+              A family intention
+            </div>
+            <h3>
+              A first apartment.
+              <br />A whole new chapter.
+            </h3>
+            <div className="ft-plan-path">
+              <i />
+              <i />
+              <i />
+              <i />
+              <Leaf size={23} />
+            </div>
+            <div className="ft-scene-line">
+              <span>A goal to work toward</span>
+              <Check size={15} />
+            </div>
+            <div className="ft-scene-line">
+              <span>Time to grow</span>
+              <Check size={15} />
+            </div>
+            <div className="ft-scene-line">
+              <span>An ownership plan</span>
+              <Check size={15} />
+            </div>
+            <small>Illustrative goal · no account or trade</small>
+          </div>
+          <span className="ft-scene-caption">
+            Tomorrow starts with a little thought.
+          </span>
+        </div>
+        <div className="ft-editorial-copy">
+          <span className="ft-hero-tag">Family Investing</span>
+          <h2>
+            Their big someday.
+            <br />
+            Your little starting point.
+          </h2>
+          <p>
+            Put a family goal into words. Think about the timing and account
+            ownership, then save a plan you can come back to.
+          </p>
+          <ul>
+            <li>Set a goal and a time horizon</li>
+            <li>Explore parent and custodial ownership</li>
+            <li>Save and download your family plan</li>
+          </ul>
+          <a className="ft-primary" href="/family-investing">
+            Make a family plan <ArrowUpRight size={16} />
+          </a>
+          <small>
+            Planning is open. Brokerage connection and trading are not enabled.
+          </small>
+        </div>
+      </section>
+      <section className="ft-small-things">
+        <div className="ft-small-things-intro">
+          <h2>
+            A little more
+            <br />
+            in your corner.
+          </h2>
+          <p>
+            More ways to use SPROUT, with clear terms and your family in mind.
+          </p>
+        </div>
+        <a className="ft-extra ft-extra-rewards" href="/rewards">
+          <div className="ft-extra-orb">
+            <img src={asset("/art/card-orange.png")} alt="" />
+            <Gift size={26} />
+          </div>
+          <h3>
+            Everyday choices.
+            <br />A little more back.
+          </h3>
+          <p>
+            Find funded purchase offers and follow each reward from delivery to
+            its payment receipt.
+          </p>
+          <span>
+            Explore Rewards <ArrowUpRight size={18} />
+          </span>
+          <small>Offers appear only when activated and funded.</small>
+        </a>
+        <a className="ft-extra ft-extra-intelligence" href="/intelligence">
+          <div className="ft-extra-orb">
+            <img src={asset("/art/card-lavender.png")} alt="" />
+            <img
+              className="ft-orb-logo"
+              src={asset("/brand/sprout-logo.png")}
+              alt=""
+            />
+          </div>
+          <h3>
+            A question today.
+            <br />A little clarity tomorrow.
+          </h3>
+          <p>
+            Ask Intelligence about an asset, a record or a reward. Understand
+            the details before your next step.
+          </p>
+          <span>
+            Meet Intelligence <ArrowUpRight size={18} />
+          </span>
+          <small>Free for verified holders of 1 million SPROUT.</small>
+        </a>
+      </section>
+      <section className="ft-closing">
+        <img src={asset("/art/card-lavender.png")} alt="" />
+        <div>
+          <h2>
+            A little more together.
+            <br />A little more understood.
+          </h2>
+          <a className="ft-primary" href="/dashboard">
+            Back to your garden <Leaf size={16} />
+          </a>
+        </div>
+        <img src={asset("/art/card-orange.png")} alt="" />
+      </section>
     </div>
   );
 }

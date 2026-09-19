@@ -20,6 +20,7 @@ import {
   injectedProvider,
   type WalletState,
 } from "../wallet";
+import { BloomGarden } from "../garden/BloomGarden";
 import { ToolsView, type ToolPage } from "./ToolsView";
 const empty: ToolsData = {
   entries: [],
@@ -199,6 +200,11 @@ export function FamilyToolsPage({ page }: { page: ToolPage }) {
   return (
     <>
       <ToolsView
+        garden={
+          page === "home" ? (
+            <BloomGarden variant="landing" scrollMarker={false} fullyBloomed />
+          ) : undefined
+        }
         page={page}
         wallet={wallet?.address ?? null}
         busy={busy}

@@ -3,7 +3,7 @@ import {AbsoluteFill,Img,Audio,staticFile,useCurrentFrame,delayRender,continueRe
 import {ToolsView,type ToolsViewProps,type ToolPage} from './product/ToolsView';
 import {assetPassport,type LedgerEntry} from './product/shared';
 import './film.css';
-const C={paper:'#fffef9',white:'#fff',ink:'#28352b',green:'#476249',sage:'#e9eee3',orange:'#ec793c',line:'#dce3d4',muted:'#717a70'};
+const C={paper:'#ffffff',white:'#fff',ink:'#252623',green:'#476249',sage:'#f3f2ed',orange:'#ec793c',line:'#dce3d4',muted:'#717a70'};
 const clamp=(x:number)=>Math.max(0,Math.min(1,x)),ease=(x:number)=>1-Math.pow(1-clamp(x),4),at=(t:number,s=0,d=.7)=>ease((t-s)/d);
 const noop=()=>{};const wallet='0x3A9215188D0bA58a26B594F11AC056C9920cF210';
 const passports=[['AAPL','0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9'],['NVDA','0x8e0092345678901234567890123456789012345678'],['SPY','0x9e0092345678901234567890123456789012345678']].map(([symbol,address])=>assetPassport({symbol,address},4663));
