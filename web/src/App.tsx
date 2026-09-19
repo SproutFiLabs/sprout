@@ -29,6 +29,7 @@ import {
   type WalletState,
 } from './wallet';
 import { getMilestoneTitle, getNickname, setMilestoneTitle, setNickname } from './localStore';
+import { t, tj } from './i18n';
 import { formatUtcDate, formatZonedDateTime, parseDateOnlyToUtcTs, viewerTimeZone } from './dates';
 import { GrowthRing } from './components/GrowthRing';
 import { DemoBanner } from './components/DemoBanner';
@@ -61,11 +62,11 @@ function randomBytes32(): `0x${string}` {
 }
 
 function usd(value: string | null, feedDecimals = 8): string {
-  if (!value) return 'unavailable';
+  if (!value) return t('unavailable');
   try {
     return `$${formatUnits(BigInt(value), feedDecimals, 2)}`;
   } catch {
-    return 'unavailable';
+    return t('unavailable');
   }
 }
 
@@ -269,7 +270,7 @@ export function App() {
           setBeneficiaryState(await api.beneficiaryState(id).catch(() => null));
         }
       } catch (error) {
-        setTxn({ label: 'Load sprout', status: 'failed', error: error instanceof Error ? error.message : String(error) });
+        setTxn({ label: t('Load sprout'), status: 'failed', error: error instanceof Error ? error.message : String(error) });
       } finally {
         setLoading(false);
       }
@@ -316,7 +317,7 @@ export function App() {
       setWallet(w);
       const chosen = await refreshSprouts(w);
       setTxn((current) =>
-        current?.label === 'Wallet' && current.status === 'failed' && current.error === 'Account changed. Reconnect to continue.'
+        current?.label === t('Wallet') && current.status === 'failed' && current.error === t('Account changed. Reconnect to continue.')
           ? null
           : current,
       );
@@ -330,7 +331,7 @@ export function App() {
       return w;
     } catch (error) {
       onboardingConnect.current = false;
-      setTxn({ label: 'Connect', status: 'failed', error: error instanceof Error ? error.message : String(error) });
+      setTxn({ label: t('Connect'), status: 'failed', error: error instanceof Error ? error.message : String(error) });
       return null;
     } finally {
       setConnecting(false);
@@ -385,7 +386,7 @@ export function App() {
         }
       } catch (error) {
         onboardingConnect.current = false;
-        setTxn({ label: 'Local wallet', status: 'failed', error: error instanceof Error ? error.message : String(error) });
+        setTxn({ label: t('Local wallet'), status: 'failed', error: error instanceof Error ? error.message : String(error) });
       }
     },
     [chain, refreshSprouts, loadDetail],
@@ -432,13 +433,13 @@ export function App() {
         setParentSprouts([]);
         setBeneficiarySprouts([]);
         setSelectedId(null);
-        setTxn({ label: 'Wallet', status: 'failed', error: 'Account changed. Reconnect to continue.' });
+        setTxn({ label: t('Wallet'), status: 'failed', error: t('Account changed. Reconnect to continue.') });
       }
     };
     const onChain = () => {
       setWallet(null);
       setDetail(null);
-      setTxn({ label: 'Wallet', status: 'failed', error: 'Network changed. Reconnect on the configured chain.' });
+      setTxn({ label: t('Wallet'), status: 'failed', error: t('Network changed. Reconnect on the configured chain.') });
     };
     provider.on?.('accountsChanged', onAccounts);
     provider.on?.('chainChanged', onChain);
@@ -541,14 +542,14 @@ export function App() {
     const factory = chain?.contracts.factory;
     const venue = chain?.contracts.venue;
     if (!wallet || !chain || !factory || !settlementToken) return;
-    await withTxn('Plant sprout', async () => {
+    await withTxn(t('Plant sprout'), async () => {
       const tokenAddrs = stockTokens.map((t) => t.address);
       const weights = tokenAddrs.map((addr) => percentToBps(plantForm.percents[addr] ?? '0'));
       const sum = weights.reduce((a, b) => a + b, 0);
-      if (sum !== 10000) throw new Error('Allocation percentages must total 100%');
-      if (!/^0x[0-9a-fA-F]{40}$/.test(plantForm.beneficiary)) throw new Error('Enter a valid beneficiary address');
+      if (sum !== 10000) throw new Error(t('Allocation percentages must total 100%'));
+      if (!/^0x[0-9a-fA-F]{40}$/.test(plantForm.beneficiary)) throw new Error(t('Enter a valid beneficiary address'));
       const graduation = parseDateOnlyToUtcTs(plantForm.graduation);
-      if (!Number.isFinite(graduation) || graduation <= Date.now() / 1000) throw new Error('Graduation date must be in the future');
+      if (!Number.isFinite(graduation) || graduation <= Date.now() / 1000) throw new Error(t('Graduation date must be in the future'));
 
       const write = contractWriter(wallet);
       const hash = await write({
@@ -570,10 +571,10 @@ export function App() {
 
   const submitFund = async () => {
     if (!wallet || !selected) return;
-    await withTxn('Fund sprout', async () => {
+    await withTxn(t('Fund sprout'), async () => {
       const token = fundForm.token as Address;
       const amount = parseUnits(fundForm.amount || '0', decimalsFor(token));
-      if (amount <= 0n) throw new Error('Amount must be positive');
+      if (amount <= 0n) throw new Error(t('Amount must be positive'));
       const write = contractWriter(wallet);
       const approveHash = await write({ address: token, abi: erc20Abi, functionName: 'approve', args: [selected.id, amount] });
       await waitForSuccess(wallet.publicClient, approveHash);
@@ -587,10 +588,10 @@ export function App() {
 
   const submitSchedule = async () => {
     if (!wallet || !selected) return;
-    await withTxn('Schedule investment', async () => {
+    await withTxn(t('Schedule investment'), async () => {
       const amount = parseUnits(scheduleForm.amount || '0', chain?.contracts.settlementDecimals ?? 6);
       const period = Math.floor(Number(scheduleForm.periodDays) * 24 * 3600);
-      if (amount <= 0n || period < 3600) throw new Error('Enter a positive amount and at least one hour');
+      if (amount <= 0n || period < 3600) throw new Error(t('Enter a positive amount and at least one hour'));
       const write = contractWriter(wallet);
       const hash = await write({
         address: selected.id,
@@ -608,7 +609,7 @@ export function App() {
 
   const cancelSchedule = async () => {
     if (!wallet || !selected) return;
-    await withTxn('Cancel schedule', async () => {
+    await withTxn(t('Cancel schedule'), async () => {
       const write = contractWriter(wallet);
       const hash = await write({ address: selected.id, abi: sproutVaultAbi, functionName: 'cancelInvestment', args: [] });
       await waitForSuccess(wallet.publicClient, hash);
@@ -620,17 +621,17 @@ export function App() {
 
   const submitGift = async () => {
     if (!wallet || !selected || !settlementToken) return;
-    await withTxn(giftForm.campaign ? 'Start campaign' : 'Create gift link', async () => {
+    await withTxn(giftForm.campaign ? t('Start campaign') : t('Create gift link'), async () => {
       const accepted = [settlementToken, ...stockTokens.map((t) => t.address)];
       let campaign: { title: string; goalDollars: number; endsAt: number } | undefined;
       if (giftForm.campaign) {
         const title = giftForm.title.trim();
         const goalDollars = Number(giftForm.goal);
         const endsAt = endOfDayUtc(giftForm.ends);
-        const problem = !title ? 'Give the campaign a title.' : textProblem(title, TITLE_MAX, 'The title');
+        const problem = !title ? t('Give the campaign a title.') : textProblem(title, TITLE_MAX, 'The title');
         if (problem) throw new Error(problem);
-        if (!Number.isInteger(goalDollars) || goalDollars < 1 || goalDollars > 100_000) throw new Error('Set a goal between $1 and $100,000 in whole dollars.');
-        if (!endsAt || endsAt * 1000 <= Date.now()) throw new Error('Pick an end date in the future.');
+        if (!Number.isInteger(goalDollars) || goalDollars < 1 || goalDollars > 100_000) throw new Error(t('Set a goal between $1 and $100,000 in whole dollars.'));
+        if (!endsAt || endsAt * 1000 <= Date.now()) throw new Error(t('Pick an end date in the future.'));
         campaign = { title, goalDollars, endsAt };
       }
       const { gift } = await api.createGift(wallet, selected.id, campaign?.title ?? giftForm.label, accepted, campaign);
@@ -663,14 +664,14 @@ export function App() {
   };
 
   const showAllGiftNotes = (g: GiftSummary) =>
-    void withTxn('Load gift notes', async () => {
+    void withTxn(t('Load gift notes'), async () => {
       if (!wallet) return;
       const { notes } = await api.giftNotes(wallet, g.id);
       setAllGiftNotes((prev) => ({ ...prev, [g.id]: notes }));
     });
 
   const toggleGiftNote = (g: GiftSummary, note: GiftNote) =>
-    void withTxn(note.hidden ? 'Show gift note' : 'Hide gift note', async () => {
+    void withTxn(note.hidden ? t('Show gift note') : t('Hide gift note'), async () => {
       if (!wallet || !selected) return;
       const { notes } = await api.setGiftNoteHidden(wallet, g.id, note, !note.hidden);
       setAllGiftNotes((prev) => ({ ...prev, [g.id]: notes }));
@@ -679,7 +680,7 @@ export function App() {
 
   const submitPayGift = async () => {
     if (!wallet || !showPayGift || !selected) return;
-    await withTxn('Pay gift', async () => {
+    await withTxn(t('Pay gift'), async () => {
       const token = payGiftForm.token as Address;
       const amount = parseUnits(payGiftForm.amount || '0', decimalsFor(token));
       const write = contractWriter(wallet);
@@ -701,7 +702,7 @@ export function App() {
 
   const submitMilestone = async () => {
     if (!wallet || !selected) return;
-    await withTxn('Create milestone', async () => {
+    await withTxn(t('Create milestone'), async () => {
       const id = randomBytes32();
       const token = (milestoneForm.token || settlementToken) as Address;
       const amount = parseUnits(milestoneForm.amount || '0', decimalsFor(token));
@@ -725,11 +726,11 @@ export function App() {
 
   const createChore = async () => {
     if (!wallet || !selected || !chain) return;
-    await withTxn('Create chore', async () => {
+    await withTxn(t('Create chore'), async () => {
       const id = randomBytes32();
       const token = (settlementToken ?? milestoneForm.token) as Address;
       const amount = parseUnits(choreForm.amount || '0', decimalsFor(token));
-      if (amount <= 0n) throw new Error('Reward must be positive');
+      if (amount <= 0n) throw new Error(t('Reward must be positive'));
       const write = contractWriter(wallet);
       const hash = await write({
         address: selected.id,
@@ -748,7 +749,7 @@ export function App() {
 
   const releaseMilestone = async (milestone: Milestone) => {
     if (!wallet || !selected) return;
-    await withTxn('Release milestone', async () => {
+    await withTxn(t('Release milestone'), async () => {
       const write = contractWriter(wallet);
       const hash = await write({ address: selected.id, abi: sproutVaultAbi, functionName: 'releaseMilestone', args: [milestone.id] });
       await waitForSuccess(wallet.publicClient, hash);
@@ -760,7 +761,7 @@ export function App() {
 
   const cancelMilestone = async (milestone: Milestone) => {
     if (!wallet || !selected) return;
-    await withTxn('Cancel milestone', async () => {
+    await withTxn(t('Cancel milestone'), async () => {
       const write = contractWriter(wallet);
       const hash = await write({ address: selected.id, abi: sproutVaultAbi, functionName: 'cancelMilestone', args: [milestone.id] });
       await waitForSuccess(wallet.publicClient, hash);
@@ -772,13 +773,13 @@ export function App() {
 
   const submitAllocation = async () => {
     if (!wallet || !selected) return;
-    await withTxn('Update allocation', async () => {
+    await withTxn(t('Update allocation'), async () => {
       const entries = stockTokens
         .map((t) => ({ asset: t.address, bps: percentToBps(allocationForm.percents[t.address] ?? '0') }))
         .filter((e) => e.bps > 0);
       const sum = entries.reduce((acc, e) => acc + e.bps, 0);
-      if (entries.length === 0) throw new Error('Allocate at least one asset');
-      if (sum !== 10000) throw new Error('Allocation percentages must total 100%');
+      if (entries.length === 0) throw new Error(t('Allocate at least one asset'));
+      if (sum !== 10000) throw new Error(t('Allocation percentages must total 100%'));
       const write = contractWriter(wallet);
       const hash = await write({
         address: selected.id,
@@ -795,7 +796,7 @@ export function App() {
 
   const claimAllowance = async (token: Address, bucket: bigint) => {
     if (!wallet || !selected) return;
-    await withTxn('Claim allowance', async () => {
+    await withTxn(t('Claim allowance'), async () => {
       const write = contractWriter(wallet);
       const hash = await write({ address: selected.id, abi: sproutVaultAbi, functionName: 'claimAllowance', args: [token, bucket] });
       await waitForSuccess(wallet.publicClient, hash);
@@ -806,7 +807,7 @@ export function App() {
 
   const withdraw = async (token: Address, amount: bigint) => {
     if (!wallet || !selected) return;
-    await withTxn('Withdraw', async () => {
+    await withTxn(t('Withdraw'), async () => {
       const write = contractWriter(wallet);
       const hash = await write({
         address: selected.id,
@@ -822,18 +823,18 @@ export function App() {
   };
 
   const runToolFund = () =>
-    withTxn('Fund dev account', async () => {
+    withTxn(t('Fund dev account'), async () => {
       const result = await api.localFund(localAccount, fundTool.amount, fundTool.token || undefined);
-      setToolsMessage(`Minted ${fundTool.amount} mock tokens to ${short(localAccount)} (tx ${result.txHash.slice(0, 10)}...)`);
+      setToolsMessage(t('Minted {amount} mock tokens to {account} (tx {hash}...)', { amount: fundTool.amount, account: short(localAccount), hash: result.txHash.slice(0, 10) }));
     });
 
   const runToolAdvance = () =>
-    withTxn('Advance local time', async () => {
+    withTxn(t('Advance local time'), async () => {
       const result = await api.advanceTime(Number(advanceSeconds));
       setToolsMessage(
-        `${result.label} (${result.refreshedFeeds.length} refreshed${
-          result.failedFeeds.length > 0 ? `, ${result.failedFeeds.length} failed` : ''
-        })`,
+        result.failedFeeds.length > 0
+          ? t('{label} ({refreshed} refreshed, {failed} failed)', { label: result.label, refreshed: result.refreshedFeeds.length, failed: result.failedFeeds.length })
+          : t('{label} ({refreshed} refreshed)', { label: result.label, refreshed: result.refreshedFeeds.length }),
       );
       if (selectedId) await loadDetail(selectedId);
     });
@@ -843,9 +844,9 @@ export function App() {
       <main className="page">
         <h1>Sprout</h1>
         <div className="card error-card">
-          <h2>Backend unavailable</h2>
+          <h2>{t('Backend unavailable')}</h2>
           <p>{fatal}</p>
-          <p>Start the backend with <code>bun run dev:server</code> and reload.</p>
+          <p>{tj('Start the backend with {command} and reload.', { command: <code>bun run dev:server</code> })}</p>
         </div>
       </main>
     );
@@ -931,8 +932,8 @@ export function App() {
     onOpenAsset: (address) => setAssetDetail(address),
     onRunToolFund: () => void runToolFund(),
     onRunToolAdvance: () => void runToolAdvance(),
-    onReconcile: () => void withTxn('Reconcile', async () => { await fetch('/api/index/reconcile', { method: 'POST' }); if (selectedId) await loadDetail(selectedId); }),
-    onRunJobs: () => void withTxn('Run due investments', async () => { await api.runJobs(); if (selectedId) await loadDetail(selectedId); }),
+    onReconcile: () => void withTxn(t('Reconcile'), async () => { await fetch('/api/index/reconcile', { method: 'POST' }); if (selectedId) await loadDetail(selectedId); }),
+    onRunJobs: () => void withTxn(t('Run due investments'), async () => { await api.runJobs(); if (selectedId) await loadDetail(selectedId); }),
     onOpenGiftQr: (g) => setGiftQr(g),
     onOpenGiftPay: (g) => { setPayGiftForm({ token: g.acceptedAssets[0] ?? '', amount: '25' }); setShowPayGift(g); },
     anyModalOpen, symbolFor, decimalsFor,
@@ -946,32 +947,32 @@ export function App() {
       <WelcomeSprout open={welcomeOpen} address={selectedId} onClose={() => setWelcomeOpen(false)} onFund={() => { setFundForm({ token: settlementToken ?? '', amount: '10' }); setShowFund(true); }} />
 
       {showPlant ? (
-        <Modal title="Plant a sprout" onClose={() => setShowPlant(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
-          <RiskLine action="Planting a sprout" />
-          <div className="step-dots" aria-label={`Step ${plantStep} of 3`}>
+        <Modal title={t('Plant a sprout')} onClose={() => setShowPlant(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+          <RiskLine action={t('Planting a sprout')} />
+          <div className="step-dots" aria-label={t('Step {step} of 3', { step: plantStep })}>
             {[1, 2, 3].map((i) => (
               <span key={i} className={i <= plantStep ? 'filled' : ''} aria-hidden="true" />
             ))}
-            <span className="fine-print">Step {plantStep} of 3 · {plantStep === 1 ? 'name & beneficiary' : plantStep === 2 ? 'allocation' : 'graduation & review'}</span>
+            <span className="fine-print">{t('Step {step} of 3 · {phase}', { step: plantStep, phase: plantStep === 1 ? t('name & beneficiary') : plantStep === 2 ? t('allocation') : t('graduation & review') })}</span>
           </div>
 
           {plantStep === 1 ? (
             <>
               <label>
-                Nickname (stays on this device)
-                <input data-testid="plant-nickname" value={plantForm.nickname} onChange={(e) => setPlantForm({ ...plantForm, nickname: e.target.value })} placeholder="e.g. Robin" maxLength={24} />
+                {t('Nickname (stays on this device)')}
+                <input data-testid="plant-nickname" value={plantForm.nickname} onChange={(e) => setPlantForm({ ...plantForm, nickname: e.target.value })} placeholder={t('e.g. Robin')} maxLength={24} />
               </label>
               <label>
-                Beneficiary wallet
+                {t('Beneficiary wallet')}
                 <input data-testid="plant-beneficiary" value={plantForm.beneficiary} onChange={(e) => setPlantForm({ ...plantForm, beneficiary: e.target.value })} placeholder="0x..." />
               </label>
-              <p className="fine-print" data-testid="plant-beneficiary-note"><b>Money in this sprout can only ever be paid to this wallet</b>: rewards you approve before graduation, and everything at graduation. It can’t be changed later, so use a wallet your family can open. The nickname stays on this device.</p>
+              <p className="fine-print" data-testid="plant-beneficiary-note">{tj('{rule}: rewards you approve before graduation, and everything at graduation. It can’t be changed later, so use a wallet your family can open. The nickname stays on this device.', { rule: <b>{t('Money in this sprout can only ever be paid to this wallet')}</b> })}</p>
             </>
           ) : null}
 
           {plantStep === 2 ? (
             <fieldset>
-              <legend>Allocation (percent, must total 100%)</legend>
+              <legend>{t('Allocation (percent, must total 100%)')}</legend>
               <StarterMixPicker tokens={stockTokens} percents={plantForm.percents} onPick={(percents) => setPlantForm({ ...plantForm, percents })} />
               {stockTokens.map((t) => (
                 <label key={t.address} className="inline">
@@ -987,50 +988,50 @@ export function App() {
                   />
                 </label>
               ))}
-              <p className="fine-print">Only factory-admitted stock tokens can be selected. Weights must total exactly 100%.</p>
+              <p className="fine-print">{t('Only factory-admitted stock tokens can be selected. Weights must total exactly 100%.')}</p>
             </fieldset>
           ) : null}
 
           {plantStep === 3 ? (
             <>
               <label>
-                Graduation date
+                {t('Graduation date')}
                 <input data-testid="plant-graduation" type="date" value={plantForm.graduation} onChange={(e) => setPlantForm({ ...plantForm, graduation: e.target.value })} />
               </label>
               {plantGraduationTs !== null ? (
                 <p className="muted" data-testid="plant-graduation-utc">
-                  Contract timestamp: {formatUtcDate(plantGraduationTs)} 00:00 UTC ({formatZonedDateTime(plantGraduationTs, viewerTimeZone())} in {viewerTimeZone()})
+                  {t('Contract timestamp: {date} 00:00 UTC ({local} in {zone})', { date: formatUtcDate(plantGraduationTs), local: formatZonedDateTime(plantGraduationTs, viewerTimeZone()), zone: viewerTimeZone() })}
                 </p>
               ) : null}
               <div className="review-card">
-                <b>{plantForm.nickname.trim() || 'A new sprout'}</b>
-                <p>Beneficiary {plantForm.beneficiary || '—'}</p>
-                <p>Allocation {stockTokens.map((t) => `${t.symbol} ${plantForm.percents[t.address] ?? '0'}%`).join(' · ')}</p>
+                <b>{plantForm.nickname.trim() || t('A new sprout')}</b>
+                <p>{t('Beneficiary {address}', { address: plantForm.beneficiary || '—' })}</p>
+                <p>{t('Allocation {mix}', { mix: stockTokens.map((token) => `${token.symbol} ${plantForm.percents[token.address] ?? '0'}%`).join(' · ') })}</p>
               </div>
-              <p className="warning">Graduation is irreversible. After the timestamp, the beneficiary has full control.</p>
+              <p className="warning">{t('Graduation is irreversible. After the timestamp, the beneficiary has full control.')}</p>
             </>
           ) : null}
 
           <div className="form-actions">
-            {plantStep > 1 ? <button type="button" data-testid="plant-back" className="btn" onClick={() => setPlantStep(plantStep - 1)}>Back</button> : null}
+            {plantStep > 1 ? <button type="button" data-testid="plant-back" className="btn" onClick={() => setPlantStep(plantStep - 1)}>{t('Back')}</button> : null}
             {plantStep < 3 ? (
               <button type="button" data-testid="plant-next" className="btn button-primary" onClick={() => setPlantStep(plantStep + 1)} disabled={plantStep === 1 ? plantForm.beneficiary.trim().length === 0 : plantAllocationEntered <= 0}>
-                Next
+                {t('Next')}
               </button>
             ) : (
-              <button data-testid="plant-submit" className="btn button-primary" onClick={() => void submitPlant()}>Plant and sign</button>
+              <button data-testid="plant-submit" className="btn button-primary" onClick={() => void submitPlant()}>{t('Plant and sign')}</button>
             )}
           </div>
         </Modal>
       ) : null}
 
       {showFund && selected ? (
-        <Modal title="Fund sprout" onClose={() => setShowFund(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
-          <RiskLine action="Adding funds" />
+        <Modal title={t('Fund sprout')} onClose={() => setShowFund(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+          <RiskLine action={t('Adding funds')} />
           <label>
-            Asset
+            {t('Asset')}
             <select data-testid="fund-token" value={fundForm.token} onChange={(e) => setFundForm({ ...fundForm, token: e.target.value })}>
-              {settlementToken ? <option value={settlementToken}>{chain?.contracts.settlementSymbol ? `${chain.contracts.settlementSymbol} (settlement)` : 'Settlement'}</option> : null}
+              {settlementToken ? <option value={settlementToken}>{chain?.contracts.settlementSymbol ? t('{symbol} (settlement)', { symbol: chain.contracts.settlementSymbol }) : t('Settlement')}</option> : null}
               {stockTokens.map((t) => (
                 <option key={t.address} value={t.address}>
                   {t.symbol}
@@ -1039,35 +1040,35 @@ export function App() {
             </select>
           </label>
           <label>
-            Amount
+            {t('Amount')}
             <input data-testid="fund-amount" value={fundForm.amount} onChange={(e) => setFundForm({ ...fundForm, amount: e.target.value })} />
           </label>
-          <p className="muted">Recipient: {selected.id}</p>
+          <p className="muted">{t('Recipient: {address}', { address: selected.id })}</p>
           <button data-testid="fund-submit" className="btn btn--primary" onClick={() => void submitFund()}>
-            Approve and fund
+            {t('Approve and fund')}
           </button>
         </Modal>
       ) : null}
 
       {showSchedule ? (
-        <Modal title="Schedule recurring investment" onClose={() => setShowSchedule(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+        <Modal title={t('Schedule recurring investment')} onClose={() => setShowSchedule(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <label>
-            Amount per period (settlement)
+            {t('Amount per period (settlement)')}
             <input data-testid="schedule-amount" value={scheduleForm.amount} onChange={(e) => setScheduleForm({ ...scheduleForm, amount: e.target.value })} />
           </label>
           <label>
-            Period (days)
+            {t('Period (days)')}
             <input data-testid="schedule-days" type="number" min={1} value={scheduleForm.periodDays} onChange={(e) => setScheduleForm({ ...scheduleForm, periodDays: e.target.value })} />
           </label>
-          <p className="muted">At most one installment runs each period. If a run is missed, the next one catches up with a single purchase — never more.</p>
+          <p className="muted">{t('At most one installment runs each period. If a run is missed, the next one catches up with a single purchase — never more.')}</p>
           <button data-testid="schedule-submit" className="btn btn--primary" onClick={() => void submitSchedule()}>
-            Schedule
+            {t('Schedule')}
           </button>
         </Modal>
       ) : null}
 
       {showInvestNow && selected && wallet && chain ? (
-        <Modal title="Invest now" onClose={() => setShowInvestNow(false)} txn={txn} explorerUrl={chain.explorerUrl}>
+        <Modal title={t('Invest now')} onClose={() => setShowInvestNow(false)} txn={txn} explorerUrl={chain.explorerUrl}>
           <InvestNowForm
             wallet={wallet}
             vault={selected.id}
@@ -1083,7 +1084,7 @@ export function App() {
 
       {showGift ? (
         <Modal
-          title={giftForm.campaign ? 'Start a birthday campaign' : 'Create gift link'}
+          title={giftForm.campaign ? t('Start a birthday campaign') : t('Create gift link')}
           onClose={() => {
             setShowGift(false);
             setGiftForm(GIFT_FORM_DEFAULTS);
@@ -1094,17 +1095,17 @@ export function App() {
           {giftForm.campaign ? (
             <>
               <label>
-                Title
+                {t('Title')}
                 <input
                   data-testid="campaign-title"
                   value={giftForm.title}
                   maxLength={TITLE_MAX}
-                  placeholder="Maya turns 8"
+                  placeholder={t('Maya turns 8')}
                   onChange={(e) => setGiftForm({ ...giftForm, title: e.target.value })}
                 />
               </label>
               <label>
-                Goal (US dollars)
+                {t('Goal (US dollars)')}
                 <input
                   data-testid="campaign-goal"
                   inputMode="numeric"
@@ -1113,33 +1114,32 @@ export function App() {
                 />
               </label>
               <label>
-                Ends on
+                {t('Ends on')}
                 <input data-testid="campaign-ends" type="date" value={giftForm.ends} onChange={(e) => setGiftForm({ ...giftForm, ends: e.target.value })} />
               </label>
               <p className="muted">
-                Family open the link, see the goal and how close it is, and can leave a short note with their gift. Gifts
-                still arrive after the end date; the page just stops counting down. The title is shown to anyone with the link.
+                {t('Family open the link, see the goal and how close it is, and can leave a short note with their gift. Gifts still arrive after the end date; the page just stops counting down. The title is shown to anyone with the link.')}
               </p>
             </>
           ) : (
             <>
               <label>
-                Label
+                {t('Label')}
                 <input data-testid="gift-label" value={giftForm.label} onChange={(e) => setGiftForm({ ...giftForm, label: e.target.value })} />
               </label>
-              <p className="muted">The link carries only an opaque id and accepted assets, never a child name or spending key.</p>
+              <p className="muted">{t('The link carries only an opaque id and accepted assets, never a child name or spending key.')}</p>
             </>
           )}
           <button data-testid="gift-submit" className="btn btn--primary" onClick={() => void submitGift()}>
-            {giftForm.campaign ? 'Start campaign' : 'Create gift link'}
+            {giftForm.campaign ? t('Start campaign') : t('Create gift link')}
           </button>
         </Modal>
       ) : null}
 
       {showPayGift ? (
-        <Modal title={`Pay gift to ${short(showPayGift.vaultId)}`} onClose={() => setShowPayGift(null)} txn={txn} explorerUrl={chain?.explorerUrl}>
+        <Modal title={t('Pay gift to {address}', { address: short(showPayGift.vaultId) })} onClose={() => setShowPayGift(null)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <label>
-            Asset
+            {t('Asset')}
             <select data-testid="paygift-token" value={payGiftForm.token} onChange={(e) => setPayGiftForm({ ...payGiftForm, token: e.target.value })}>
               {showPayGift.acceptedAssets.map((asset) => (
                 <option key={asset} value={asset}>
@@ -1149,31 +1149,31 @@ export function App() {
             </select>
           </label>
           <label>
-            Amount
+            {t('Amount')}
             <input data-testid="paygift-amount" value={payGiftForm.amount} onChange={(e) => setPayGiftForm({ ...payGiftForm, amount: e.target.value })} />
           </label>
           <button data-testid="paygift-submit" className="btn btn--primary" onClick={() => void submitPayGift()}>
-            Approve and pay
+            {t('Approve and pay')}
           </button>
         </Modal>
       ) : null}
 
       {giftQr ? (
-        <Modal title="Gift link QR code" onClose={() => setGiftQr(null)} txn={txn} explorerUrl={chain?.explorerUrl}>
+        <Modal title={t('Gift link QR code')} onClose={() => setGiftQr(null)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <GiftQrCard url={`${window.location.origin}/gift/${giftQr.id}`} label={giftQr.label} />
         </Modal>
       ) : null}
 
       {showMilestone ? (
-        <Modal title="Add a chore (allowance milestone)" onClose={() => setShowMilestone(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+        <Modal title={t('Add a chore (allowance milestone)')} onClose={() => setShowMilestone(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <label>
-            Chore title (stays on this device)
-            <input data-testid="milestone-title" value={milestoneForm.title} onChange={(e) => setMilestoneForm({ ...milestoneForm, title: e.target.value })} placeholder="e.g. Help water the garden" maxLength={80} />
+            {t('Chore title (stays on this device)')}
+            <input data-testid="milestone-title" value={milestoneForm.title} onChange={(e) => setMilestoneForm({ ...milestoneForm, title: e.target.value })} placeholder={t('e.g. Help water the garden')} maxLength={80} />
           </label>
           <label>
-            Asset
+            {t('Asset')}
             <select data-testid="milestone-token" value={milestoneForm.token} onChange={(e) => setMilestoneForm({ ...milestoneForm, token: e.target.value })}>
-              {settlementToken ? <option value={settlementToken}>{chain?.contracts.settlementSymbol ? `${chain.contracts.settlementSymbol} (settlement)` : 'Settlement'}</option> : null}
+              {settlementToken ? <option value={settlementToken}>{chain?.contracts.settlementSymbol ? t('{symbol} (settlement)', { symbol: chain.contracts.settlementSymbol }) : t('Settlement')}</option> : null}
               {stockTokens.map((t) => (
                 <option key={t.address} value={t.address}>
                   {t.symbol}
@@ -1182,28 +1182,28 @@ export function App() {
             </select>
           </label>
           <label>
-            Amount
+            {t('Amount')}
             <input data-testid="milestone-amount" value={milestoneForm.amount} onChange={(e) => setMilestoneForm({ ...milestoneForm, amount: e.target.value })} />
           </label>
           <label>
-            Unlock date (optional)
+            {t('Unlock date (optional)')}
             <input data-testid="milestone-unlock" type="date" value={milestoneForm.unlock} onChange={(e) => setMilestoneForm({ ...milestoneForm, unlock: e.target.value })} />
           </label>
           {milestoneUnlockTs !== null ? (
             <p className="muted" data-testid="milestone-unlock-utc">
-              Unlocks {formatUtcDate(milestoneUnlockTs)} 00:00 UTC ({formatZonedDateTime(milestoneUnlockTs, viewerTimeZone())} in {viewerTimeZone()})
+              {t('Unlocks {date} 00:00 UTC ({local} in {zone})', { date: formatUtcDate(milestoneUnlockTs), local: formatZonedDateTime(milestoneUnlockTs, viewerTimeZone()), zone: viewerTimeZone() })}
             </p>
           ) : null}
           <button data-testid="milestone-submit" className="btn btn--primary" onClick={() => void submitMilestone()}>
-            Create milestone
+            {t('Create milestone')}
           </button>
         </Modal>
       ) : null}
 
       {showAllocation && selected ? (
-        <Modal title="Edit allocation" onClose={() => setShowAllocation(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+        <Modal title={t('Edit allocation')} onClose={() => setShowAllocation(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <fieldset>
-            <legend>Percent (must total 100%; zero removes an asset)</legend>
+            <legend>{t('Percent (must total 100%; zero removes an asset)')}</legend>
             <StarterMixPicker tokens={stockTokens} percents={allocationForm.percents} onPick={(percents) => setAllocationForm({ ...allocationForm, percents })} />
             {stockTokens.map((t) => (
               <label key={t.address} className="inline">
@@ -1220,16 +1220,16 @@ export function App() {
               </label>
             ))}
           </fieldset>
-          <p className="muted">Only factory-admitted assets can be selected.</p>
+          <p className="muted">{t('Only factory-admitted assets can be selected.')}</p>
           <button data-testid="allocation-submit" className="btn btn--primary" onClick={() => void submitAllocation()}>
-            Save allocation
+            {t('Save allocation')}
           </button>
         </Modal>
       ) : null}
 
       {showWithdraw && selected && holdings ? (
-        <Modal title="Withdraw after graduation" onClose={() => setShowWithdraw(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
-          <p className="muted">As beneficiary you can withdraw any balance to your wallet.</p>
+        <Modal title={t('Withdraw after graduation')} onClose={() => setShowWithdraw(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+          <p className="muted">{t('As beneficiary you can withdraw any balance to your wallet.')}</p>
           <ul className="stack">
             {holdings.holdings
               .filter((h) => BigInt(h.rawBalance) > 0n)
@@ -1239,7 +1239,7 @@ export function App() {
                     {h.symbol}: {formatUnits(BigInt(h.rawBalance), h.decimals, 4)}
                   </span>
                   <button data-testid={`withdraw-all-${h.symbol}`} className="btn btn--small" onClick={() => void withdraw(h.address, BigInt(h.rawBalance))} disabled={!chainReady}>
-                    Withdraw all
+                    {t('Withdraw all')}
                   </button>
                 </li>
               ))}
@@ -1248,37 +1248,36 @@ export function App() {
       ) : null}
 
       {showChore ? (
-        <Modal title="Add a chore" onClose={() => setShowChore(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+        <Modal title={t('Add a chore')} onClose={() => setShowChore(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <label>
-            Chore title (stays on this device)
-            <input data-testid="chore-title" value={choreForm.title} onChange={(e) => setChoreForm({ ...choreForm, title: e.target.value })} placeholder="e.g. Help water the garden" maxLength={80} />
+            {t('Chore title (stays on this device)')}
+            <input data-testid="chore-title" value={choreForm.title} onChange={(e) => setChoreForm({ ...choreForm, title: e.target.value })} placeholder={t('e.g. Help water the garden')} maxLength={80} />
           </label>
           <label>
-            Reward ({symbolFor(settlementToken ?? '')})
+            {t('Reward ({symbol})', { symbol: symbolFor(settlementToken ?? '') })}
             <input data-testid="chore-amount" value={choreForm.amount} onChange={(e) => setChoreForm({ ...choreForm, amount: e.target.value })} />
           </label>
           <p className="muted">
-            The on-chain vault stores only a milestone id and amount. A release moves the reward into the beneficiary allowance
-            bucket; the beneficiary then claims it.
+            {t('The on-chain vault stores only a milestone id and amount. A release moves the reward into the beneficiary allowance bucket; the beneficiary then claims it.')}
           </p>
           <button data-testid="chore-submit" className="btn button-primary" onClick={() => void createChore()}>
-            Create chore
+            {t('Create chore')}
           </button>
         </Modal>
       ) : null}
 
       {showSettings ? (
-        <Modal title="Family settings" onClose={() => setShowSettings(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+        <Modal title={t('Family settings')} onClose={() => setShowSettings(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <div className="review-card">
-            <b>{sprouts.length} sprout(s) in this workspace</b>
-            <p>Nicknames and chore titles are stored on this device only. Balances, roles and graduation live on-chain.</p>
+            <b>{t('{count} sprout(s) in this workspace', { count: sprouts.length })}</b>
+            <p>{t('Nicknames and chore titles are stored on this device only. Balances, roles and graduation live on-chain.')}</p>
           </div>
           <p className="muted">
-            Family co-parent accounts and notification delivery are not implemented in the backend. Nothing is faked here.
+            {t('Family co-parent accounts and notification delivery are not implemented in the backend. Nothing is faked here.')}
           </p>
           <div className="review-card">
-            <b>Local demo reset</b>
-            <p>In local demo mode you can reset device labels without deleting on-chain data. On-chain records cannot be deleted by the app.</p>
+            <b>{t('Local demo reset')}</b>
+            <p>{t('In local demo mode you can reset device labels without deleting on-chain data. On-chain records cannot be deleted by the app.')}</p>
             <button
               className="btn"
               onClick={() => {
@@ -1287,25 +1286,25 @@ export function App() {
                 } catch {
                   /* local only */
                 }
-                setToolsMessage('Cleared device-local labels. On-chain records are unchanged.');
+                setToolsMessage(t('Cleared device-local labels. On-chain records are unchanged.'));
                 setShowSettings(false);
               }}
             >
-              Clear device-local labels
+              {t('Clear device-local labels')}
             </button>
           </div>
         </Modal>
       ) : null}
 
       {showNotifications ? (
-        <Modal title="A few little updates" onClose={() => setShowNotifications(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
-          <p className="muted">These are the real indexed on-chain events for this sprout. Push/email notification delivery is not implemented.</p>
-          {events.length === 0 ? <p className="empty-note">No indexed events yet.</p> : (
+        <Modal title={t('A few little updates')} onClose={() => setShowNotifications(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+          <p className="muted">{t('These are the real indexed on-chain events for this sprout. Push/email notification delivery is not implemented.')}</p>
+          {events.length === 0 ? <p className="empty-note">{t('No indexed events yet.')}</p> : (
             <ul className="stack">
               {events.slice(-6).reverse().map((e) => (
                 <li key={`${e.blockNumber}-${e.logIndex}`} className="gift-row">
                   <span>{e.eventName}</span>
-                  <span className="muted">block {e.blockNumber}</span>
+                  <span className="muted">{t('block {number}', { number: e.blockNumber })}</span>
                 </li>
               ))}
             </ul>
@@ -1314,16 +1313,15 @@ export function App() {
       ) : null}
 
       {showHelp ? (
-        <Modal title="Help" onClose={() => setShowHelp(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
+        <Modal title={t('Help')} onClose={() => setShowHelp(false)} txn={txn} explorerUrl={chain?.explorerUrl}>
           <p className="muted">
-            This is your live family workspace. Balances, roles and graduation live on-chain; nicknames and chore titles
-            stay on this device.
+            {t('This is your live family workspace. Balances, roles and graduation live on-chain; nicknames and chore titles stay on this device.')}
           </p>
           <div className="review-card">
-            <b>Updates</b>
-            <p>Push/email notification delivery is not implemented. The activity list shows the real indexed on-chain events.</p>
+            <b>{t('Updates')}</b>
+            <p>{t('Push/email notification delivery is not implemented. The activity list shows the real indexed on-chain events.')}</p>
             <button className="btn" data-testid="notifications-open" onClick={() => { setShowHelp(false); setShowNotifications(true); }}>
-              View recent activity
+              {t('View recent activity')}
             </button>
           </div>
         </Modal>
@@ -1332,21 +1330,20 @@ export function App() {
       {assetDetail ? (() => {
         const h = holdings?.holdings.find((x) => x.address.toLowerCase() === assetDetail.toLowerCase());
         return (
-          <Modal title={h ? `${h.symbol} details` : 'Asset details'} onClose={() => setAssetDetail(null)} txn={txn} explorerUrl={chain?.explorerUrl}>
+          <Modal title={h ? t('{symbol} details', { symbol: h.symbol }) : t('Asset details')} onClose={() => setAssetDetail(null)} txn={txn} explorerUrl={chain?.explorerUrl}>
             {h ? (
               <>
                 <div className="review-card">
-                  <b>{h.symbol} · {h.kind === 'settlement' ? 'settlement' : 'stock token'}</b>
-                  <p>Balance {formatUnits(BigInt(h.rawBalance), h.decimals, 4)} · value {h.valueUsd ? usd(h.valueUsd, h.feedDecimals) : 'unavailable'}</p>
-                  <p>Valuation status: {h.status}</p>
+                  <b>{h.symbol} · {h.kind === 'settlement' ? t('settlement') : t('stock token')}</b>
+                  <p>{t('Balance {amount} · value {value}', { amount: formatUnits(BigInt(h.rawBalance), h.decimals, 4), value: h.valueUsd ? usd(h.valueUsd, h.feedDecimals) : t('unavailable') })}</p>
+                  <p>{t('Valuation status: {status}', { status: t(h.status) })}</p>
                 </div>
                 <p className="fine-print">
-                  Stock tokens are tokenized exposure, not direct ownership of a brokerage-held share. Availability depends on
-                  eligibility. Prices come from configured feeds; when a feed is stale the value is shown as unavailable.
+                  {t('Stock tokens are tokenized exposure, not direct ownership of a brokerage-held share. Availability depends on eligibility. Prices come from configured feeds; when a feed is stale the value is shown as unavailable.')}
                 </p>
               </>
             ) : (
-              <p className="muted">No live holding data for this asset.</p>
+              <p className="muted">{t('No live holding data for this asset.')}</p>
             )}
           </Modal>
         );
@@ -1422,8 +1419,8 @@ function Modal({
       <div className="modal" ref={ref}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button data-testid="modal-close" className="btn btn--small" onClick={onClose} aria-label="Close">
-            Close
+          <button data-testid="modal-close" className="btn btn--small" onClick={onClose} aria-label={t('Close')}>
+            {t('Close')}
           </button>
         </div>
         <TxnStatusLine txn={txn ?? null} explorerUrl={explorerUrl} />

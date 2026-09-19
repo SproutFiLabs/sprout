@@ -6,6 +6,8 @@ import { api, type ChainPublic, type GiftSummary, type LocalWalletInfo } from '.
 import { contractWriter, waitForSuccess, type WalletState } from './wallet';
 import { TxnStatusLine, type TxnState } from './components/TxnStatus';
 import { CampaignProgress, GiftNotesList, NAME_MAX, NOTE_MAX, giftAmountLabel, textProblem } from './components/Campaign';
+import { t, tj } from './i18n';
+import { LanguageToggle } from './i18n/LanguageToggle';
 
 interface GiftPageProps {
   giftId: string;
@@ -58,7 +60,7 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
     return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.decimals ?? 18;
   };
   const labelFor = (asset: string): string => {
-    if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementSymbol ?? 'Settlement';
+    if (asset.toLowerCase() === chain.contracts.settlementToken?.toLowerCase()) return chain.contracts.settlementSymbol ?? t('Settlement');
     return chain.contracts.stockTokens.find((t) => t.address.toLowerCase() === asset.toLowerCase())?.symbol ?? short(asset);
   };
 
@@ -68,11 +70,11 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
     const problem = textProblem(form.name, NAME_MAX, 'Your name') ?? textProblem(form.note, NOTE_MAX, 'The note');
     setNoteProblem(problem);
     if (problem) return;
-    setTxn({ label: 'Pay gift', status: 'pending' });
+    setTxn({ label: t('Pay gift'), status: 'pending' });
     try {
       const token = form.token as Address;
       const amount = parseUnits(form.amount || '0', decimalsFor(token));
-      if (amount <= 0n) throw new Error('Amount must be positive');
+      if (amount <= 0n) throw new Error(t('Amount must be positive'));
       const write = contractWriter(wallet);
       const approveHash = await write({ address: token, abi: erc20Abi, functionName: 'approve', args: [gift.vaultId, amount] });
       await waitForSuccess(wallet.publicClient, approveHash);
@@ -88,14 +90,14 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
       const message = { name: form.name.trim(), note: form.note.trim() };
       await api.recordGiftPayment(wallet, gift.id, payHash, message).catch((e: unknown) => {
         if (message.name || message.note) {
-          setNoteProblem(`Your gift went through, but the note couldn't be saved: ${apiErrorText(e)}`);
+          setNoteProblem(t("Your gift went through, but the note couldn't be saved: {error}", { error: apiErrorText(e) }));
         }
       });
-      setTxn({ label: 'Pay gift', status: 'confirmed', hash: payHash });
+      setTxn({ label: t('Pay gift'), status: 'confirmed', hash: payHash });
       setForm((f) => ({ ...f, note: '' }));
       await load();
     } catch (e) {
-      setTxn({ label: 'Pay gift', status: 'failed', error: e instanceof Error ? e.message : String(e) });
+      setTxn({ label: t('Pay gift'), status: 'failed', error: e instanceof Error ? e.message : String(e) });
     }
   };
 
@@ -108,12 +110,13 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
             <span>SPROUT</span>
           </a>
           <div className="garden-gift-topright">
-            <a className="garden-gift-link" href="/dashboard">Dashboard</a>
+            <LanguageToggle />
+            <a className="garden-gift-link" href="/dashboard">{t('Dashboard')}</a>
             {wallet ? (
               <span className="garden-pill garden-pill--sm">{short(wallet.address)}</span>
             ) : (
               <button className="garden-pill garden-pill--dark" onClick={() => void onConnect()}>
-                Connect wallet
+                {t('Connect wallet')}
               </button>
             )}
           </div>
@@ -124,54 +127,54 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
             <img src="/art/dashboard/hero-bouquet.png" alt="" />
           </div>
           <section className="garden-card garden-gift-card">
-            <span className="garden-eyebrow">{gift?.campaign ? 'Birthday campaign' : 'Gift preview'}</span>
+            <span className="garden-eyebrow">{gift?.campaign ? t('Birthday campaign') : t('Gift preview')}</span>
             {error ? (
               <p className="garden-gift-warning" data-testid="gift-error">
                 {error}
               </p>
             ) : null}
-            {!gift && !error ? <p className="garden-empty-note">Loading gift…</p> : null}
+            {!gift && !error ? <p className="garden-empty-note">{t('Loading gift…')}</p> : null}
             {gift ? (
               <>
-                <h1 className="garden-gift-title" data-testid="gift-page-title">{gift.campaign?.title ?? gift.label ?? 'Gift link'}</h1>
+                <h1 className="garden-gift-title" data-testid="gift-page-title">{gift.campaign?.title ?? gift.label ?? t('Gift link')}</h1>
                 {gift.campaign ? <CampaignProgress campaign={gift.campaign} nowMs={Date.now()} /> : null}
-                <p className="garden-gift-lead">This link adds funds to one fixed vault. It never grants withdrawal access.</p>
+                <p className="garden-gift-lead">{t('This link adds funds to one fixed vault. It never grants withdrawal access.')}</p>
                 <div className="garden-gift-facts">
                   <div>
-                    <small>Accepted assets</small>
+                    <small>{t('Accepted assets')}</small>
                     <b>{gift.acceptedAssets.map(labelFor).join(', ')}</b>
                   </div>
                   <div>
-                    <small>Gifts received</small>
+                    <small>{t('Gifts received')}</small>
                     <b>{gift.paymentCount}</b>
                   </div>
                 </div>
 
                 {gift.notes && gift.notes.length > 0 ? (
                   <section className="gift-notes-wall" aria-labelledby="gift-notes-title">
-                    <h2 id="gift-notes-title">Notes from family</h2>
+                    <h2 id="gift-notes-title">{t('Notes from family')}</h2>
                     <GiftNotesList notes={gift.notes} tokenLabel={(token, amount) => giftAmountLabel(token, amount, chain.contracts)} />
                   </section>
                 ) : null}
 
                 {!chain.configured ? (
-                  <p className="garden-gift-notice">This chain is not configured, so paying is disabled. Nothing is guessed.</p>
+                  <p className="garden-gift-notice">{t('This chain is not configured, so paying is disabled. Nothing is guessed.')}</p>
                 ) : !wallet ? (
                   <div className="garden-gift-form">
                     {localWallet?.enabled && onConnectLocal ? (
                       <button data-testid="gift-page-local" className="garden-pill garden-pill--dark garden-pill--wide" onClick={() => void onConnectLocal()}>
-                        Use local demo gifter
+                        {t('Use local demo gifter')}
                       </button>
                     ) : null}
                     <button data-testid="gift-page-connect" className="garden-pill garden-pill--wide" onClick={() => void onConnect()}>
-                      Connect wallet to pay
+                      {t('Connect wallet to pay')}
                     </button>
                     <TxnStatusLine txn={connectTxn ?? null} explorerUrl={chain.explorerUrl} />
                   </div>
                 ) : (
                   <div className="garden-gift-form">
                     <label>
-                      Asset
+                      {t('Asset')}
                       <select data-testid="gift-page-token" value={form.token} onChange={(e) => setForm({ ...form, token: e.target.value })}>
                         {gift.acceptedAssets.map((asset) => (
                           <option key={asset} value={asset}>
@@ -181,12 +184,12 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
                       </select>
                     </label>
                     <label>
-                      Amount
+                      {t('Amount')}
                       <input data-testid="gift-page-amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
                     </label>
                     <label>
                       <span>
-                        Your name <span className="garden-muted">(optional)</span>
+                        {tj('Your name {optional}', { optional: <span className="garden-muted">{t('(optional)')}</span> })}
                       </span>
                       <input
                         data-testid="gift-page-name"
@@ -198,25 +201,31 @@ export function GiftPage({ giftId, chain, wallet, localWallet, connectTxn, onCon
                     </label>
                     <label>
                       <span>
-                        A note <span className="garden-muted">(optional, {[...form.note.trim()].length}/{NOTE_MAX})</span>
+                        {tj('A note {optional}', {
+                          optional: (
+                            <span className="garden-muted">
+                              {t('(optional, {count}/{max})', { count: [...form.note.trim()].length, max: NOTE_MAX })}
+                            </span>
+                          ),
+                        })}
                       </span>
                       <textarea
                         data-testid="gift-page-note"
                         value={form.note}
                         rows={3}
                         maxLength={NOTE_MAX * 2}
-                        placeholder="Happy birthday!"
+                        placeholder={t('Happy birthday!')}
                         onChange={(e) => setForm({ ...form, note: e.target.value })}
                       />
                     </label>
-                    <p className="garden-muted gift-note-privacy">Your name and note are shown on this page to anyone with the link.</p>
+                    <p className="garden-muted gift-note-privacy">{t('Your name and note are shown on this page to anyone with the link.')}</p>
                     {noteProblem ? (
                       <p className="garden-gift-warning" role="alert" data-testid="gift-note-problem">
                         {noteProblem}
                       </p>
                     ) : null}
                     <button data-testid="gift-page-submit" className="garden-pill garden-pill--dark garden-pill--wide" onClick={() => void pay()}>
-                      Approve and pay
+                      {t('Approve and pay')}
                     </button>
                   </div>
                 )}

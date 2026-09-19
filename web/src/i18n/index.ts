@@ -32,6 +32,11 @@ function apply(locale: Locale): void {
   if (typeof document !== 'undefined') document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
 }
 
+/** Strings looked up in Chinese that had no translation (tests read this). */
+export function missingTranslations(): ReadonlySet<string> {
+  return missing;
+}
+
 /** Pick the language before React paints: a saved choice, else the browser's. */
 export function initializeLocale(): Locale {
   apply(typeof window === 'undefined' ? 'en' : detect());
@@ -66,14 +71,15 @@ export function useLocale(): Locale {
   return locale;
 }
 
+/** Text a caller already translated (it holds Chinese characters) passes through as is. */
+const ALREADY_CHINESE = /[㐀-鿿]/;
+
 function lookup(text: string): string {
   if (current !== 'zh') return text;
   const hit = ZH[text];
-  if (hit === undefined) {
-    missing.add(text);
-    return text;
-  }
-  return hit;
+  if (hit !== undefined) return hit;
+  if (!ALREADY_CHINESE.test(text)) missing.add(text);
+  return text;
 }
 
 /**
@@ -85,6 +91,16 @@ export function t(text: string, vars?: Record<string, string | number>): string 
   const out = lookup(text);
   if (!vars) return out;
   return out.replace(/\{(\w+)\}/g, (whole, name: string) => (name in vars ? String(vars[name]) : whole));
+}
+
+/**
+ * `t` for a word whose Chinese depends on where it is used: looks up
+ * `'{text}|{context}'` first, then `text`. English always shows `text`.
+ *   tc('lesson', 'Done')   // 已完成, where t('Done') on a button is 完成
+ */
+export function tc(context: string, text: string, vars?: Record<string, string | number>): string {
+  if (current === 'zh' && ZH[`${text}|${context}`] !== undefined) return t(`${text}|${context}`, vars);
+  return t(text, vars);
 }
 
 /**

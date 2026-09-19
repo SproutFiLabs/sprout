@@ -1,3 +1,205 @@
 /** Simplified Chinese for the components strings, keyed by the English source text. */
 export const zh: Record<string, string> = {
+  // Gift page (GiftPage.tsx)
+  'Settlement': '结算代币',
+  'Pay gift': '送出礼物',
+  'Amount must be positive': '金额必须大于 0',
+  "Your gift went through, but the note couldn't be saved: {error}": '你的礼物已经送到了，但留言没能保存：{error}',
+  'Dashboard': '控制台',
+  'Connect wallet': '连接钱包',
+  'Birthday campaign': '生日心愿',
+  'Gift preview': '礼物预览',
+  'Loading gift…': '正在加载礼物…',
+  'Gift link': '礼物链接',
+  'This link adds funds to one fixed vault. It never grants withdrawal access.': '这个链接只会把资金存入一个固定的金库合约，永远不会给出提取权限。',
+  'Accepted assets': '可接受的资产',
+  'Gifts received': '已收到的礼物',
+  'Notes from family': '亲友留言',
+  'This chain is not configured, so paying is disabled. Nothing is guessed.': '这条链还没有配置，所以暂时无法付款。我们不会去猜任何设置。',
+  'Use local demo gifter': '使用本地演示送礼账户',
+  'Connect wallet to pay': '连接钱包付款',
+  'Asset': '资产',
+  'Amount': '金额',
+  'Your name {optional}': '你的名字{optional}',
+  '(optional)': '（选填）',
+  'A note {optional}': '留言{optional}',
+  '(optional, {count}/{max})': '（选填，{count}/{max}）',
+  'Happy birthday!': '生日快乐！',
+  'Your name and note are shown on this page to anyone with the link.': '你的名字和留言会显示在这个页面上，拿到链接的人都能看到。',
+  'Approve and pay': '授权并付款',
+
+  // Campaigns and notes (Campaign.tsx)
+  'Your name': '你的名字',
+  'The note': '留言',
+  'The title': '标题',
+  '{field} can be at most {max} characters.': '{field}最多 {max} 个字。',
+  "{field} can't include links.": '{field}不能包含链接。',
+  'Ended {date}': '已于 {date}结束',
+  'Ends today': '今天结束',
+  '{days} days left · ends {date}': '还剩 {days} 天 · {date}结束',
+  'raised of {goal}': '已筹得，目标 {goal}',
+  '{pct}% of the goal': '已达成目标的 {pct}%',
+  'Someone who cares': '一位有心人',
+  'Show on the gift page': '在礼物页面显示',
+  'Hide': '隐藏',
+
+  // Invest now (InvestNow.tsx)
+  'Invest now': '立即买入',
+  'Investing…': '正在买入…',
+  'Done': '完成',
+  'settlement': '结算代币',
+  'Buying stock tokens': '买入股票代币',
+  'Runs your plan’s {amount} purchase now instead of waiting for it. The plan keeps its schedule from today.':
+    '现在就执行定投计划里 {amount} 的买入，不用再等。之后计划从今天起按原来的节奏继续。',
+  'Amount to invest ({ticker})': '投资金额（{ticker}）',
+  'Available to invest: {amount} {ticker}': '可用于投资：{amount} {ticker}',
+  'about {amount} {symbol}': '约 {amount} {symbol}',
+  'Could not check prices: {error}': '无法核对价格：{error}',
+  'Keep this amount as a weekly plan': '把这个金额保留为每周定投',
+  'One wallet confirmation.': '需要在钱包里确认 1 次。',
+  '{count} wallet confirmations.': '需要在钱包里确认 {count} 次。',
+  'Prices come from the market feed; the purchase is refused if the pool pays much less than that price.':
+    '价格来自市场行情数据；如果交易池给出的价格比这个价格低很多，这笔买入会被拒绝。',
+  'After this, the plan buys automatically each week.': '之后，计划会每周自动买入。',
+  'Automatic weekly buying is switched off for now, so you can run each week’s purchase from here.':
+    '每周自动买入目前已关闭，你可以每周在这里手动执行买入。',
+  'Step {n} of {total}: set the amount. Confirm in your wallet.': '第 {n} 步（共 {total} 步）：设定金额。请在钱包中确认。',
+  'Checking prices before you buy…': '买入前正在核对价格…',
+  'The purchase is not ready yet. Wait a moment and press Invest now again.': '这笔买入还没准备好。请稍等片刻，再点一次“立即买入”。',
+  'Step {n} of {total}: buy. Confirm in your wallet.': '第 {n} 步（共 {total} 步）：买入。请在钱包中确认。',
+  'Step {n} of {total}: clear the one-off amount. This moves no money.': '第 {n} 步（共 {total} 步）：清除这次单独设定的金额。这一步不会动用任何资金。',
+  // Server blocker messages, by code (server/src/invest.ts)
+  'Buying is not configured on this server.': '这台服务器还没有配置买入功能。',
+  'This sprout has graduated, so it no longer buys anything.': '这株小芽已经交接给孩子，不会再买入任何东西。',
+  'This sprout was planted without a trading venue, so it cannot buy stocks.': '这株小芽种下时没有设置交易场所，所以无法买入股票。',
+  'Enter an amount large enough to buy something.': '请输入一个足够买到东西的金额。',
+  'That is more than this sprout has available to invest. Add funds first, or choose a smaller amount.':
+    '这超出了这株小芽目前可用于投资的金额。请先存入资金，或者选一个小一点的金额。',
+  'The trading pool is pricing these stocks too far from the market price right now, so the purchase would be refused. Try again shortly.':
+    '交易池目前给这些股票的报价与市场价格相差太远，这笔买入会被拒绝。请稍后再试。',
+  'The {symbol} price has not updated recently, so buying is paused to protect the price you get. This usually means US markets are closed; try again once they reopen.':
+    '{symbol} 的价格最近没有更新，为了保护你的成交价格，买入已暂停。这通常是因为美国股市休市；请在开市后再试。',
+  'The {symbol} price feed is paused right now, so {symbol} cannot be bought. Try again later.':
+    '{symbol} 的价格源目前已暂停，所以现在无法买入 {symbol}。请稍后再试。',
+  'The {symbol} price could not be read just now. Try again in a minute.': '暂时读取不到 {symbol} 的价格。请过一分钟再试。',
+  'The purchase could not be prepared. Try again in a minute.': '这笔买入没能准备好。请过一分钟再试。',
+  'The purchase could not be prepared ({name}). Try again in a minute.': '这笔买入没能准备好（{name}）。请过一分钟再试。',
+
+  // Risk disclosure (BetaNotice.tsx)
+  'Transactions settle on Robinhood Chain mainnet with real funds and cannot be reversed.': '交易在 Robinhood Chain 主网上使用真实资金结算，无法撤销。',
+  'The contracts have not been independently audited.': '合约尚未经过独立审计。',
+  'Graduation withdrawal has not yet been verified on mainnet.': '交接日后的提取功能尚未在主网上验证。',
+  'Backup restoration has not yet been verified.': '备份恢复功能尚未经过验证。',
+  'Balances and activity are read from the chain and can lag behind it.': '余额和动态从链上读取，可能滞后于链上的实际情况。',
+  'Nothing here is financial advice.': '这里的任何内容都不构成投资建议。',
+  'Automatic weekly investing is switched off, so nothing invests on its own. Invest now buys from your wallet.':
+    '每周自动定投目前已关闭，不会自动投资。“立即买入”会用你自己的钱包买入。',
+  'Weekly plans run automatically from a service wallet; a run can be delayed or skipped when prices are stale.':
+    '定投计划由一个服务钱包自动执行；价格过时的时候，某一次执行可能会推迟或被跳过。',
+  '{beta} {action} settles on Robinhood Chain mainnet and cannot be undone.': '{beta}{action}会在 Robinhood Chain 主网上结算，一经完成无法撤销。',
+  'Beta, real funds.': '测试版，真实资金。',
+
+  // Contract address (PublicCa.tsx)
+  'Copy contract address {ca}': '复制合约地址 {ca}',
+  'CA': '合约地址',
+  'Copied': '已复制',
+  'Copy failed': '复制失败',
+  'Copy': '复制',
+  'This sprout': '这株小芽',
+  'Copy this sprout’s address {address}': '复制这株小芽的地址 {address}',
+
+  // Onboarding (OnboardingIntro.tsx)
+  'Weekly investing': '每周定投',
+  'A small amount, on repeat, gives their future a steady rhythm.': '每次一点点，一直坚持，给孩子的未来一个稳稳的节奏。',
+  'Gifts from their people': '来自亲友的礼物',
+  'Birthdays and little surprises can join the same growing portfolio.': '生日礼物和小惊喜，都能汇入同一个不断成长的投资组合。',
+  'Earned rewards': '挣来的奖励',
+  'Everyday effort can become an allowance they can see and understand.': '日常的付出，可以变成孩子看得见、也能理解的零花钱。',
+  'Sprout can’t touch it': 'Sprout 动不了这笔钱',
+  'Each sprout is its own contract on Robinhood Chain. Nobody at Sprout can move, freeze or refund the money in it.':
+    '每株小芽都是 Robinhood Chain 上一个独立的合约。Sprout 的任何人都无法转走、冻结或退回里面的钱。',
+  'It only ever goes to your child': '这笔钱只会交给你的孩子',
+  'As rewards you approve before the big day, and all of it on the big day. Pick a child’s wallet your family can open: it can’t be changed later.':
+    '在交接日之前，以你批准的奖励发放；到了交接日，全部交给孩子。请选一个你们家能打开的孩子的钱包：之后无法更改。',
+  'It doesn’t need this website': '它不依赖这个网站',
+  'If Sprout ever shuts down, the money stays put. Save your sprout’s address, and free tools can still take it out.':
+    '就算 Sprout 哪天关停，钱也还在原处。保存好你的小芽地址，用免费工具依然可以把钱提取出来。',
+  'A little introduction': '简单介绍',
+  'A little future, grown together.': '一起种下一个小小的未来。',
+  'SPROUT gives a child a place of their own for contributions, rewards and thoughtful gifts.':
+    'SPROUT 给孩子一个属于自己的地方，存放家人的投入、奖励和用心的礼物。',
+  'Small ways to help it grow.': '用小小的方式，帮它长大。',
+  'One sprout can hold the habits and moments your family already shares.': '一株小芽，可以装下你们家已有的好习惯和美好时刻。',
+  'Before you add money': '存入资金之前',
+  'The money stays theirs, not ours.': '这笔钱属于孩子，不属于我们。',
+  'Here is what that means, in plain words.': '用大白话说，意思是这样的：',
+  'Close welcome tour': '关闭欢迎导览',
+  'How to take money out without Sprout': '不通过 Sprout，怎样把钱取出来',
+  'A small beginning can become something they can carry into their own future.': '一个小小的开始，也能成为孩子带进自己未来的东西。',
+  'See how it grows': '看看它怎么长大',
+  'Where the money lives': '钱放在哪里',
+  'Plant their first sprout': '种下第一株小芽',
+  'Connect & plant': '连接并种下',
+  'Skip for now': '先跳过',
+  'I’ll explore myself': '我自己逛逛',
+  'Introduction panel {n} of {total}': '介绍第 {n} 页，共 {total} 页',
+  'The first little beginning': '第一个小小的开始',
+  'Welcome.': '欢迎。',
+  'Their sprout is ready to grow. It has no money in it yet — adding the first funds is the next step.':
+    '孩子的小芽已经准备好长大了。里面还没有钱——下一步就是存入第一笔资金。',
+  'Add the first funds': '存入第一笔资金',
+  'I’ll do this later': '稍后再说',
+  'Save this sprout’s address. With it, the money can be reached even if Sprout ever shuts down.':
+    '请保存这株小芽的地址。有了它，就算 Sprout 哪天关停，也依然能取到这笔钱。',
+
+  // Starter mixes (StarterMixes.tsx)
+  'Even split': '平均分配',
+  'The same share of each stock.': '每只股票的占比相同。',
+  'Mostly the S&P 500': '以标普 500 为主',
+  '70% SPY, which follows 500 large US companies; the rest split across Apple, NVIDIA and Microsoft.':
+    '70% 投入 SPY（追踪 500 家美国大公司），其余分给苹果、英伟达和微软。',
+  'Just the companies': '只选公司股票',
+  'Apple, NVIDIA and Microsoft, and no index fund.': '苹果、英伟达和微软，不含指数基金。',
+  'Starter mixes': '入门配比',
+  'Starter mixes are examples to start from, not advice.': '入门配比只是供你起步的示例，不构成投资建议。',
+  'Total {total}%': '合计 {total}%',
+  'Total {total}% of 100%': '合计 {total}% / 100%',
+
+  // Gift QR code (GiftQr.tsx)
+  'This browser cannot draw the image.': '这个浏览器无法绘制图片。',
+  'The image could not be created.': '图片没能生成。',
+  'Gift link QR code': '礼物链接二维码',
+  'Help a sprout grow 🌱': '帮小芽长大 🌱',
+  'QR code that opens the gift link': '打开礼物链接的二维码',
+  'Scan with a phone camera to add a gift.': '用手机相机扫一扫，就能送上一份礼物。',
+  'Anyone who scans it can add money to this sprout from their own wallet. It gives nobody any control, and gifts can’t be taken back.':
+    '任何扫码的人都可以用自己的钱包给这株小芽存入资金。它不会让任何人获得控制权，礼物送出后也无法收回。',
+  'Download PNG': '下载 PNG',
+  'Print': '打印',
+
+  // Transaction status (TxnStatus.tsx)
+  '{label}:': '{label}：',
+  'pending': '处理中',
+  'confirmed': '已确认',
+  'failed': '失败',
+
+  // Growth ring (GrowthRing.tsx)
+  '{label}: {value}, {sublabel}': '{label}：{value}，{sublabel}',
+  '{label}: {value}': '{label}：{value}',
+
+  // Plan cadence (garden/format.ts)
+  'day': '天',
+  'week': '周',
+  '2 weeks': '2 周',
+  '{days} days': '{days} 天',
+
+  // Dates (dates.ts)
+  '{date} ({zone})': '{date}（{zone}）',
+
+  // Wallet errors (wallet.ts)
+  'No injected EIP-1193 wallet found. Install a browser wallet to connect.': '没有检测到浏览器钱包。请先安装一个浏览器钱包，再来连接。',
+  'Wallet returned no accounts': '钱包没有返回任何账户',
+  'The connected account changed. Reconnect the wallet.': '已连接的账户发生了变化。请重新连接钱包。',
+  'Wrong network: expected chain {expected}, wallet is on {actual}.': '网络不对：应连接链 {expected}，钱包当前在链 {actual} 上。',
+  'Transaction reverted: {hash}': '交易执行失败（已回退）：{hash}',
 };

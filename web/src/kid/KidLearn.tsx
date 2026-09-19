@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Check, Leaf, Lightbulb, Shrub, Sprout as SproutIcon, TreeDeciduous, X } from 'lucide-react';
 import { findLesson, orderLessons, type Lesson, type QuizOption } from './lessons';
 import { BADGES, badgeProgress, loadProgress, markLessonDone, type Badge } from './progress';
+import { getLocale, t, tc } from '../i18n';
 
 /**
  * The Learn section of the kid view: lessons tied to what the sprout holds, a
@@ -22,11 +23,21 @@ interface Outcome {
   earned: Badge | null;
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/** One key per English form; Chinese uses the same words for both. */
+const count = (n: number, one: string, many: string) => t(n === 1 ? one : many, { n });
+
+/**
+ * A badge's name in the current language. "Sprout" is also the brand, which is
+ * never translated, so in Chinese the badge names are looked up under their own
+ * keys ("Sprout (badge)") instead of the bare word.
+ */
+function badgeName(badge: Badge): string {
+  return getLocale() === 'zh' ? t(`${badge.name} (badge)`) : badge.name;
+}
 
 function tagFor(lesson: Lesson, held: boolean): string {
-  if (held) return 'In your sprout';
-  return lesson.kind === 'company' ? 'Company' : 'Basics';
+  if (held) return t('In your sprout');
+  return lesson.kind === 'company' ? t('Company') : t('Basics');
 }
 
 export function KidLearn({
@@ -85,31 +96,31 @@ export function KidLearn({
 
   const CurrentIcon = progress.current ? BADGE_ICON[progress.current.id] : SproutIcon;
   const status = !progress.next
-    ? 'You finished every lesson.'
+    ? t('You finished every lesson.')
     : progress.current
-      ? `${plural(progress.toNext, 'more lesson')} to ${progress.next.name}`
-      : `Finish a lesson to earn your first badge: ${progress.next.name}`;
+      ? t(progress.toNext === 1 ? '{n} more lesson to {badge}' : '{n} more lessons to {badge}', { n: progress.toNext, badge: badgeName(progress.next) })
+      : t('Finish a lesson to earn your first badge: {badge}', { badge: badgeName(progress.next) });
 
   return (
     <section className="kid-card kid-learn" id="learn" ref={sectionRef} aria-labelledby="kid-learn-title" data-testid="kid-learn">
       <div className="kid-learn-head">
         <div className="kid-learn-intro">
-          <h2 id="kid-learn-title"><BookOpen size={20} aria-hidden /> Learn</h2>
-          <p className="kid-muted">Short lessons about what’s in your sprout. Answer the question at the end of each one to earn badges.</p>
+          <h2 id="kid-learn-title"><BookOpen size={20} aria-hidden /> {t('Learn')}</h2>
+          <p className="kid-muted">{t('Short lessons about what’s in your sprout. Answer the question at the end of each one to earn badges.')}</p>
         </div>
         <div className="kid-learn-progress" data-testid="kid-learn-progress">
           <div className="kid-award-now" data-badge={progress.current?.id ?? 'none'}>
             <span className="kid-award-icon" aria-hidden><CurrentIcon size={26} /></span>
             <div>
-              <b data-testid="kid-badge-name">{progress.current ? `${progress.current.name} badge` : 'No badge yet'}</b>
+              <b data-testid="kid-badge-name">{progress.current ? t('{badge} badge', { badge: badgeName(progress.current) }) : t('No badge yet')}</b>
               <span data-testid="kid-badge-next">{status}</span>
             </div>
           </div>
           <div className="kid-learn-bar" aria-hidden>
             <span style={{ width: `${Math.round((done.length / Math.max(1, lessons.length)) * 100)}%` }} />
           </div>
-          <p className="kid-learn-count" data-testid="kid-learn-count">{done.length} of {plural(lessons.length, 'lesson')} done</p>
-          <ol className="kid-awards" aria-label="Badges">
+          <p className="kid-learn-count" data-testid="kid-learn-count">{t(lessons.length === 1 ? '{done} of {n} lesson done' : '{done} of {n} lessons done', { done: done.length, n: lessons.length })}</p>
+          <ol className="kid-awards" aria-label={t('Badges')}>
             {BADGES.map((badge) => {
               const Icon = BADGE_ICON[badge.id];
               const need = progress.needs[badge.id];
@@ -117,9 +128,9 @@ export function KidLearn({
               return (
                 <li key={badge.id} data-earned={has} data-testid={`kid-badge-${badge.id}`}>
                   <Icon size={18} aria-hidden />
-                  <span>{badge.name}</span>
-                  <small>{badge.need === 'all' ? 'all lessons' : plural(need, 'lesson')}</small>
-                  <span className="kid-sr">{has ? ', earned' : ', not earned yet'}</span>
+                  <span>{badgeName(badge)}</span>
+                  <small>{badge.need === 'all' ? t('all lessons') : count(need, '{n} lesson', '{n} lessons')}</small>
+                  <span className="kid-sr">{has ? t(', earned') : t(', not earned yet')}</span>
                 </li>
               );
             })}
@@ -156,10 +167,10 @@ export function KidLearn({
                   onClick={() => onNavigate(lesson.id)}
                 >
                   <span className={`kid-lesson-tag${heldIds.has(lesson.id) ? ' kid-lesson-tag--held' : ''}`}>{tagFor(lesson, heldIds.has(lesson.id))}</span>
-                  <span className="kid-lesson-name">{lesson.title}</span>
-                  <span className="kid-lesson-summary">{lesson.summary}</span>
+                  <span className="kid-lesson-name">{t(lesson.title)}</span>
+                  <span className="kid-lesson-summary">{t(lesson.summary)}</span>
                   <span className="kid-lesson-state">
-                    {isDone ? <><Check size={15} aria-hidden /> Done</> : 'Not done yet'}
+                    {isDone ? <><Check size={15} aria-hidden /> {tc('lesson', 'Done')}</> : t('Not done yet')}
                   </span>
                 </button>
               </li>
@@ -168,7 +179,7 @@ export function KidLearn({
         </ul>
       )}
 
-      <p className="kid-learn-foot">These lessons are for learning, not financial advice.</p>
+      <p className="kid-learn-foot">{t('These lessons are for learning, not financial advice.')}</p>
     </section>
   );
 }
@@ -217,21 +228,21 @@ function LessonView({
   return (
     <article className="kid-lesson" ref={articleRef} aria-labelledby="kid-lesson-title" data-testid="kid-lesson" data-lesson-id={lesson.id} data-done={done}>
       <button type="button" className="kid-learn-back" data-learn-control data-testid="kid-lesson-back" onClick={() => onNavigate(null)}>
-        <ArrowLeft size={16} aria-hidden /> All lessons
+        <ArrowLeft size={16} aria-hidden /> {t('All lessons')}
       </button>
       <div className="kid-lesson-top">
         <span className={`kid-lesson-tag${held ? ' kid-lesson-tag--held' : ''}`}>{tagFor(lesson, held)}</span>
-        {done ? <span className="kid-lesson-done" data-testid="kid-lesson-done"><Check size={14} aria-hidden /> Done</span> : null}
+        {done ? <span className="kid-lesson-done" data-testid="kid-lesson-done"><Check size={14} aria-hidden /> {tc('lesson', 'Done')}</span> : null}
       </div>
-      <h3 id="kid-lesson-title" ref={headingRef} tabIndex={-1}>{lesson.title}</h3>
-      {held && lesson.symbol ? <p className="kid-lesson-held">Your sprout holds {lesson.symbol}, so this lesson is about part of it.</p> : null}
+      <h3 id="kid-lesson-title" ref={headingRef} tabIndex={-1}>{t(lesson.title)}</h3>
+      {held && lesson.symbol ? <p className="kid-lesson-held">{t('Your sprout holds {symbol}, so this lesson is about part of it.', { symbol: lesson.symbol })}</p> : null}
       <div className="kid-lesson-body">
-        {lesson.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        {lesson.body.map((paragraph) => <p key={paragraph}>{t(paragraph)}</p>)}
       </div>
 
       <div className="kid-quiz">
-        <p className="kid-quiz-label"><Lightbulb size={16} aria-hidden /> Try it</p>
-        <p className="kid-quiz-question" id={questionId}>{lesson.quiz.question}</p>
+        <p className="kid-quiz-label"><Lightbulb size={16} aria-hidden /> {t('Try it')}</p>
+        <p className="kid-quiz-question" id={questionId}>{t(lesson.quiz.question)}</p>
         <div className="kid-quiz-options" role="group" aria-labelledby={questionId}>
           {lesson.quiz.options.map((option, index) => {
             const chosen = option.id === picked;
@@ -248,7 +259,7 @@ function LessonView({
                 onClick={() => onAnswer(option)}
               >
                 <span className="kid-quiz-letter" aria-hidden>{'ABC'[index]}</span>
-                <span className="kid-quiz-text">{option.text}</span>
+                <span className="kid-quiz-text">{t(option.text)}</span>
                 {chosen ? (option.correct ? <Check size={18} aria-hidden /> : <X size={18} aria-hidden />) : null}
               </button>
             );
@@ -257,12 +268,12 @@ function LessonView({
         <div className="kid-quiz-feedback" role="status" data-testid="kid-quiz-feedback" data-result={result}>
           {result === 'right' ? (
             <>
-              <b>That’s right!</b> {lesson.quiz.explanation}
-              {earned ? <> <b>You earned the {earned.name} badge.</b></> : firstTime ? ' Lesson done.' : null}
+              <b>{t('That’s right!')}</b> {t(lesson.quiz.explanation)}
+              {earned ? <> <b>{t('You earned the {badge} badge.', { badge: badgeName(earned) })}</b></> : firstTime ? <> {t('Lesson done.')}</> : null}
             </>
           ) : result === 'wrong' ? (
             <>
-              <b>Not quite.</b> {lesson.quiz.explanation} Try another answer.
+              <b>{t('Not quite.')}</b> {t(lesson.quiz.explanation)} {t('Try another answer.')}
             </>
           ) : null}
         </div>
@@ -270,11 +281,11 @@ function LessonView({
           <div className="kid-lesson-actions">
             {next ? (
               <button type="button" className="kid-learn-next" data-learn-control data-testid="kid-lesson-next" onClick={() => onNavigate(next.id)}>
-                Next: {next.title} <ArrowRight size={16} aria-hidden />
+                {t('Next: {title}', { title: t(next.title) })} <ArrowRight size={16} aria-hidden />
               </button>
             ) : null}
             <button type="button" className="kid-learn-back" data-learn-control onClick={() => onNavigate(null)}>
-              <ArrowLeft size={16} aria-hidden /> All lessons
+              <ArrowLeft size={16} aria-hidden /> {t('All lessons')}
             </button>
           </div>
         ) : null}

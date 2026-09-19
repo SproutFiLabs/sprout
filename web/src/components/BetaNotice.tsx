@@ -1,4 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
+import { t, tj } from '../i18n';
 
 /**
  * Risk disclosure for a beta product that moves real money.
@@ -31,19 +32,23 @@ export function betaPoints(automationEnabled: boolean | null): string[] {
       : automationEnabled === true
         ? ['Weekly plans run automatically from a service wallet; a run can be delayed or skipped when prices are stale.']
         : [];
-  return [...BETA_POINTS.slice(0, 2), ...automation, ...BETA_POINTS.slice(2)];
+  return [...BETA_POINTS.slice(0, 2), ...automation, ...BETA_POINTS.slice(2)].map((point) => t(point));
 }
 
 /**
  * The short form, shown inside the dialogs that actually spend money. This one
  * is deliberately not dismissible: it is the last thing in front of a signature.
+ * Callers pass `action` already translated ("Adding funds" / 存入资金).
  */
 export function RiskLine({ action }: { action: string }): JSX.Element {
   return (
     <p className="risk-line" role="note">
       <AlertTriangle size={14} aria-hidden />
       <span>
-        <b>Beta, real funds.</b> {action} settles on Robinhood Chain mainnet and cannot be undone.
+        {tj('{beta} {action} settles on Robinhood Chain mainnet and cannot be undone.', {
+          beta: <b>{t('Beta, real funds.')}</b>,
+          action,
+        })}
       </span>
     </p>
   );

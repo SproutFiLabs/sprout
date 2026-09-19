@@ -98,3 +98,18 @@ legend {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+/* Simplified Chinese. The Latin faces carry no Chinese glyphs, so name good system
+   ones rather than leave the browser to guess; Latin words keep their own face.
+   Tight negative tracking suits Latin display type but crowds Chinese characters. */
+:root:lang(zh-CN),
+html:lang(zh-CN) :is(.garden, .kid-root, .welcome-sprout-backdrop, .onboarding-backdrop) {
+  --font-sans: 'Satoshi', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Noto Sans CJK SC', Arial, sans-serif;
+  --garden-sans: 'Satoshi', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Noto Sans CJK SC', Arial, sans-serif;
+  --font-serif: Georgia, 'Songti SC', 'STSong', 'Noto Serif SC', 'Noto Serif CJK SC', 'Times New Roman', serif;
+  --garden-serif: Georgia, 'Songti SC', 'STSong', 'Noto Serif SC', 'Noto Serif CJK SC', 'Times New Roman', serif;
+}
+html:lang(zh-CN) body :is(h1, h2, h3, h4, .garden-value, .kid-value, .garden-weekly-figure) {
+  letter-spacing: 0;
+}
+html:lang(zh-CN) .garden-period { white-space: nowrap; }

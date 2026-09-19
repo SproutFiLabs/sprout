@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 interface GrowthRingProps {
   progress: number;
   value: string;
@@ -13,7 +15,7 @@ export function GrowthRing({ progress, value, label, sublabel, muted = false }: 
   const dash = circumference * clamped;
 
   return (
-    <div className="ring-wrap" role="img" aria-label={`${label}: ${value}${sublabel ? `, ${sublabel}` : ''}`}>
+    <div className="ring-wrap" role="img" aria-label={sublabel ? t('{label}: {value}, {sublabel}', { label, value, sublabel }) : t('{label}: {value}', { label, value })}>
       <svg viewBox="0 0 200 200" className="ring" aria-hidden="true">
         <circle cx="100" cy="100" r={radius} className="ring-track" />
         <circle

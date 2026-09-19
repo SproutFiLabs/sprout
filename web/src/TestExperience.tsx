@@ -3,6 +3,8 @@ import { ArrowRight, RotateCcw, Sparkles } from 'lucide-react';
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { Preview } from './Preview';
 import { SPROUTS } from './sampleData';
+import { LanguageToggle } from './i18n/LanguageToggle';
+import { t } from './i18n';
 
 type TestStage = 'intro' | 'form' | 'dashboard';
 
@@ -51,25 +53,28 @@ export function TestExperience() {
   return (
     <main className="test-experience" data-testid="test-experience">
       <header className="test-experience-header">
-        <a className="test-experience-brand" href="/" aria-label="SPROUT home"><span>✦</span> SPROUT</a>
-        <span className="test-experience-badge"><Sparkles size={14} /> Sample walkthrough</span>
+        <a className="test-experience-brand" href="/" aria-label={t('SPROUT home')}><span>✦</span> SPROUT</a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="test-experience-badge"><Sparkles size={14} /> {t('Sample walkthrough')}</span>
+          <LanguageToggle />
+        </div>
       </header>
       {stage === 'form' ? (
         <section className="test-setup-card" aria-labelledby="test-setup-title">
           <img className="test-setup-art" src="/art/dashboard/motion/petal-orange.png" alt="" aria-hidden="true" />
-          <span className="test-eyebrow">Sample walkthrough · no transactions</span>
-          <h1 id="test-setup-title">Give their sprout a name.</h1>
-          <p>Explore a prepared family wallet with sample balances. No signatures or transactions are involved.</p>
-          <div className="test-wallet" aria-label="Simulated sample wallet">
-            <div><span>Sample wallet</span><b>simulated</b></div>
-            <input id="test-wallet-address" aria-label="Sample wallet address" value={SPROUTS[0]!.parent} readOnly />
+          <span className="test-eyebrow">{t('Sample walkthrough · no transactions')}</span>
+          <h1 id="test-setup-title">{t('Give their sprout a name.')}</h1>
+          <p>{t('Explore a prepared family wallet with sample balances. No signatures or transactions are involved.')}</p>
+          <div className="test-wallet" aria-label={t('Simulated sample wallet')}>
+            <div><span>{t('Sample wallet')}</span><b>{t('simulated')}</b></div>
+            <input id="test-wallet-address" aria-label={t('Sample wallet address')} value={SPROUTS[0]!.parent} readOnly />
           </div>
           <form onSubmit={createSample}>
-            <label htmlFor="test-child-name">Child’s name</label>
+            <label htmlFor="test-child-name">{t('Child’s name')}</label>
             <input id="test-child-name" data-testid="test-child-name" value={draftName} onChange={(event) => setDraftName(event.target.value)} autoFocus maxLength={40} />
-            <button type="submit" data-testid="test-create" className="test-primary">Create their sample sprout <ArrowRight size={16} /></button>
+            <button type="submit" data-testid="test-create" className="test-primary">{t('Create their sample sprout')} <ArrowRight size={16} /></button>
           </form>
-          <button type="button" className="test-link" onClick={restart}><RotateCcw size={14} /> Restart tour</button>
+          <button type="button" className="test-link" onClick={restart}><RotateCcw size={14} /> {t('Restart tour')}</button>
         </section>
       ) : null}
       <OnboardingIntro

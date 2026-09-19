@@ -1,4 +1,5 @@
 import { formatUnits } from '@sprout/shared';
+import { t } from '../i18n';
 
 /**
  * Chore reward label. The approved sample shows dollars ("+ $2"). In live mode
@@ -45,8 +46,8 @@ export function holdingSharesText(args: {
  */
 export function cadenceLabel(periodSeconds: number): string {
   const days = Math.round(periodSeconds / 86400);
-  if (days === 1) return 'day';
-  if (days === 7) return 'week';
-  if (days === 14) return '2 weeks';
-  return `${days} days`;
+  if (days === 1) return t('day');
+  if (days === 7) return t('week');
+  if (days === 14) return t('2 weeks');
+  return t('{days} days', { days });
 }

@@ -7,6 +7,7 @@ import { holdingSharesText } from './garden/format';
 import { getMilestoneTitle, getNickname } from './localStore';
 import { ThemeToggle } from './theme/ThemeSettings';
 import { LanguageToggle } from './i18n/LanguageToggle';
+import { dateLocale, t, tc } from './i18n';
 import { KidLearn } from './kid/KidLearn';
 import { findLesson, lessonForSymbol } from './kid/lessons';
 
@@ -51,15 +52,16 @@ export function timeUntil(targetSeconds: number, nowMs: number): string | null {
   if (target.getTime() <= now.getTime()) return null;
   let months = (target.getUTCFullYear() - now.getUTCFullYear()) * 12 + (target.getUTCMonth() - now.getUTCMonth());
   if (target.getUTCDate() < now.getUTCDate()) months -= 1;
-  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const count = (n: number, one: string, many: string) => t(n === 1 ? one : many, { n });
   if (months <= 0) {
     const days = Math.max(1, Math.ceil((target.getTime() - now.getTime()) / 86_400_000));
-    return plural(days, 'day');
+    return count(days, '{n} day', '{n} days');
   }
   const years = Math.floor(months / 12);
   const rest = months % 12;
-  if (years === 0) return plural(rest, 'month');
-  return rest === 0 ? plural(years, 'year') : `${plural(years, 'year')} and ${plural(rest, 'month')}`;
+  if (years === 0) return count(rest, '{n} month', '{n} months');
+  if (rest === 0) return count(years, '{n} year', '{n} years');
+  return t('{years} and {months}', { years: count(years, '{n} year', '{n} years'), months: count(rest, '{n} month', '{n} months') });
 }
 
 export function kidViewPath(vault: string, name?: string | null): string {
@@ -90,8 +92,9 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
   const [openLesson, setOpenLesson] = useState<string | null>(() => findLesson(lessonId)?.id ?? null);
   const params = new URLSearchParams(window.location.search);
   const name = (params.get('name') ?? getNickname(vault) ?? '').trim().slice(0, 24);
-  const heading = name ? `${name}’s sprout` : 'Your sprout';
-  const lessonTitle = findLesson(openLesson)?.title;
+  const heading = name ? t('{name}’s sprout', { name }) : t('Your sprout');
+  const openTitle = findLesson(openLesson)?.title;
+  const lessonTitle = openTitle ? t(openTitle) : null;
 
   useEffect(() => {
     document.title = lessonTitle ? `${lessonTitle} · ${heading} · Sprout` : `${heading} · Sprout`;
@@ -181,7 +184,7 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
     <main className="garden-root kid-root" data-testid="kid-view">
       <header className="kid-top">
         <a className="garden-brand" href="/"><span className="garden-brand-mark"><img src="/brand/sprout-logo.png" alt="" /></span><span>SPROUT</span></a>
-        <span className="kid-badge">Just looking · nothing here moves money</span>
+        <span className="kid-badge">{t('Just looking · nothing here moves money')}</span>
         <ThemeToggle />
         <LanguageToggle />
       </header>
@@ -190,16 +193,16 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
         <div className="kid-hero-copy">
           <h1 data-testid="kid-heading">{heading}</h1>
           {error ? (
-            <p className="kid-lead" role="alert">{error}</p>
+            <p className="kid-lead" role="alert">{t(error)}</p>
           ) : !data ? (
-            <p className="kid-lead">Taking a look…</p>
+            <p className="kid-lead">{t('Taking a look…')}</p>
           ) : (
             <>
-              <p className="kid-value" data-testid="kid-value">{value ?? (h ? 'Still growing' : '—')}</p>
+              <p className="kid-value" data-testid="kid-value">{value ?? (h ? t('Still growing') : '—')}</p>
               <p className="kid-lead">
                 {value
-                  ? 'is growing in your sprout.'
-                  : 'Prices are resting right now, so we can’t add it up. Check back soon.'}
+                  ? t('is growing in your sprout.')
+                  : t('Prices are resting right now, so we can’t add it up. Check back soon.')}
               </p>
             </>
           )}
@@ -210,18 +213,24 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
       {data ? (
         <div className="kid-grid">
           <section className="kid-card" aria-labelledby="kid-own">
-            <h2 id="kid-own"><Leaf size={20} aria-hidden /> What you own</h2>
-            {stocks.length === 0 && !cash ? <p className="kid-muted">Nothing yet. When money is added and invested, it shows up here.</p> : null}
+            <h2 id="kid-own"><Leaf size={20} aria-hidden /> {t('What you own')}</h2>
+            {stocks.length === 0 && !cash ? <p className="kid-muted">{t('Nothing yet. When money is added and invested, it shows up here.')}</p> : null}
             <ul className="kid-list" data-testid="kid-holdings">
               {stocks.map((s) => {
                 const lesson = lessonForSymbol(s.symbol);
                 return (
                   <li key={s.address}>
                     <b>{holdingSharesText({ shareEquivalent: s.shareEquivalent, rawBalance: s.rawBalance, decimals: s.decimals })} {s.symbol}</b>
-                    <span>a little piece of {COMPANY[s.symbol] ?? s.symbol}</span>
+                    <span>
+                      {COMPANY[s.symbol]
+                        ? t('a little piece of {company}', { company: tc('holding', COMPANY[s.symbol]!) })
+                        : t('a little piece of {ticker}', { ticker: s.symbol })}
+                    </span>
                     {lesson ? (
                       <a className="kid-learn-link" href={kidLessonPath(vault, lesson.id, window.location.search)} onClick={(e) => followLessonLink(e, lesson.id)}>
-                        Learn about {lesson.name ?? lesson.title}
+                        {lesson.name === lesson.symbol
+                          ? t('Learn about {ticker}', { ticker: lesson.name ?? '' })
+                          : t('Learn about {name}', { name: t(lesson.name ?? lesson.title) })}
                       </a>
                     ) : null}
                   </li>
@@ -230,42 +239,45 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
               {cash ? (
                 <li>
                   <b>{dollars(cash.valueUsd, cash.feedDecimals) ?? '—'}</b>
-                  <span>waiting to be planted in stocks</span>
+                  <span>{t('waiting to be planted in stocks')}</span>
                 </li>
               ) : null}
             </ul>
           </section>
 
           <section className="kid-card" aria-labelledby="kid-chores">
-            <h2 id="kid-chores"><Star size={20} aria-hidden /> Chores and rewards</h2>
-            {openChores.length === 0 ? <p className="kid-muted">No chores waiting right now.</p> : null}
+            <h2 id="kid-chores"><Star size={20} aria-hidden /> {t('Chores and rewards')}</h2>
+            {openChores.length === 0 ? <p className="kid-muted">{t('No chores waiting right now.')}</p> : null}
             <ul className="kid-list" data-testid="kid-chores">
               {openChores.map((m) => (
                 <li key={m.id}>
-                  <b>{getMilestoneTitle(data.chainId, vault, m.id) ?? 'A chore'}</b>
-                  <span>earns {reward(m.token, m.amount)} when a grown-up says it’s done</span>
+                  <b>{getMilestoneTitle(data.chainId, vault, m.id) ?? t('A chore')}</b>
+                  <span>{t('earns {reward} when a grown-up says it’s done', { reward: reward(m.token, m.amount) })}</span>
                 </li>
               ))}
             </ul>
             {claimable.length > 0 ? (
               <p className="kid-highlight" data-testid="kid-rewards">
-                You have {claimable.map((a) => reward(a.token, a.bucket)).join(' and ')} of rewards ready to claim.
+                {t('You have {amounts} of rewards ready to claim.', {
+                  amounts: claimable.map((a) => reward(a.token, a.bucket)).reduce((first, second) => t('{first} and {second}', { first, second })),
+                })}
               </p>
             ) : null}
           </section>
 
           <section className="kid-card" aria-labelledby="kid-gifts">
-            <h2 id="kid-gifts"><Gift size={20} aria-hidden /> Gifts</h2>
+            <h2 id="kid-gifts"><Gift size={20} aria-hidden /> {t('Gifts')}</h2>
             <p className="kid-big" data-testid="kid-gifts">{data.gifts}</p>
-            <p className="kid-muted">{data.gifts === 1 ? 'gift from family so far' : 'gifts from family so far'}</p>
+            <p className="kid-muted">{data.gifts === 1 ? t('gift from family so far') : t('gifts from family so far')}</p>
           </section>
 
           <section className="kid-card" aria-labelledby="kid-when">
-            <h2 id="kid-when"><CalendarHeart size={20} aria-hidden /> When it’s yours</h2>
-            <p className="kid-big" data-testid="kid-countdown">{until ?? 'It’s yours now'}</p>
+            <h2 id="kid-when"><CalendarHeart size={20} aria-hidden /> {t('When it’s yours')}</h2>
+            <p className="kid-big" data-testid="kid-countdown">{until ?? t('It’s yours now')}</p>
             <p className="kid-muted">
-              {until ? 'to go, until ' : 'since '}
-              {new Date(data.graduationTimestamp * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
+              {t(until ? 'to go, until {date}' : 'since {date}', {
+                date: new Date(data.graduationTimestamp * 1000).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }),
+              })}
             </p>
           </section>
         </div>
@@ -277,7 +289,7 @@ export function KidView({ vault, lessonId = null }: { vault: string; lessonId?: 
 
       <footer className="kid-foot">
         <SproutIcon size={16} aria-hidden />
-        <span>A grown-up looks after this sprout until the big day. Values go up and down.</span>
+        <span>{t('A grown-up looks after this sprout until the big day. Values go up and down.')}</span>
       </footer>
     </main>
   );

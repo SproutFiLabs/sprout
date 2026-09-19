@@ -1,9 +1,18 @@
+import { getLocale } from '../i18n';
+
 /** One raster puppet rig shared by the dashboard and the campaign renderer. */
 export type Art = Record<string, CanvasImageSource>;
 export const PARTS = ['petal-orange', 'petal-blue', 'petal-yellow', 'centre', 'leaf-green', 'leaf-purple', 'wing-left', 'wing-right', 'body', 'sparkle'];
 export const clamp = (n: number) => Math.max(0, Math.min(1, n));
 export const smooth = (n: number) => { const p = clamp(n); return p * p * (3 - 2 * p); };
 const TAU = Math.PI * 2;
+
+/** The hand-lettered motto beside the flowers, in the page's language. */
+function mottoLines(): { lines: string[]; font: string } {
+  return getLocale() === 'zh'
+    ? { lines: ['小小一步，', '明天', '更明媚。'], font: "'Kaiti SC', 'STKaiti', KaiTi, 'Songti SC', serif" }
+    : { lines: ['Small steps.', 'Brighter', 'days.'], font: 'Georgia' };
+}
 
 export function part(c: CanvasRenderingContext2D, art: Art, name: string, x: number, y: number, w: number, h: number, angle = 0, base = false) {
   if (!art[name] || w < .1 || h < .1) return;
@@ -111,9 +120,10 @@ export function bouquet(c: CanvasRenderingContext2D, art: Art, width: number, he
     flower(c, art, 330, 278, 194, progress, time, 'orange', 2);
     flower(c, art, 490, 276, 162, progress, time, 'yellow', 1.4);
     butterfly(c, art, 580 + Math.sin(time * .7) * 10, 76 - progress * 20 + Math.sin(time * .8) * 6, 28, time, -.18);
-    c.fillStyle = mottoColor; c.textAlign = 'center'; c.font = 'italic 20px Georgia';
+    const motto = mottoLines();
+    c.fillStyle = mottoColor; c.textAlign = 'center'; c.font = `italic 20px ${motto.font}`;
     c.translate(632, 126); c.rotate(-.12);
-    for (const [i, line] of ['Small steps.', 'Brighter', 'days.'].entries()) c.fillText(line, 0, i * 25);
+    for (const [i, line] of motto.lines.entries()) c.fillText(line, 0, i * 25);
     c.restore();
     return;
   }
@@ -123,9 +133,10 @@ export function bouquet(c: CanvasRenderingContext2D, art: Art, width: number, he
   flower(c, art, 490, 276, 190, progress, time, 'orange', 2);
   flower(c, art, 330, 294, 122, progress, time, 'yellow', 1.4);
   butterfly(c, art, 565 + Math.sin(time * .7) * 13, 112 - progress * 45 + Math.sin(time * .8) * 8, 31, time, -.18);
-  c.fillStyle = mottoColor; c.textAlign = 'center'; c.font = 'italic 22px Georgia';
+  const motto = mottoLines();
+  c.fillStyle = mottoColor; c.textAlign = 'center'; c.font = `italic 22px ${motto.font}`;
   c.translate(652, 115); c.rotate(-.12);
-  for (const [i, line] of ['Small steps.', 'Brighter', 'days.'].entries()) c.fillText(line, 0, i * 27);
+  for (const [i, line] of motto.lines.entries()) c.fillText(line, 0, i * 27);
   c.restore();
 }
 
