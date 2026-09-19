@@ -1093,7 +1093,9 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       const path = new URL(c.req.url).pathname;
       if (path.startsWith('/api')) return c.json({ error: 'not found' }, 404);
       const safe = path.replace(/\.\./g, '');
-      const candidate = Bun.file(join(dist, safe === '/' ? 'index.html' : safe));
+      // Serve tokenomics as complete HTML so crawlers need no JavaScript or wallet.
+      const filePath = /^\/tokenomics\/?$/.test(safe) ? 'tokenomics.html' : safe === '/' ? 'index.html' : safe;
+      const candidate = Bun.file(join(dist, filePath));
       if (await candidate.exists()) return new Response(candidate);
       // A child's page is for the family, not for search engines.
       if (/^\/kid\//.test(path)) {

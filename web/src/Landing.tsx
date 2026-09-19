@@ -294,7 +294,7 @@ export function Landing() {
                 <a href="/faq">{t('Questions')}</a>
                 <a href="/guide">{t('Getting started')}</a>
                 <a href="/docs">{t('Documentation')}</a>
-                <a href="/whitepaper">{t('Whitepaper')}</a>
+                <a href="/whitepaper">{t('Whitepaper')}</a><a href="/tokenomics">{t('Tokenomics')}</a>
                 <a href="/settings">{t('Appearance')}</a>
               </nav>
             ) : null}
@@ -497,7 +497,7 @@ export function Landing() {
             </div>
             <div className="reference-footer-links">
               <div><span>SPROUT</span><a href={DASHBOARD}>{t('Dashboard')}</a><a href={`${DASHBOARD}?new=1`}>{t('Plant a sprout')}</a><a href="/gift">{t('Gift preview')}</a><a href="/intelligence">Intelligence</a></div>
-              <div><span>{t('Learn')}</span><a href="/faq">{t('Questions')}</a><a href="/guide">{t('Getting started')}</a><a href="/docs">{t('Documentation')}</a><a href="/whitepaper">{t('Whitepaper')}</a><a href="/settings">{t('Appearance')}</a></div>
+              <div><span>{t('Learn')}</span><a href="/faq">{t('Questions')}</a><a href="/guide">{t('Getting started')}</a><a href="/docs">{t('Documentation')}</a><a href="/whitepaper">{t('Whitepaper')}</a><a href="/tokenomics">{t('Tokenomics')}</a><a href="/settings">{t('Appearance')}</a></div>
             </div>
           </footer>
         </div>

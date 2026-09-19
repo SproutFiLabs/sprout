@@ -7,7 +7,7 @@ import * as zh from './sections.zh';
 export type KnowledgePageKind = 'docs' | 'whitepaper' | 'guide' | 'faq';
 
 const links = [
-  ['/faq', 'FAQ'], ['/docs', 'Docs'], ['/whitepaper', 'Whitepaper'], ['/guide', 'Guide'], ['/settings', 'Settings'],
+  ['/faq', 'FAQ'], ['/docs', 'Docs'], ['/whitepaper', 'Whitepaper'], ['/tokenomics', 'Tokenomics'], ['/guide', 'Guide'], ['/settings', 'Settings'],
   ['/test/', 'Sample mode'], ['/dashboard', 'Dashboard'],
 ] as const;
 

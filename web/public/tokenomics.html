@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SPROUT Tokenomics — Supply, Utility, Locks &amp; Burns</title>
+  <meta name="description" content="SPROUT on Robinhood Chain: 1 billion initial supply, holder tiers, optional time locks, voluntary buy and burn, and manual Harvest distributions. Contract and source links." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://www.sproutfy.tech/tokenomics" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="SPROUT Tokenomics" />
+  <meta property="og:description" content="The supply, the utility, and the rules. A plain-English reference for SPROUT on Robinhood Chain." />
+  <meta property="og:url" content="https://www.sproutfy.tech/tokenomics" />
+  <meta property="og:image" content="https://www.sproutfy.tech/og-card.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <style>
+    @font-face{font-family:Satoshi;src:url('/fonts/satoshi/Satoshi-Variable.woff2') format('woff2');font-display:swap}
+    :root{color-scheme:light;--bg:#f5f2e9;--card:#fffdf7;--ink:#243c2a;--muted:#656e60;--line:#dcded0;--accent:#b95828}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Satoshi,system-ui,sans-serif}a{color:inherit;text-underline-offset:4px}a:hover{color:var(--accent)}a:focus-visible{outline:3px solid var(--accent);outline-offset:5px}.skip{position:absolute;left:16px;top:-80px;background:var(--card);padding:10px}.skip:focus{top:12px}header{border-bottom:1px solid var(--line)}.top{max-width:1160px;margin:auto;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-size:13px;letter-spacing:.16em;font-weight:800}.brand img{width:30px;height:30px}.top nav{display:flex;gap:24px;font-size:13px}.top nav a{text-decoration:none}main{max-width:1104px;margin:auto;padding:65px 28px 48px}.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:800}h1,h2{font-family:Georgia,serif;font-weight:400;line-height:1.1}h1{font-size:clamp(46px,7vw,78px);letter-spacing:-.045em;margin:16px 0 24px}h2{font-size:34px;letter-spacing:-.025em;margin:8px 0 22px}h3{font-size:18px;margin:0 0 9px}p{margin:0 0 18px}.intro{max-width:675px;font-size:20px;color:var(--muted)}.reviewed{font-size:12px;color:var(--muted);margin:22px 0 32px}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.fact{padding:22px;background:var(--card);border:1px solid var(--line);border-radius:10px}.fact strong{display:block;font-size:28px;font-weight:600;letter-spacing:-.04em}.fact span{font-size:13px;color:var(--muted)}.contract{margin:16px 0 28px;padding:16px 20px;border:1px solid var(--line);border-radius:8px;font-size:13px}.contract b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}code{font-family:ui-monospace,monospace;font-size:.88em;overflow-wrap:anywhere}.jump{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 42px}.jump a{padding:6px 13px;border:1px solid var(--line);border-radius:24px;text-decoration:none;font-size:12px}.section{border-top:1px solid var(--line);padding:38px 0}.section>p,.section>ul,.section>.note{max-width:850px}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:24px}.box p:last-child{margin-bottom:0}.note{border-left:3px solid var(--accent);padding:12px 18px;background:var(--card);font-size:14px;margin:22px 0}.table-wrap{overflow:auto;margin:22px 0}table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}caption{text-align:left;font-size:13px;color:var(--muted);padding-bottom:10px}th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}th,td{padding:14px 12px;border-bottom:1px solid var(--line);vertical-align:top}th:first-child,td:first-child{padding-left:0}td strong{white-space:nowrap}.sources{font-size:13px;color:var(--muted)}.sources a{display:inline-block;margin-right:16px}ul{padding-left:21px}li{margin:9px 0}.pill{display:inline-block;font-size:11px;background:#e7ecdf;color:#345337;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}footer{border-top:1px solid var(--line);padding-top:26px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:24px}.footer-links{display:flex;gap:18px;flex-wrap:wrap}
+    @media(max-width:640px){.top{padding:18px 20px;align-items:flex-start}.top nav{gap:10px 16px;flex-wrap:wrap;justify-content:flex-end}main{padding:40px 20px}.facts{grid-template-columns:1fr}.fact{padding:15px 20px}.fact strong{font-size:26px}.two{grid-template-columns:1fr}h2{font-size:29px}.intro{font-size:18px}.section{padding:30px 0}th,td{padding:11px 8px;font-size:12px}footer{flex-direction:column}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+    @media print{body{background:white;color:black}main{padding:20px}.top nav,.jump,.skip{display:none}.section{break-inside:avoid}h1{font-size:42px}.fact,.box,.note{background:white}a{color:inherit}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to tokenomics</a>
+  <header><div class="top"><a class="brand" href="/"><img src="/brand/sprout-logo.png" alt="" /> SPROUT</a><nav aria-label="Main navigation"><a href="/perks">Holder perks</a><a href="/whitepaper">Whitepaper</a><a href="/dashboard">Open Sprout ↗</a></nav></div></header>
+  <main id="main">
+    <div class="eyebrow">SPROUT · Token reference</div>
+    <h1>The supply.<br />The utility. The rules.</h1>
+    <p class="intro">SPROUT unlocks features in Sprout, a family app for stock-token portfolios. Here is how holding, rooting and burning work, and what each does—and does not—provide.</p>
+    <p class="reviewed">Tokenomics · Reviewed <time datetime="2026-09-19">19 September 2026</time> · Operational status below is as of this review.</p>
+    <div class="facts" aria-label="Token facts"><div class="fact"><strong>1,000,000,000</strong><span>Initial SPROUT supply</span></div><div class="fact"><strong>Robinhood Chain</strong><span>ERC-20 · Chain ID 4663 · 18 decimals</span></div><div class="fact"><strong>Hold · Root · Burn</strong><span>App access, optional locks, voluntary burns</span></div></div>
+    <div class="contract"><b>SPROUT token contract</b><a href="https://robinhoodchain.blockscout.com/token/0x5ec27c931fb49911128dddf7d914c1754da9f49f"><code>0x5ec27c931fb49911128dddf7d914c1754da9f49f</code></a></div>
+    <nav class="jump" aria-label="On this page"><a href="#supply">Supply &amp; launch</a><a href="#utility">Holder utility</a><a href="#root">Rooting</a><a href="#burn">Buy &amp; burn</a><a href="#harvest">Harvest</a><a href="#boundaries">Boundaries &amp; sources</a></nav>
+
+    <section class="section" id="supply"><div class="eyebrow">01 / Supply &amp; launch</div><h2>One billion at creation.</h2>
+      <p>SPROUT launched through the Pons V2 launch factory. The launcher token mints its initial supply to a bonding curve. Its published implementation has no post-deployment mint function; holders can voluntarily burn their own tokens. The token supply is not increased by Sprout’s holder perks or root multipliers.</p>
+      <p>The Pons V2 launch design graduates from the bonding curve into Uniswap V4 liquidity. Launchpad liquidity and any launchpad buyback or vesting arrangements are separate from Sprout’s optional root lock and Buy &amp; burn feature.</p>
+      <div class="two"><div class="box"><h3>Total supply ≠ circulating supply</h3><p>A transfer to the dead address removes spendable tokens without reducing the ERC-20 reported total supply. Liquidity, contract balances and other locked holdings must also be considered before describing a circulating supply.</p></div><div class="box"><h3>Follow the on-chain record</h3><p>Use the explorer for current supply, holders and transfers. This page does not claim a verified team allocation, treasury allocation or vesting schedule. A contract balance alone does not establish its beneficiary or unlock conditions.</p></div></div>
+      <p class="sources"><a href="https://robinhoodchain.blockscout.com/token/0x5ec27c931fb49911128dddf7d914c1754da9f49f">Token explorer ↗</a><a href="https://robinhoodchain.blockscout.com/token/0x5ec27c931fb49911128dddf7d914c1754da9f49f?tab=holders">Holder distribution ↗</a><a href="https://github.com/ponsdotdev/pons-labs/blob/main/contractsV2/src/v2/PonsV2LauncherToken.sol">Launcher source ↗</a></p>
+    </section>
+
+    <section class="section" id="utility"><div class="eyebrow">02 / Holder utility</div><h2>A little more access.</h2>
+      <p>Holding SPROUT unlocks extra baskets and a weighted voice in votes on the next asset to add. Ordinary holdings qualify after seven days, reduced to 24 hours during the token’s first week. Eligibility uses the lowest sampled wallet balance over the hold window.</p>
+      <div class="table-wrap"><table><caption>Current tier thresholds. Holder baskets are cumulative, in addition to public starter mixes.</caption><thead><tr><th scope="col">Tier</th><th scope="col">Qualifying SPROUT</th><th scope="col">Holder baskets</th><th scope="col">Vote weight</th></tr></thead><tbody><tr><th scope="row">Seedling</th><td>100,000</td><td>4</td><td>1×</td></tr><tr><th scope="row">Sapling</th><td>1,000,000</td><td>6</td><td>2×</td></tr><tr><th scope="row">Bloom</th><td>5,000,000</td><td>8</td><td>5×</td></tr><tr><th scope="row">Grove</th><td>10,000,000</td><td>10</td><td>10×</td></tr></tbody></table></div>
+      <ul><li><strong>Sapling and above:</strong> eligible for early access when a new-asset window is announced. No window is active at this review.</li><li><strong>Bloom and above:</strong> eligible for automatic weekly investing when enabled. Automatic investing is currently switched off.</li><li><strong>Sprout Intelligence:</strong> enabled for wallets with at least 1,000,000 actual SPROUT in the wallet, currently up to 40 requests per day. This is a separate balance check, not the tier multiplier.</li></ul>
+      <p>Votes concern application features; they do not grant control over anyone’s family vault. Application perks and eligibility settings can change.</p>
+      <p class="sources"><a href="/perks">Current holder perks ↗</a><a href="/api/perks">Public tier configuration ↗</a><a href="/intelligence">Sprout Intelligence ↗</a></p>
+    </section>
+
+    <section class="section" id="root"><div class="eyebrow">03 / Root your SPROUT <span class="pill">Live · Optional</span></div><h2>Lock tokens. Count for more.</h2>
+      <p>Rooting locks your own SPROUT for a chosen period. It counts toward your tier immediately. Your qualifying amount is eligible wallet holdings plus credit from your locks.</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Lock duration</th><th scope="col">Tier multiplier</th><th scope="col">Example</th></tr></thead><tbody><tr><th scope="row">30 days</th><td>1.25×</td><td>800,000 counts as 1,000,000</td></tr><tr><th scope="row">90 days</th><td>1.5×</td><td>1,000,000 counts as 1,500,000</td></tr><tr><th scope="row">180 days</th><td>2×</td><td>500,000 counts as 1,000,000</td></tr></tbody></table></div>
+      <p><strong>No yield, interest or extra tokens.</strong> The multiplier changes tier credit only. There is no early withdrawal. On or after the unlock date, the owner can withdraw the original tokens to the same wallet; withdrawal is not automatic. Matured, unwithdrawn locks count at 1×.</p>
+      <p>The root contract has no owner, admin withdrawal, pause or upgrade mechanism. It has not been independently audited.</p>
+      <div class="note"><strong>Separate eligibility matters:</strong> root credit applies to holder tiers, baskets and votes. Intelligence and Harvest currently check actual wallet balances. Moving SPROUT into a root lock may put your wallet below those separate thresholds.</div>
+      <p class="sources"><a href="https://robinhoodchain.blockscout.com/address/0xC194350F10592f8f1a9AF8b826C40ae6B1A53abA">Root contract ↗</a><a href="https://github.com/SproutFiLabs/sprout/blob/f05d8102f71eebc1a98996015303d1c8976cb650/contracts/src/SproutRootLock.sol">Root source ↗</a><a href="/perks#root">Rooting and current totals ↗</a></p>
+    </section>
+
+    <section class="section" id="burn"><div class="eyebrow">04 / Buy &amp; burn <span class="pill">Live · Voluntary</span></div><h2>Out of circulation. For good.</h2>
+      <p>Anyone can spend USDG from their own wallet to buy SPROUT on the market and send the purchased tokens directly to <code>0x000000000000000000000000000000000000dEaD</code>. Nothing is taken from a family’s sprout.</p>
+      <ul><li>Current amounts: $1, $5, $20, or a custom amount up to $100 in USDG.</li><li>The interface quotes the SPROUT received, includes the displayed pool fee and sets a minimum output. Network fees and price impact also apply.</li><li>An optional “Add a $1 burn to my buys” setting offers a separate burn after eligible actions. Each transaction still needs the wallet’s approval.</li><li>Burning does not improve your tier, pay rewards or guarantee any price effect.</li></ul>
+      <p>The public counter distinguishes <strong>burned via Sprout</strong> from <strong>the full dead-address balance</strong>. Tokens sent there outside this feature are not attributed to Sprout’s Buy &amp; burn.</p>
+      <p class="sources"><a href="/perks#burn">Burn panel and current totals ↗</a><a href="/api/burns/summary">Public burn records ↗</a><a href="https://github.com/SproutFiLabs/sprout/commit/43fb04d9f4f632db8f2494c4ec7982088d301378">Buy &amp; burn source ↗</a></p>
+    </section>
+
+    <section class="section" id="harvest"><div class="eyebrow">05 / Harvest</div><h2>Announced rounds. Manual payments.</h2>
+      <p>Harvest is a separate system for discretionary, manually funded distributions. A wallet must hold at least 1,000,000 SPROUT at a published snapshot block and register before the round’s deadline. The announced budget is divided proportionally by actual snapshot holdings among eligible registered wallets, with rounding down.</p>
+      <p>Each round identifies its payout asset, treasury, budget and deadline. Funds remain in the treasury until the team sends payments; they are not escrowed by registration. The application verifies payment receipts. Root multipliers and SPROUT held in root locks are not included in wallet snapshot balances.</p>
+      <div class="note">There is no fixed APY, guaranteed payment, recurring payout promise or automatic revenue share. No Harvest rounds are published at this review. Check the live page for subsequent announcements.</div>
+      <p class="sources"><a href="/harvest">Harvest rounds ↗</a><a href="/api/harvest">Current rules and rounds ↗</a><a href="https://github.com/SproutFiLabs/sprout/blob/43fb04d9f4f632db8f2494c4ec7982088d301378/docs/harvest.md">Distribution rules ↗</a></p>
+    </section>
+
+    <section class="section" id="boundaries"><div class="eyebrow">06 / Boundaries &amp; sources</div><h2>Know what you are holding.</h2>
+      <p>SPROUT is separate from USDG and the stock tokens held in family vaults. Holding it does not give a claim on those assets or permission to move them. Rooting is not yield-bearing staking, and burns do not promise appreciation.</p>
+      <p>Launchpad trading fees are separate from Sprout’s app features. This page does not promise a fixed allocation of trading fees to holders, development or burns. Any separately announced Harvest budget is specific to its round.</p>
+      <p>Token prices and liquidity can change. A verified source-code match is not an independent audit. Sprout is beta software and its contracts have not been independently audited. Nothing on this page is financial advice.</p>
+      <p class="sources"><a href="https://github.com/SproutFiLabs/sprout">Public source repository ↗</a><a href="https://robinhoodchain.blockscout.com/token/0x5ec27c931fb49911128dddf7d914c1754da9f49f?tab=contract">Verified token source ↗</a><a href="/whitepaper">Technical whitepaper ↗</a><a href="/faq">Frequently asked questions ↗</a></p>
+    </section>
+    <footer><span>SPROUT · A little, together.<br />Tokenomics reference · 19 September 2026</span><div class="footer-links"><a href="/">Home</a><a href="/perks">Perks</a><a href="https://github.com/SproutFiLabs/sprout">Source</a></div></footer>
+  </main>
+</body>
+</html>
