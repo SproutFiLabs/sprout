@@ -2,18 +2,22 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, Check, Leaf, Wallet } from 'lucide-react';
 import { t, tj, dateLocale } from '../i18n';
 import { LanguageToggle } from '../i18n/LanguageToggle';
-import { injectedProvider } from '../wallet';
+import { connectWallet, injectedProvider, type WalletState } from '../wallet';
+import { api } from '../api';
 import { useAutomationEnabled } from '../automationStatus';
 import { PublicCa } from '../components/PublicCa';
 import { holdPeriod, tierAtLeast, tierLabel, useHolder, wholeTokens, TIER_ORDER, type TierId } from './holder';
 import { HOLDER_BOUQUETS } from './locks';
+import { HolderVotes } from './Votes';
 import './perks.css';
 
 /** Vote weight per tier; the server uses the same table. */
 const VOTE_WEIGHT: Record<TierId, number> = { seedling: 1, sapling: 2, bloom: 5, grove: 10 };
 
-function useInjectedAccount(): [string | null, () => Promise<void>, string | null] {
+/** The visitor's address (read only), and a full wallet once they connect to vote. */
+function useVisitorWallet(): { address: string | null; wallet: WalletState | null; connect: () => Promise<void>; error: string | null } {
   const [address, setAddress] = useState<string | null>(null);
+  const [wallet, setWallet] = useState<WalletState | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     const provider = injectedProvider();
@@ -22,23 +26,24 @@ function useInjectedAccount(): [string | null, () => Promise<void>, string | nul
   }, []);
   const connect = async () => {
     setError(null);
-    const provider = injectedProvider();
-    if (!provider) {
+    if (!injectedProvider()) {
       setError(t('No browser wallet found. Open this page in the browser that has your wallet.'));
       return;
     }
     try {
-      const a = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
-      setAddress(a[0] ?? null);
+      const { chain } = await api.config();
+      const w = await connectWallet({ chainId: chain.chainId, name: chain.name, rpcUrl: chain.walletRpcUrl });
+      setWallet(w);
+      setAddress(w.address);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
   };
-  return [address, connect, error];
+  return { address, wallet, connect, error };
 }
 
 export function PerksPage() {
-  const [address, connect, connectError] = useInjectedAccount();
+  const { address, wallet, connect, error: connectError } = useVisitorWallet();
   const holder = useHolder(address);
   const automation = useAutomationEnabled();
   const { perks, status } = holder;
@@ -173,10 +178,11 @@ export function PerksPage() {
             <p>{t('Holders ({tier} and up) get weekly plans that run by themselves, with the network fees on Sprout. Everyone else runs each week with Invest now.', { tier: tierLabel(autoTier) })}</p>
             {automation === false ? <p className="perks-muted">{t('Automatic investing isn’t switched on yet. When it is, holders get it first.')}</p> : null}
           </article>
-          <article className="perks-card" id="holder-votes">
-            <h2>🗳️ {t('Votes on the next stock')}</h2>
-            <p>{t('Holders vote on which stock Sprout adds next. Higher tiers count more.')}</p>
-          </article>
+        </section>
+
+        <section className="perks-card" id="holder-votes" aria-labelledby="perks-votes">
+          <h2 id="perks-votes">🗳️ {t('Votes on the next stock')}</h2>
+          <HolderVotes wallet={wallet} onConnect={() => void connect()} />
         </section>
 
         <section className="perks-fine">
