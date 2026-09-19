@@ -15,3 +15,13 @@ Sources: existing app captures at 1440×900 and the same revised states at the s
 Build and full TypeScript checks passed. Missing-font and cached-font setup paths were exercised; downloaded SHA-256 matches the recorded original. Existing Vite large-chunk advisory remains unrelated.
 
 Result: passed
+
+# Private milestone proof studio
+
+The ZK extension follows the existing Family Privacy typography and botanical palette. A forest-green studio holds milestone controls beside an ivory proof receipt; it becomes a single column at narrow widths. The proof seal and status animation follow real worker stages and respect reduced motion. No artificial percentage or success timer is used.
+
+Browser checks passed at 1280px desktop and 390px mobile: real PLONK creation, certificate/receipt success, independent verification in a separate page, fragment removal, parent revocation followed by recipient rejection, and refusal of a $5,000 milestone against a $1,250 local mock balance. Production-bundled WASM/worker proof generation also passed. A raw HTTP/JSON error wrapper found during the mobile check was replaced with the server's readable message. Screens use labeled inputs, live status and error announcements, and an explicit source-certification/public-chain boundary.
+
+React review: generation and verification use dedicated abortable workers; closing the view, changing wallet/vault, cancellation and timeout terminate outstanding work. Async results are guarded against stale instances and uploaded-file races. Certificate polling is cleaned up on unmount. Proof JSON is allowlisted and never contains the balance, salt, wallet or child name.
+
+Validation: 124 server tests, 78 web tests and 48 contract tests pass; real PLONK witness/tamper tests, TypeScript checks, artifact checksum gate, full local-chain smoke and production web build pass. The pre-existing Vite main-chunk size advisory remains. Cryptographic audit and production deployment are outside this validation; see `docs/private-milestone-proofs.md`.

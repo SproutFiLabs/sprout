@@ -18,14 +18,19 @@
     "build:web": "bun run --cwd web build",
     "build": "bash scripts/build.sh",
     "smoke": "bun run scripts/e2e-smoke.ts",
-    "dev:local": "bash scripts/dev-local.sh"
+    "dev:local": "bash scripts/dev-local.sh",
+    "build:zk": "node scripts/build-zk.mjs",
+    "test:zk": "node scripts/test-zk.mjs"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "1.0.9",
     "@types/bun": "^1.1.13",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/snarkjs": "0.7.9",
+    "circom2": "0.2.23",
+    "circomlib": "2.0.5",
     "playwright": "1.63.0",
-    "typescript": "^5.6.3",
-    "@napi-rs/canvas": "1.0.9"
+    "typescript": "^5.6.3"
   }
 }

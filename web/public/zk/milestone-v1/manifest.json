@@ -1,0 +1,17 @@
+{
+  "circuit": "sprout-milestone-v1",
+  "protocol": "plonk",
+  "curve": "bn128",
+  "publicSignals": [
+    "commitment",
+    "thresholdCents",
+    "scope"
+  ],
+  "circuitSha256": "630eb766b0658a29fe60efc63ed1b09595ed2bbe03a3a8f37d45b0f44024271e",
+  "ceremonyBlake2b512": "ded2694169b7b08e898f736d5de95af87c3f1a64594013351b1a796dbee393bd825f88f9468c84505ddd11eb0b1465ac9b43b9064aa8ec97f2b73e04758b8a4a",
+  "files": {
+    "milestone.zkey": "e6fdfc02e265575b4a56aaacfa9293fa38fb685e40784106a17f4a0d09abb30e",
+    "milestone.wasm": "d5e167f81356f660c1271e03c572c99ca43656b8fd7e6113eac14749e75487ff",
+    "verification_key.json": "efda891075947fb0ba907fe6cfddad6939dcfef490b767ab42359c4e8e3e6f96"
+  }
+}

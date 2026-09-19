@@ -1,3 +1,4 @@
+import { ProofStudio } from './ProofStudio';
 import { useEffect, useState } from 'react';
 import {
   ShieldCheck,
@@ -213,6 +214,7 @@ export function PrivacyCenter({
           </div>
         ) : null}
         <div className="privacy-grid">
+          <ProofStudio key={`${wallet?.address ?? "none"}:${vault}`} wallet={wallet} vault={vault} sprouts={sprouts} onVaultChange={value => { setVault(value as typeof vault); setLink(''); }} />
           <section className="privacy-card" data-testid="privacy-labels">
             <div className="privacy-card-top">
               <span className="privacy-number">01 / PRIVATE LABELS</span>

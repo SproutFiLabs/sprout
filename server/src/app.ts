@@ -1,3 +1,4 @@
+import { registerZkRoutes } from './zk';
 import { randomBytes, createPublicKey } from 'node:crypto';
 import { join } from 'node:path';
 import { Hono, type Context } from 'hono';
@@ -195,7 +196,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     c.header('X-Content-Type-Options', 'nosniff');
     c.header('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
     c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    if (/^\/(api|kid|dashboard|family|gift)(\/|$)/.test(c.req.path)) {
+    if (/^\/(api|kid|dashboard|family|gift|verify)(\/|$)/.test(c.req.path)) {
       c.header('Cache-Control', 'no-store');
       c.header('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
@@ -218,11 +219,13 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     c.res.headers.set('X-Content-Type-Options', 'nosniff');
     c.res.headers.set('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
     c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    if (/^\/(api|kid|dashboard|family|gift)(\/|$)/.test(c.req.path)) {
+    if (/^\/(api|kid|dashboard|family|gift|verify)(\/|$)/.test(c.req.path)) {
       c.res.headers.set('Cache-Control', 'no-store');
       c.res.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
   });
+
+  registerZkRoutes(app, deps, (c, purpose) => requireAuth(c, deps, purpose));
 
   app.post('/api/family/gift-key', async (c) => {
     const signer = (await requireAuth(c, deps, 'family-gift-key')).toLowerCase();

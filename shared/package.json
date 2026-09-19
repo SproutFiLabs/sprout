@@ -4,9 +4,13 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./zk": "./src/zk.ts",
+    "./zk-commitment": "./src/zk-commitment.ts"
   },
   "dependencies": {
+    "circomlibjs": "0.1.7",
+    "snarkjs": "0.7.6",
     "viem": "^2.21.40",
     "zod": "^3.23.8"
   }

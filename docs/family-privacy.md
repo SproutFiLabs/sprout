@@ -37,3 +37,7 @@ No live funds were moved. No production deployment or database migration was per
 ## Showcase
 
 `privacy-browser-check.mjs` captures the actual updated interface using an isolated sample family. `privacy-showcase.mjs` composes a 30-second 1920×1080, 30 fps film from those captures; FFmpeg is selected with `FFMPEG_PATH`. The final film includes an original synthesized ambient soundtrack. Generated captures, test backups and video files stay in ignored `output/privacy/`, outside source control. The film labels the sample build and explicitly states that on-chain balances and transfers remain public.
+
+## Private milestone proofs
+
+Family privacy now includes browser-generated PLONK proofs for selectively disclosing a Sprout-certified savings milestone. Exact balances, wallet addresses and child names are omitted from the proof. Read [the implementation, trust model and build instructions](private-milestone-proofs.md) before integrating it elsewhere. Sprout attests the balance snapshot; existing blockchain activity remains public.

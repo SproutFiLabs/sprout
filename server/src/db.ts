@@ -3,6 +3,13 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS zk_milestone_certificates (
+ id TEXT PRIMARY KEY, vault_id TEXT NOT NULL, commitment TEXT NOT NULL,
+ threshold_cents TEXT NOT NULL, scope TEXT NOT NULL, issued_at INTEGER NOT NULL,
+ expires_at INTEGER NOT NULL, revoked INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_zk_milestone_vault ON zk_milestone_certificates(vault_id,issued_at);
+
 CREATE TABLE IF NOT EXISTS family_gift_keys (address TEXT PRIMARY KEY, public_key TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS family_sessions (token_hash TEXT PRIMARY KEY, address TEXT NOT NULL, expires_at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_family_session_address ON family_sessions(address);

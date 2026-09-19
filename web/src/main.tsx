@@ -1,3 +1,4 @@
+import { ProofVerifier } from './privacy/ProofVerifier';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
@@ -30,6 +31,7 @@ function currentPath(): string {
 function Root() {
   const path = currentPath();
   if (path === '/' || path === '/index.html') return <Landing />;
+  if (path === '/verify') return <ProofVerifier />;
   if (path === '/gift') return <GiftLanding />;
   if (path === '/dashboard/preview') return <Preview />;
   if (path === '/docs' || path === '/whitepaper' || path === '/guide' || path === '/faq') {

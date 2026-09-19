@@ -1,3 +1,4 @@
+import type { ZkIssuance, ZkCertificateStatus } from '@sprout/shared/zk';
 import type { Address } from 'viem';
 import { sign, type WalletState } from './wallet';
 import { encryptGift, decryptGift } from './privacy/crypto';
@@ -266,12 +267,12 @@ async function getJson<T>(url: string): Promise<T> {
   const version = sessionVersion;
   const res = await fetch(url, { headers: familyHeaders(), cache: 'no-store' });
   if (!res.ok) {
-    if (res.status === 401 && /^\/api\/(sprouts|family|jobs)/.test(url)) { clearFamilySession(); window.dispatchEvent(new Event('sprout-family-session-ended')); }
+    if (res.status === 401 && /^\/api\/(sprouts|family|jobs|zk)/.test(url)) { clearFamilySession(); window.dispatchEvent(new Event('sprout-family-session-ended')); }
     const text = await res.text();
     throw new Error(`${res.status} ${text}`);
   }
   const result = await res.json() as T;
-  if (/^\/api\/(sprouts|family|jobs)/.test(url) && version !== sessionVersion) throw new Error('Family session changed.');
+  if (/^\/api\/(sprouts|family|jobs|zk)/.test(url) && version !== sessionVersion) throw new Error('Family session changed.');
   return result;
 }
 
@@ -310,6 +311,10 @@ async function signedPostJson<T>(wallet: WalletState, url: string, purpose: stri
 }
 
 export const api = {
+  zkCertificates: (vault: string) => getJson<{ certificates: ZkCertificateStatus[] }>(`/api/zk/certificates/${vault}`),
+  issueZk: (wallet: WalletState, vault: string, thresholdCents: string) => signedPostJson<ZkIssuance>(wallet, `/api/zk/issue/${vault}`, `zk-issue:${vault.toLowerCase()}`, { thresholdCents }),
+  revokeZk: (wallet: WalletState, id: string) => signedPostJson(wallet, `/api/zk/revoke/${id}`, `zk-revoke:${id}`, {}),
+
   kidInvites: (vault: string) => getJson<{ invites: KidInvitation[] }>(`/api/family/invites/${vault}`),
   createKidInvite: (wallet: WalletState, vault: string, showBalance: boolean) => signedPostJson<{ id: string; token: string; expiresAt: number }>(wallet, `/api/family/invites/${vault}`, `kid-invite:${vault.toLowerCase()}`, { showBalance }),
   revokeKidInvite: (wallet: WalletState, id: string) => signedPostJson(wallet, `/api/family/invites/${id}/revoke`, `kid-revoke:${id}`, {}),
