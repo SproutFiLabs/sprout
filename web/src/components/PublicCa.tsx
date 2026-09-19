@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import { t } from '../i18n';
 import './public-ca.css';
 
 /**
@@ -78,15 +79,15 @@ export function PublicCa({ variant }: { variant: 'landing' | 'dashboard' }) {
       className={`public-ca public-ca--${variant}`}
       data-testid="public-ca"
       title={ca}
-      aria-label={`Copy contract address ${ca}`}
+      aria-label={t('Copy contract address {ca}', { ca })}
       onClick={() => void copyToClipboard(ca).then((ok) => setCopied(ok ? 'yes' : 'no'))}
     >
-      <span className="public-ca-label">CA</span>
+      <span className="public-ca-label">{t('CA')}</span>
       <code className="public-ca-full" data-testid="public-ca-address">{ca}</code>
       <code className="public-ca-short" aria-hidden="true">{shortCa(ca)}</code>
       <span className="public-ca-action" role="status" data-testid="public-ca-status">
         {copied === 'yes' ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-        <span className="public-ca-action-text">{copied === 'yes' ? 'Copied' : copied === 'no' ? 'Copy failed' : 'Copy'}</span>
+        <span className="public-ca-action-text">{copied === 'yes' ? t('Copied') : copied === 'no' ? t('Copy failed') : t('Copy')}</span>
       </span>
     </button>
   );
@@ -103,18 +104,18 @@ export function SproutAddressRow({ address }: { address: string }) {
 
   return (
     <div className="garden-menu-row">
-      <span>This sprout</span>
+      <span>{t('This sprout')}</span>
       <button
         type="button"
         className="sprout-address"
         data-testid="sprout-address"
         title={address}
-        aria-label={`Copy this sprout’s address ${address}`}
+        aria-label={t('Copy this sprout’s address {address}', { address })}
         onClick={() => void copyToClipboard(address).then(setCopied)}
       >
         <code>{shortCa(address)}</code>
         {copied ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}
-        <span className="sprout-address-status" role="status">{copied ? 'Copied' : ''}</span>
+        <span className="sprout-address-status" role="status">{copied ? t('Copied') : ''}</span>
       </button>
     </div>
   );

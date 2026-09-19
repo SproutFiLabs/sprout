@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
+import { t } from '../i18n';
 
 export interface TxnState {
+  /** Shown as is: callers pass it already translated. */
   label: string;
   status: 'idle' | 'pending' | 'confirmed' | 'failed';
   hash?: string;
@@ -18,7 +20,7 @@ export function TxnStatusLine({ txn, explorerUrl }: { txn: TxnState | null; expl
   if (!txn || txn.status === 'idle') return null;
   return (
     <p ref={ref} className={`txn txn--${txn.status}`} role="status" data-testid="txn-status">
-      <strong>{txn.label}:</strong> {txn.status}
+      <strong>{t('{label}:', { label: txn.label })}</strong> {t(txn.status)}
       {txn.hash ? (
         <>
           {' '}

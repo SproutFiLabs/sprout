@@ -10,6 +10,7 @@ import {
   type PublicClient,
   type WalletClient,
 } from 'viem';
+import { t } from './i18n';
 
 export interface Eip1193Provider {
   request: (args: { method: string; params?: unknown[] | object }) => Promise<unknown>;
@@ -56,9 +57,9 @@ export function toChain(input: ChainInput): Chain {
 
 export async function connectWallet(input: ChainInput): Promise<WalletState> {
   const provider = injectedProvider();
-  if (!provider) throw new Error('No injected EIP-1193 wallet found. Install a browser wallet to connect.');
+  if (!provider) throw new Error(t('No injected EIP-1193 wallet found. Install a browser wallet to connect.'));
   const accounts = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
-  if (!accounts[0]) throw new Error('Wallet returned no accounts');
+  if (!accounts[0]) throw new Error(t('Wallet returned no accounts'));
   const chain = toChain(input);
   const walletClient = createWalletClient({ account: getAddress(accounts[0]), chain, transport: custom(provider) });
   const publicClient = createPublicClient({ chain, transport: custom(provider) });
@@ -154,11 +155,11 @@ export async function assertWalletReady(wallet: WalletState): Promise<void> {
     wallet.provider.request({ method: 'eth_chainId' }) as Promise<string>,
   ]);
   if (!accounts.some((a) => a.toLowerCase() === wallet.address.toLowerCase())) {
-    throw new Error('The connected account changed. Reconnect the wallet.');
+    throw new Error(t('The connected account changed. Reconnect the wallet.'));
   }
   const liveChain = Number.parseInt(chainHex, 16);
   if (liveChain !== wallet.expectedChainId) {
-    throw new Error(`Wrong network: expected chain ${wallet.expectedChainId}, wallet is on ${liveChain}.`);
+    throw new Error(t('Wrong network: expected chain {expected}, wallet is on {actual}.', { expected: wallet.expectedChainId, actual: liveChain }));
   }
 }
 
@@ -205,7 +206,7 @@ export function latestConfirmedBlock(): number {
 /** Wait for a receipt and reject reverted transactions. Resolves to the block number. */
 export async function waitForSuccess(publicClient: PublicClient, hash: Hex): Promise<number> {
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  if (receipt.status !== 'success') throw new Error(`Transaction reverted: ${hash}`);
+  if (receipt.status !== 'success') throw new Error(t('Transaction reverted: {hash}', { hash }));
   const block = Number(receipt.blockNumber);
   if (block > lastConfirmedBlock) lastConfirmedBlock = block;
   return block;

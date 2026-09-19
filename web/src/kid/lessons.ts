@@ -5,6 +5,10 @@
  * predictions, and nothing that tells anyone what to do with money. Each
  * lesson ends with one multiple-choice question that has exactly one right
  * answer and an explanation shown whichever answer was picked.
+ *
+ * The text stays English here and is translated where it is shown. The Chinese
+ * lives in web/src/i18n/zh/kid.ts, keyed by the exact English, so changing a
+ * sentence here means updating its key there too.
  */
 
 export interface QuizOption {
