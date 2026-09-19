@@ -113,3 +113,6 @@ html:lang(zh-CN) body :is(h1, h2, h3, h4, .garden-value, .kid-value, .garden-wee
   letter-spacing: 0;
 }
 html:lang(zh-CN) .garden-period { white-space: nowrap; }
+/* Chinese can break between any two characters, so a big heading could end with
+   one character alone on its last line (靠大家一起守 / 护。); pull a few down with it. */
+html:lang(zh-CN) body :is(h1, h2, h3) { text-wrap: pretty; }

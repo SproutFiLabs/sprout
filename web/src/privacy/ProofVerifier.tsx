@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Check, Fingerprint, ShieldCheck, Upload } from 'lucide-react';
 import { milestoneLabel, type ZkEnvelope } from '@sprout/shared/zk';
 import { checkCertificate, MAX_PROOF_BYTES, parseProof, proofFromHash, proofTask } from './zk-client';
+import { dateLocale, t, useLocale } from '../i18n';
+import { LanguageToggle } from '../i18n/LanguageToggle';
 import './zk.css';
 
 // A fragment never reaches HTTP logs. Remove it before any verification request.
 const incomingHash = location.pathname.replace(/\/+$/, '') === '/verify' ? location.hash : '';
 if (incomingHash) history.replaceState(null, '', '/verify');
 export function ProofVerifier() {
+  const locale = useLocale();
   const [verified, setVerified] = useState<ZkEnvelope | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('Choose a proof or open a private proof link.');
@@ -44,7 +47,6 @@ export function ProofVerifier() {
   };
   useEffect(() => {
     mounted.current = true;
-    document.title = 'Verify a private milestone · Sprout';
     if (incomingHash) {
       try {
         void verify(proofFromHash(incomingHash));
@@ -58,6 +60,9 @@ export function ProofVerifier() {
       controller.current?.abort();
     };
   }, []);
+  useEffect(() => {
+    document.title = `${t('Verify a private milestone')} · Sprout`;
+  }, [locale]);
   useEffect(() => {
     if (!verified) return;
     const task = new AbortController();
@@ -86,50 +91,53 @@ export function ProofVerifier() {
         <a href="/">
           <img src="/brand/sprout-logo.png" alt="" /> sprout
         </a>
-        <a href="/dashboard">
-          Open your garden <ArrowUpRight size={16} />
-        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <LanguageToggle />
+          <a href="/dashboard">
+            {t('Open your garden')} <ArrowUpRight size={16} />
+          </a>
+        </div>
       </header>
       <section className="zk-verifier-hero">
         <span className="zk-eyebrow">
-          <Fingerprint size={16} /> INDEPENDENT PROOF CHECK
+          <Fingerprint size={16} /> {t('INDEPENDENT PROOF CHECK')}
         </span>
         <h1>
-          The proof is public.
+          {t('The proof is public.')}
           <br />
-          <em>The details stay private.</em>
+          <em>{t('The details stay private.')}</em>
         </h1>
-        <p>Verify a milestone without asking for a wallet address, child’s name or exact balance.</p>
+        <p>{t('Verify a milestone without asking for a wallet address, child’s name or exact balance.')}</p>
       </section>
       <section className={`zk-verification-card ${verified ? 'is-verified' : ''}`}>
         <div className="zk-verification-icon">{verified ? <Check size={34} /> : <ShieldCheck size={34} />}</div>
         <h2>
           {verified
-            ? `${milestoneLabel(verified.certificate.thresholdCents)} milestone verified`
-            : 'Verify a private milestone'}
+            ? t('{amount} milestone verified', { amount: milestoneLabel(verified.certificate.thresholdCents) })
+            : t('Verify a private milestone')}
         </h2>
         <p role="status" aria-live="polite">
-          {status}
+          {t(status)}
         </p>
         {verified ? (
           <div className="zk-verification-facts">
             <span>
-              <Check size={16} /> PLONK proof verified in this browser
+              <Check size={16} /> {t('PLONK proof verified in this browser')}
             </span>
             <span>
-              <Check size={16} /> Sprout certificate active
+              <Check size={16} /> {t('Sprout certificate active')}
             </span>
-            <span>Snapshot certified {new Date(verified.certificate.issuedAt).toLocaleTimeString()}</span>
-            <span>Certificate expires {new Date(verified.certificate.expiresAt).toLocaleTimeString()}</span>
+            <span>{t('Snapshot certified {time}', { time: new Date(verified.certificate.issuedAt).toLocaleTimeString(dateLocale()) })}</span>
+            <span>{t('Certificate expires {time}', { time: new Date(verified.certificate.expiresAt).toLocaleTimeString(dateLocale()) })}</span>
           </div>
         ) : null}
         <label className="zk-upload">
-          <Upload size={17} /> {busy ? 'Checking proof…' : 'Choose a proof file'}
+          <Upload size={17} /> {busy ? t('Checking proof…') : t('Choose a proof file')}
           <input
             type="file"
             accept=".json,application/json"
             disabled={busy}
-            aria-label="Upload milestone proof"
+            aria-label={t('Upload milestone proof')}
             onChange={(e) => {
               const file = e.target.files?.[0];
               e.target.value = '';
@@ -157,16 +165,14 @@ export function ProofVerifier() {
         </label>
         {error ? (
           <p className="zk-error" role="alert">
-            {error}
+            {t(error)}
           </p>
         ) : null}
       </section>
       <footer className="zk-verifier-boundary">
-        <b>What this proves</b>
+        <b>{t('What this proves')}</b>
         <p>
-          A Sprout-certified balance snapshot met the selected threshold. The ZK proof is checked locally; Sprout
-          attests the source balance and checks expiry and revocation. This is not a trustless proof of on-chain funds,
-          an identity check or permission to move money. Existing blockchain activity remains public.
+          {t('A Sprout-certified balance snapshot met the selected threshold. The ZK proof is checked locally; Sprout attests the source balance and checks expiry and revocation. This is not a trustless proof of on-chain funds, an identity check or permission to move money. Existing blockchain activity remains public.')}
         </p>
       </footer>
     </main>

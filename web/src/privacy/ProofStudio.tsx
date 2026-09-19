@@ -3,6 +3,7 @@ import { ArrowUpRight, Check, Copy, Download, Fingerprint, LockKeyhole, ShieldCh
 import { ZK_THRESHOLDS, milestoneLabel, type ZkEnvelope, type ZkCertificateStatus } from '@sprout/shared/zk';
 import { api } from '../api';
 import type { WalletState } from '../wallet';
+import { dateLocale, t } from '../i18n';
 import { checkCertificate, downloadProof, proofLink, proofTask, proofError, type ProofStage } from './zk-client';
 import './zk.css';
 
@@ -127,35 +128,34 @@ export function ProofStudio({
     <section className={`zk-studio ${busy ? 'is-proving' : ''} ${current ? 'is-proven' : ''}`} data-testid="zk-studio">
       <div className="zk-intro">
         <span className="zk-eyebrow">
-          <Sparkles size={15} /> ZERO-KNOWLEDGE MILESTONES
+          <Sparkles size={15} /> {t('ZERO-KNOWLEDGE MILESTONES')}
         </span>
         <h2>
-          Show the milestone.
+          {t('Show the milestone.')}
           <br />
-          <em>Keep the rest yours.</em>
+          <em>{t('Keep the rest yours.')}</em>
         </h2>
         <p>
-          Prove how far a sprout has grown. Share a milestone with no exact balance, wallet address or child’s identity
-          in the proof.
+          {t('Prove how far a sprout has grown. Share a milestone with no exact balance, wallet address or child’s identity in the proof.')}
         </p>
         <label className="zk-vault-label">
-          Choose a sprout
+          {t('Choose a sprout')}
           <select value={vault} disabled={!wallet || busy} onChange={(e) => onVaultChange(e.target.value)}>
             {!sprouts.length ? (
-              <option value="">No parent sprouts yet</option>
+              <option value="">{t('No parent sprouts yet')}</option>
             ) : (
               sprouts.map((s, i) => (
                 <option key={s.id} value={s.id}>
-                  Family sprout {i + 1}
+                  {t('Family sprout {n}', { n: i + 1 })}
                 </option>
               ))
             )}
           </select>
         </label>
         <label className="zk-label" htmlFor="zk-threshold">
-          Choose what you reveal
+          {t('Choose what you reveal')}
         </label>
-        <div className="zk-thresholds" role="group" aria-label="Milestone amount">
+        <div className="zk-thresholds" role="group" aria-label={t('Milestone amount')}>
           {ZK_THRESHOLDS.map((amount) => (
             <button
               key={amount}
@@ -190,59 +190,59 @@ export function ProofStudio({
         </select>
         <div className="zk-primary-actions">
           <button className="zk-create" onClick={() => void create()} disabled={!wallet || !vault || busy}>
-            <Fingerprint size={19} /> {busy ? 'Creating proof…' : 'Create private proof'} <ArrowUpRight size={17} />
+            <Fingerprint size={19} /> {busy ? t('Creating proof…') : t('Create private proof')} <ArrowUpRight size={17} />
           </button>
           {busy ? (
-            <button className="zk-cancel" onClick={cancel} aria-label="Cancel proof creation">
+            <button className="zk-cancel" onClick={cancel} aria-label={t('Cancel proof creation')}>
               <X size={18} />
             </button>
           ) : null}
         </div>
         <p className="zk-trust">
-          Sprout certifies a balance snapshot. Your browser proves the milestone. Certificates expire after 30 minutes.
+          {t('Sprout certifies a balance snapshot. Your browser proves the milestone. Certificates expire after 30 minutes.')}
         </p>
         <a className="zk-verify-link" href="/verify">
-          Have a proof? Verify it independently <ArrowUpRight size={14} />
+          {t('Have a proof? Verify it independently')} <ArrowUpRight size={14} />
         </a>
       </div>
       <div className="zk-proof-pane">
         <div className="zk-receipt">
           <div className="zk-receipt-top">
-            <span>SPROUT / PRIVATE PROOF</span>
+            <span>{t('SPROUT / PRIVATE PROOF')}</span>
             <ShieldCheck size={22} />
           </div>
           <div className="zk-seal" aria-hidden="true">
             {current ? <Check size={32} /> : <Fingerprint size={32} />}
           </div>
-          <span className="zk-milestone-label">{current ? 'MILESTONE VERIFIED' : 'YOUR SELECTED MILESTONE'}</span>
+          <span className="zk-milestone-label">{current ? t('MILESTONE VERIFIED') : t('YOUR SELECTED MILESTONE')}</span>
           <strong className="zk-amount">≥ {milestoneLabel(current?.certificate.thresholdCents ?? threshold)}</strong>
           <div className="zk-hidden-fields">
             <span>
-              Exact balance{' '}
+              {t('Exact balance')}{' '}
               <b>
-                <LockKeyhole size={12} /> Not included
+                <LockKeyhole size={12} /> {t('Not included')}
               </b>
             </span>
             <span>
-              Wallet address{' '}
+              {t('Wallet address')}{' '}
               <b>
-                <LockKeyhole size={12} /> Not included
+                <LockKeyhole size={12} /> {t('Not included')}
               </b>
             </span>
             <span>
-              Child’s identity{' '}
+              {t('Child’s identity')}{' '}
               <b>
-                <LockKeyhole size={12} /> Not included
+                <LockKeyhole size={12} /> {t('Not included')}
               </b>
             </span>
           </div>
           <div className="zk-live-status" role="status" aria-live="polite">
             <span className={`zk-status-dot ${busy ? 'is-working' : ''}`} />
             {stage
-              ? stages[stage]
+              ? t(stages[stage])
               : current
-                ? 'PLONK proof + active Sprout certificate'
-                : 'Your milestone. The rest stays out.'}
+                ? t('PLONK proof + active Sprout certificate')
+                : t('Your milestone. The rest stays out.')}
           </div>
           {current ? (
             <code className="zk-fingerprint">
@@ -264,37 +264,36 @@ export function ProofStudio({
                     })
                 }
               >
-                <Copy size={15} /> Copy proof link
+                <Copy size={15} /> {t('Copy proof link')}
               </button>
               <button onClick={() => downloadProof(current)}>
-                <Download size={15} /> Download proof
+                <Download size={15} /> {t('Download proof')}
               </button>
               <a href={proofLink(current)} target="_blank" rel="noreferrer">
-                <ShieldCheck size={15} /> Verify this proof
+                <ShieldCheck size={15} /> {t('Verify this proof')}
               </a>
             </div>
           ) : null}
           <p className="zk-disclosure">
-            A shared proof reveals the milestone amount and certificate timing. It does not hide activity already
-            visible on the blockchain.
+            {t('A shared proof reveals the milestone amount and certificate timing. It does not hide activity already visible on the blockchain.')}
           </p>
         </div>
       </div>
       {error ? (
         <p className="zk-error" role="alert">
-          {error}
+          {t(error)}
         </p>
       ) : null}
       {notice ? (
         <p className="zk-notice" role="status">
-          {notice}
+          {t(notice)}
         </p>
       ) : null}
       {certificates.some((c) => c.expiresAt > now) ? (
         <div className="zk-certificates">
           <div className="zk-certificates-heading">
-            <h3>Your proof certificates</h3>
-            <span>You control when they close.</span>
+            <h3>{t('Your proof certificates')}</h3>
+            <span>{t('You control when they close.')}</span>
           </div>
           {certificates
             .filter((c) => c.expiresAt > now)
@@ -302,16 +301,16 @@ export function ProofStudio({
               <div className="zk-certificate-row" key={c.id}>
                 <ShieldCheck size={18} />
                 <div>
-                  <b>{milestoneLabel(c.thresholdCents)} milestone</b>
+                  <b>{t('{amount} milestone', { amount: milestoneLabel(c.thresholdCents) })}</b>
                   <span>
                     {c.revoked
-                      ? 'Revoked'
-                      : `Expires ${new Date(c.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}{' '}
+                      ? t('Revoked')
+                      : t('Expires {time}', { time: new Date(c.expiresAt).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' }) })}{' '}
                     · {c.id.slice(0, 8)}
                   </span>
                 </div>
                 <button disabled={c.revoked || Boolean(revoking)} onClick={() => void revoke(c.id)}>
-                  {c.revoked ? 'Revoked' : revoking === c.id ? 'Revoking…' : 'Revoke proof'}
+                  {c.revoked ? t('Revoked') : revoking === c.id ? t('Revoking…') : t('Revoke proof')}
                 </button>
               </div>
             ))}

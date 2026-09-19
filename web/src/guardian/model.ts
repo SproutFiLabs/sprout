@@ -7,6 +7,7 @@ import {
   type Hex,
   type PublicClient,
 } from "viem";
+import { t } from "../i18n";
 import artifact from "./contract.json";
 export const guardianAbi = artifact.abi;
 export const ZERO = "0x0000000000000000000000000000000000000000" as Address;
@@ -198,8 +199,8 @@ export async function readGuardian(
 }
 export function countdown(readyAt: number, now: number) {
   const seconds = Math.max(0, readyAt - now);
-  if (seconds === 0) return "Ready to execute";
+  if (seconds === 0) return t("Ready to execute");
   const h = Math.floor(seconds / 3600),
     m = Math.floor((seconds % 3600) / 60);
-  return `${h}h ${m.toString().padStart(2, "0")}m`;
+  return t("{h}h {m}m", { h, m: m.toString().padStart(2, "0") });
 }

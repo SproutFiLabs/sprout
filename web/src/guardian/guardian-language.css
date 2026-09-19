@@ -1,0 +1,5 @@
+/* On phones the header row drops its gap, which left the EN/中文 switch touching
+   "Connect wallet" (kept apart from guardian.css so upstream edits merge cleanly). */
+@media (max-width: 760px) {
+  .guardian-nav > div > .language-toggle { margin-right: 8px; }
+}

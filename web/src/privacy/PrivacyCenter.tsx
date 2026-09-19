@@ -27,6 +27,7 @@ import {
   privateStoreError,
   unlockLabels,
 } from '../localStore';
+import { t, tj } from '../i18n';
 import './privacy.css';
 import './family-safety-fixes.css';
 
@@ -165,34 +166,34 @@ export function PrivacyCenter({
         <header className="privacy-top">
           <a href="/" className="privacy-brand">
             <img src="/brand/sprout-logo.png" alt="" />
-            sprout<span>FAMILY PRIVACY</span>
+            sprout<span>{t('FAMILY PRIVACY')}</span>
           </a>
-          <button className="privacy-icon" aria-label="Close family privacy" onClick={onClose}>
+          <button className="privacy-icon" aria-label={t('Close family privacy')} onClick={onClose}>
             <X size={22} />
           </button>
         </header>
-        <a className="privacy-pill" href="/guardian" style={{display:"inline-flex",margin:"20px 0"}}>Guardian wallets · recovery, passkeys & transfer limits ↗</a>
+        <a className="privacy-pill" href="/guardian" style={{display:"inline-flex",margin:"20px 0"}}>{t('Guardian wallets · recovery, passkeys & transfer limits ↗')}</a>
         <section className="privacy-hero">
           <div>
             <span className="privacy-kicker">
-              <span /> A smaller digital footprint
+              <span /> {t('A smaller digital footprint')}
             </span>
             <h1 id="privacy-title">
-              Let their future grow.
+              {t('Let their future grow.')}
               <br />
-              <em>Keep their world small.</em>
+              <em>{t('Keep their world small.')}</em>
             </h1>
             <p>
-              Less identity out in the open.
+              {t('Less identity out in the open.')}
               <br />
-              More control in your family’s hands.
+              {t('More control in your family’s hands.')}
             </p>
             <div className="privacy-pills">
               <span>
-                <ShieldCheck size={15} /> Family access protected
+                <ShieldCheck size={15} /> {t('Family access protected')}
               </span>
               <span className="privacy-public">
-                <EyeOff size={15} /> Blockchain still public
+                <EyeOff size={15} /> {t('Blockchain still public')}
               </span>
             </div>
           </div>
@@ -202,19 +203,15 @@ export function PrivacyCenter({
             <img src="/art/dashboard/hero-bouquet.png" alt="" />
             <div className="privacy-seal">
               <LockKeyhole size={24} />
-              <span>
-                FAMILY
-                <br />
-                FIRST
-              </span>
+              <span>{tj('FAMILY{br}FIRST', { br: <br /> })}</span>
             </div>
           </div>
         </section>
         {!wallet ? (
           <div className="privacy-connect">
-            <p>Connect your parent wallet to manage encryption and kid invitations.</p>
+            <p>{t('Connect your parent wallet to manage encryption and kid invitations.')}</p>
             <button onClick={onConnect} className="privacy-button">
-              Connect family wallet <ArrowUpRight size={16} />
+              {t('Connect family wallet')} <ArrowUpRight size={16} />
             </button>
           </div>
         ) : null}
@@ -222,21 +219,20 @@ export function PrivacyCenter({
           <ProofStudio key={`${wallet?.address ?? "none"}:${vault}`} wallet={wallet} vault={vault} sprouts={sprouts} onVaultChange={value => { setVault(value as typeof vault); setLink(''); }} />
           <section className="privacy-card" data-testid="privacy-labels">
             <div className="privacy-card-top">
-              <span className="privacy-number">01 / PRIVATE LABELS</span>
+              <span className="privacy-number">{t('01 / PRIVATE LABELS')}</span>
               <KeyRound size={22} />
             </div>
             <h2>
-              Their name.
+              {t('Their name.')}
               <br />
-              Your secret.
+              {t('Your secret.')}
             </h2>
             <p>
-              Names, chore titles and gift labels are encrypted on this device. Unlock them with your passphrase. Sprout
-              never receives that key.
+              {t('Names, chore titles and gift labels are encrypted on this device. Unlock them with your passphrase. Sprout never receives that key.')}
             </p>
             <span className={`privacy-status ${unlocked ? 'is-on' : ''}`}>
               <span />
-              {unlocked ? 'Encrypted vault unlocked' : exists ? 'Encrypted vault locked' : 'Set up encrypted storage'}
+              {unlocked ? t('Encrypted vault unlocked') : exists ? t('Encrypted vault locked') : t('Set up encrypted storage')}
             </span>
             {!unlocked ? (
               <form
@@ -262,7 +258,7 @@ export function PrivacyCenter({
                 }}
               >
                 <label className="privacy-field">
-                  {recoveryMode ? 'Recovery key' : exists ? 'Your passphrase' : 'Create a passphrase (12+ characters)'}
+                  {recoveryMode ? t('Recovery key') : exists ? t('Your passphrase') : t('Create a passphrase (12+ characters)')}
                   <input
                     autoComplete="off"
                     type="password"
@@ -273,16 +269,16 @@ export function PrivacyCenter({
                   />
                 </label>
                 <button className="privacy-button" disabled={!wallet || busy || !passphrase}>
-                  {busy ? 'Working…' : exists || restore ? 'Unlock private labels' : 'Encrypt my family labels'}
+                  {busy ? t('Working…') : exists || restore ? t('Unlock private labels') : t('Encrypt my family labels')}
                   <ArrowRight size={16} />
                 </button>
                 <label className="privacy-check">
                   <input type="checkbox" checked={recoveryMode} onChange={(e) => setRecoveryMode(e.target.checked)} />
-                  Use a recovery key
+                  {t('Use a recovery key')}
                 </label>
                 {!exists ? (
                   <label className="privacy-import">
-                    Restore an encrypted backup
+                    {t('Restore an encrypted backup')}
                     <input
                       type="file"
                       accept="application/json,.json"
@@ -298,7 +294,7 @@ export function PrivacyCenter({
               <div className="privacy-actions">
                 <button className="privacy-button" onClick={() => void run(saveBackup)}>
                   <Download size={16} />
-                  Download encrypted backup
+                  {t('Download encrypted backup')}
                 </button>
                 <button
                   className="privacy-secondary"
@@ -307,41 +303,39 @@ export function PrivacyCenter({
                     setRecovery('');
                   }}
                 >
-                  Lock labels <LockKeyhole size={14} />
+                  {t('Lock labels')} <LockKeyhole size={14} />
                 </button>
               </div>
             )}
             {recovery ? (
               <div className="privacy-recovery">
-                <strong>Your recovery key — save it somewhere private</strong>
+                <strong>{t('Your recovery key — save it somewhere private')}</strong>
                 <code>{recovery}</code>
-                <p>Keep this key separate from your encrypted backup. Sprout cannot reset it.</p>
+                <p>{t('Keep this key separate from your encrypted backup. Sprout cannot reset it.')}</p>
                 <button className="privacy-secondary" onClick={() => setRecovery('')}>
-                  I saved my key <Check size={14} />
+                  {t('I saved my key')} <Check size={14} />
                 </button>
               </div>
             ) : null}
             <small>
-              Keep an encrypted backup and save your recovery key separately. Together, they let you restore your family
-              labels.
+              {t('Keep an encrypted backup and save your recovery key separately. Together, they let you restore your family labels.')}
             </small>
           </section>
           <section className="privacy-card" data-testid="privacy-invites">
             <div className="privacy-card-top">
-              <span className="privacy-number">02 / KID ACCESS</span>
+              <span className="privacy-number">{t('02 / KID ACCESS')}</span>
               <Link2 size={22} />
             </div>
             <h2>
-              A little window.
+              {t('A little window.')}
               <br />
-              No keys to the vault.
+              {t('No keys to the vault.')}
             </h2>
             <p>
-              One invitation. Their own little window. No name or wallet address in the link, and you decide when it
-              closes.
+              {t('One invitation. Their own little window. No name or wallet address in the link, and you decide when it closes.')}
             </p>
             <label className="privacy-field">
-              Choose a sprout
+              {t('Choose a sprout')}
               <select
                 value={vault}
                 onChange={(e) => {
@@ -351,11 +345,11 @@ export function PrivacyCenter({
                 disabled={!wallet || busy}
               >
                 {!sprouts.length ? (
-                  <option>No parent sprouts yet</option>
+                  <option>{t('No parent sprouts yet')}</option>
                 ) : (
                   sprouts.map((s, i) => (
                     <option key={s.id} value={s.id}>
-                      Family sprout {i + 1}
+                      {t('Family sprout {n}', { n: i + 1 })}
                     </option>
                   ))
                 )}
@@ -363,10 +357,10 @@ export function PrivacyCenter({
             </label>
             <label className="privacy-check">
               <input type="checkbox" checked={amounts} onChange={(e) => setAmounts(e.target.checked)} />
-              Allow this device to see the total balance
+              {t('Allow this device to see the total balance')}
             </label>
             <p className="privacy-caption">
-              Amounts hidden by default. Invitation expires in 7 days; device access lasts up to 24 hours after opening.
+              {t('Amounts hidden by default. Invitation expires in 7 days; device access lasts up to 24 hours after opening.')}
             </p>
             <button
               className="privacy-button"
@@ -379,11 +373,11 @@ export function PrivacyCenter({
                 })
               }
             >
-              Create kid invitation <ArrowUpRight size={16} />
+              {t('Create kid invitation')} <ArrowUpRight size={16} />
             </button>
             {link ? (
               <div className="privacy-link">
-                <p>Share privately with the child’s device. Whoever opens it first gets access.</p>
+                <p>{t('Share privately with the child’s device. Whoever opens it first gets access.')}</p>
                 <button
                   className="privacy-secondary"
                   onClick={() =>
@@ -394,7 +388,7 @@ export function PrivacyCenter({
                   }
                 >
                   <Copy size={15} />
-                  Copy private invitation
+                  {t('Copy private invitation')}
                 </button>
               </div>
             ) : null}
@@ -404,10 +398,10 @@ export function PrivacyCenter({
                 .map((i, n) => (
                   <div className="privacy-invite" key={i.id}>
                     <div>
-                      <b>Kid access {n + 1}</b>
+                      <b>{t('Kid access {n}', { n: n + 1 })}</b>
                       <span>
-                        {i.redeemed ? 'Opened on a device' : 'Waiting to be opened'} ·{' '}
-                        {i.showBalance ? 'Balance visible' : 'Amounts hidden'}
+                        {i.redeemed ? t('Opened on a device') : t('Waiting to be opened')} ·{' '}
+                        {i.showBalance ? t('Balance visible') : t('Amounts hidden')}
                       </span>
                     </div>
                     <button
@@ -421,7 +415,7 @@ export function PrivacyCenter({
                         })
                       }
                     >
-                      Revoke
+                      {t('Revoke')}
                     </button>
                   </div>
                 ))}
@@ -429,31 +423,30 @@ export function PrivacyCenter({
           </section>
           <section className="privacy-card privacy-wide">
             <div className="privacy-card-top">
-              <span className="privacy-number">03 / THOUGHTFUL GIFTING</span>
+              <span className="privacy-number">{t('03 / THOUGHTFUL GIFTING')}</span>
               <Gift size={22} />
             </div>
             <div className="privacy-wide-content">
               <div>
                 <h2>
-                  Share the love.
+                  {t('Share the love.')}
                   <br />
-                  <em>Leave the name out.</em>
+                  <em>{t('Leave the name out.')}</em>
                 </h2>
                 <p>
-                  Gift previews use a generic title. Private messages are encrypted in the sender’s browser and opened
-                  with your family key. No public message wall.
+                  {t('Gift previews use a generic title. Private messages are encrypted in the sender’s browser and opened with your family key. No public message wall.')}
                 </p>
               </div>
               <div className="privacy-gift-preview">
                 <div className="privacy-gift-icon">
                   <Sprout size={30} />
                 </div>
-                <span>SPROUT · GIFT INVITATION</span>
-                <h3>A gift for the future</h3>
-                <p>A little today. A world of possibilities.</p>
+                <span>{t('SPROUT · GIFT INVITATION')}</span>
+                <h3>{t('A gift for the future')}</h3>
+                <p>{t('A little today. A world of possibilities.')}</p>
                 <span className="privacy-status is-on">
                   <LockKeyhole size={12} />
-                  Their name stays with family
+                  {t('Their name stays with family')}
                 </span>
               </div>
             </div>
@@ -470,54 +463,51 @@ export function PrivacyCenter({
                 })
               }
             >
-              {giftReady ? 'Encrypted gifting enabled' : 'Enable encrypted gift messages'}
+              {giftReady ? t('Encrypted gifting enabled') : t('Enable encrypted gift messages')}
               <ArrowRight size={15} />
             </button>
             <small>
-              The gift link and its payments can still be correlated on-chain. Existing plaintext messages are now
-              family-only; they have not been retroactively encrypted.
+              {t('The gift link and its payments can still be correlated on-chain. Existing plaintext messages are now family-only; they have not been retroactively encrypted.')}
             </small>
           </section>
         </div>
         <section className="privacy-boundary">
           <div>
-            <span className="privacy-number">YOUR PRIVACY, EXPLAINED</span>
+            <span className="privacy-number">{t('YOUR PRIVACY, EXPLAINED')}</span>
             <h2>
-              Private family details.
+              {t('Private family details.')}
               <br />
-              Public blockchain activity.
+              {t('Public blockchain activity.')}
             </h2>
             <p>
-              Names and messages can stay out of public view in Sprout. Wallet relationships, balances and transfers
-              remain visible on the blockchain. These controls reduce identity exposure; they do not hide on-chain
-              wealth or guarantee physical safety.
+              {t('Names and messages can stay out of public view in Sprout. Wallet relationships, balances and transfers remain visible on the blockchain. These controls reduce identity exposure; they do not hide on-chain wealth or guarantee physical safety.')}
             </p>
           </div>
           <div className="privacy-readiness">
             <span>
-              <Check size={16} /> Authenticated family views
+              <Check size={16} /> {t('Authenticated family views')}
             </span>
             <span>
-              <Check size={16} /> Revocable kid invitations
+              <Check size={16} /> {t('Revocable kid invitations')}
             </span>
             <span>
-              <Check size={16} /> Encrypted family labels
+              <Check size={16} /> {t('Encrypted family labels')}
             </span>
           </div>
         </section>
         {error || privateStoreError() ? (
           <p className="privacy-error" role="alert">
-            {error || privateStoreError()}
+            {t(error || privateStoreError())}
           </p>
         ) : null}
         {message ? (
           <p className="privacy-feedback" role="status">
-            {message}
+            {t(message)}
           </p>
         ) : null}
         <footer className="privacy-footer">
           <span>
-            <ShieldCheck size={17} /> A quieter footprint. A growing future.
+            <ShieldCheck size={17} /> {t('A quieter footprint. A growing future.')}
           </span>
           <button
             className="privacy-secondary"
@@ -529,7 +519,7 @@ export function PrivacyCenter({
               })
             }
           >
-            Lock family sessions <LockKeyhole size={15} />
+            {t('Lock family sessions')} <LockKeyhole size={15} />
           </button>
         </footer>
       </main>
