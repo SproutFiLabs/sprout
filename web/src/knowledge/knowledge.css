@@ -4,3 +4,5 @@
 
 .knowledge-brand-mark{overflow:hidden}.knowledge-brand-mark img{width:21px;height:21px;object-fit:contain}
 .knowledge-code{overflow-wrap:anywhere}
+.knowledge-topbar-actions{display:flex;align-items:center;gap:10px}
+@media print{.knowledge-topbar-actions .language-toggle{display:none}}

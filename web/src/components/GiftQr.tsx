@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Download, Printer } from 'lucide-react';
 import { encodeQr, qrToSvg } from '../qr';
+import { getLocale, t } from '../i18n';
 
 /**
  * A printable QR code for a gift link, for birthday cards and party
@@ -27,12 +28,12 @@ async function downloadPng(svgUrl: string, filename: string): Promise<void> {
   canvas.width = PNG_SIZE;
   canvas.height = PNG_SIZE;
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('This browser cannot draw the image.');
+  if (!ctx) throw new Error(t('This browser cannot draw the image.'));
   // Keep module edges sharp when scaling the vector up.
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(image, 0, 0, PNG_SIZE, PNG_SIZE);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-  if (!blob) throw new Error('The image could not be created.');
+  if (!blob) throw new Error(t('The image could not be created.'));
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -45,22 +46,22 @@ async function downloadPng(svgUrl: string, filename: string): Promise<void> {
 
 export function GiftQrCard({ url, label }: { url: string; label: string | null }) {
   const [error, setError] = useState<string | null>(null);
-  const svg = useMemo(() => qrToSvg(encodeQr(url, 'Q'), { title: 'Gift link QR code' }), [url]);
+  const locale = getLocale();
+  const svg = useMemo(() => qrToSvg(encodeQr(url, 'Q'), { title: t('Gift link QR code') }), [url, locale]);
   const src = svgDataUrl(svg);
   const name = `sprout-${slug(label ?? 'gift')}-qr`;
 
   return (
     <div className="gift-qr">
       <div className="gift-qr-print" data-testid="gift-qr-card">
-        <p className="gift-qr-kicker">Help a sprout grow 🌱</p>
+        <p className="gift-qr-kicker">{t('Help a sprout grow 🌱')}</p>
         {label ? <p className="gift-qr-label">{label}</p> : null}
-        <img className="gift-qr-image" src={src} alt="QR code that opens the gift link" data-testid="gift-qr-image" />
-        <p className="gift-qr-instructions">Scan with a phone camera to add a gift.</p>
+        <img className="gift-qr-image" src={src} alt={t('QR code that opens the gift link')} data-testid="gift-qr-image" />
+        <p className="gift-qr-instructions">{t('Scan with a phone camera to add a gift.')}</p>
         <p className="gift-qr-url">{url}</p>
       </div>
       <p className="muted gift-qr-note">
-        Anyone who scans it can add money to this sprout from their own wallet. It gives nobody any control, and gifts
-        can’t be taken back.
+        {t('Anyone who scans it can add money to this sprout from their own wallet. It gives nobody any control, and gifts can’t be taken back.')}
       </p>
       {error ? <p className="garden-notice" role="alert">{error}</p> : null}
       <div className="gift-qr-actions">
@@ -73,13 +74,13 @@ export function GiftQrCard({ url, label }: { url: string; label: string | null }
             downloadPng(src, `${name}.png`).catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
           }}
         >
-          <Download size={15} aria-hidden /> Download PNG
+          <Download size={15} aria-hidden /> {t('Download PNG')}
         </button>
         <a className="btn" href={src} download={`${name}.svg`} data-testid="gift-qr-svg">
           SVG
         </a>
         <button type="button" className="btn" onClick={() => window.print()} data-testid="gift-qr-print">
-          <Printer size={15} aria-hidden /> Print
+          <Printer size={15} aria-hidden /> {t('Print')}
         </button>
       </div>
     </div>

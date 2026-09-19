@@ -1,5 +1,6 @@
 import { formatUnits } from '@sprout/shared';
 import type { GiftCampaign, GiftNote } from '../api';
+import { dateLocale, t } from '../i18n';
 
 /**
  * Birthday campaigns: a gift link with a title, a dollar goal and an end date,
@@ -14,11 +15,14 @@ export const TITLE_MAX = 60;
 
 const LINKISH = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|xyz|app|gg|co|me|ly|tech|link|site|online|finance|money)\b)/i;
 
-/** The server's text rule, for early feedback. Returns an error message or null. */
+/**
+ * The server's text rule, for early feedback. Returns an error message or null.
+ * `field` is English ("The note"); it is translated here with the message.
+ */
 export function textProblem(text: string, max: number, field: string): string | null {
   const clean = text.replace(/\s+/g, ' ').trim();
-  if ([...clean].length > max) return `${field} can be at most ${max} characters.`;
-  if (LINKISH.test(clean)) return `${field} can't include links.`;
+  if ([...clean].length > max) return t('{field} can be at most {max} characters.', { field: t(field), max });
+  if (LINKISH.test(clean)) return t("{field} can't include links.", { field: t(field) });
   return null;
 }
 
@@ -35,11 +39,11 @@ export function progressPercent(c: Pick<GiftCampaign, 'raisedCents' | 'goalCents
 /** "Ends today", "3 days left", "Ended Sep 30". */
 export function timeLeftText(endsAt: number, nowMs: number): string {
   const msLeft = endsAt * 1000 - nowMs;
-  const date = new Date(endsAt * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-  if (msLeft <= 0) return `Ended ${date}`;
+  const date = new Date(endsAt * 1000).toLocaleDateString(dateLocale(), { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  if (msLeft <= 0) return t('Ended {date}', { date });
   const days = Math.ceil(msLeft / 86_400_000);
-  if (days <= 1) return 'Ends today';
-  return `${days} days left · ends ${date}`;
+  if (days <= 1) return t('Ends today');
+  return t('{days} days left · ends {date}', { days, date });
 }
 
 /** The last second (UTC) of a yyyy-mm-dd date. */
@@ -55,7 +59,7 @@ export function CampaignProgress({ campaign, nowMs, compact = false }: { campaig
     <div className={'campaign-progress' + (compact ? ' campaign-progress--compact' : '')} data-testid="campaign-progress">
       <div className="campaign-progress-figures">
         <b>{dollars(campaign.raisedCents)}</b>
-        <span>raised of {dollars(campaign.goalCents)}</span>
+        <span>{t('raised of {goal}', { goal: dollars(campaign.goalCents) })}</span>
         <small>{timeLeftText(campaign.endsAt, nowMs)}</small>
       </div>
       <div
@@ -64,7 +68,7 @@ export function CampaignProgress({ campaign, nowMs, compact = false }: { campaig
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
-        aria-label={`${pct}% of the goal`}
+        aria-label={t('{pct}% of the goal', { pct })}
       >
         <span style={{ width: `${pct}%` }} />
       </div>
@@ -90,13 +94,13 @@ export function GiftNotesList({
       {notes.map((n) => (
         <li key={`${n.txHash}:${n.logIndex}`} className={'gift-note' + (n.hidden ? ' gift-note--hidden' : '')}>
           <div className="gift-note-head">
-            <b>{n.name ?? 'Someone who cares'}</b>
+            <b>{n.name ?? t('Someone who cares')}</b>
             {n.token && n.amount ? <span>{tokenLabel(n.token, n.amount)}</span> : null}
           </div>
           {n.note ? <p>{n.note}</p> : null}
           {onToggleHidden ? (
             <button type="button" className="garden-see-all gift-note-toggle" data-testid="gift-note-toggle" onClick={() => onToggleHidden(n)}>
-              {n.hidden ? 'Show on the gift page' : 'Hide'}
+              {n.hidden ? t('Show on the gift page') : t('Hide')}
             </button>
           ) : null}
         </li>

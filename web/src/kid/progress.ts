@@ -71,6 +71,7 @@ export interface Badge {
   need: number | 'all';
 }
 
+/** Names stay English; KidLearn shows them in Chinese via "<name> (badge)" keys in i18n/zh/kid.ts. */
 export const BADGES: readonly Badge[] = [
   { id: 'seedling', name: 'Seedling', need: 1 },
   { id: 'sprout', name: 'Sprout', need: 3 },

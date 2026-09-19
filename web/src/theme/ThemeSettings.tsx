@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, Moon, Sun, Monitor } from 'lucide-react';
+import { t } from '../i18n';
 
 export type Appearance = 'light' | 'dark' | 'system';
 type ResolvedAppearance = Exclude<Appearance, 'system'>;
@@ -113,16 +114,16 @@ export function ThemeSettings() {
   return (
     <section className="theme-settings" aria-labelledby="theme-settings-title">
       <div className="theme-settings-heading">
-        <span className="theme-settings-eyebrow">Appearance</span>
-        <h2 id="theme-settings-title">Choose your garden’s light.</h2>
-        <p>This changes the way SPROUT looks on this device. Wallet and family settings stay separate.</p>
+        <span className="theme-settings-eyebrow">{t('Appearance')}</span>
+        <h2 id="theme-settings-title">{t('Choose your garden’s light.')}</h2>
+        <p>{t('This changes the way SPROUT looks on this device. Wallet and family settings stay separate.')}</p>
       </div>
-      <div className="theme-settings-options" role="radiogroup" aria-label="Appearance preference">
+      <div className="theme-settings-options" role="radiogroup" aria-label={t('Appearance preference')}>
         {OPTIONS.map(({ value, label, description, icon: Icon }) => (
           <label className={`theme-option${preference === value ? ' theme-option--selected' : ''}`} key={value}>
             <input type="radio" name="sprout-appearance" value={value} checked={preference === value} onChange={() => setAppearance(value)} />
             <span className="theme-option-icon"><Icon size={18} /></span>
-            <span className="theme-option-copy"><b>{label}</b><small>{description}</small></span>
+            <span className="theme-option-copy"><b>{t(label)}</b><small>{t(description)}</small></span>
             <span className="theme-option-check" aria-hidden="true"><Check size={15} /></span>
           </label>
         ))}
@@ -139,11 +140,11 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
       type="button"
       className={`theme-toggle${className ? ` ${className}` : ''}`}
       onClick={() => setAppearance(dark ? 'light' : 'dark')}
-      aria-label={`Switch to ${dark ? 'light' : 'dark'} appearance`}
-      title={`Switch to ${dark ? 'light' : 'dark'} appearance`}
+      aria-label={dark ? t('Switch to light appearance') : t('Switch to dark appearance')}
+      title={dark ? t('Switch to light appearance') : t('Switch to dark appearance')}
     >
       {dark ? <Sun size={16} /> : <Moon size={16} />}
-      <span className="theme-toggle-label">{dark ? 'Light' : 'Dark'}</span>
+      <span className="theme-toggle-label">{dark ? t('Light') : t('Dark')}</span>
     </button>
   );
 }

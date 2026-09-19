@@ -5,6 +5,7 @@ import { api, type ChainPublic, type InvestQuote } from '../api';
 import { contractWriter, waitForSuccess, type WalletState } from '../wallet';
 import { RiskLine } from './BetaNotice';
 import { rememberOneOffSchedule } from '../localStore';
+import { t, tj, getLocale } from '../i18n';
 
 /**
  * "Invest now": the parent buys the sprout's stock mix from its own wallet.
@@ -42,6 +43,39 @@ function writeOneOff(vault: string, amount: bigint | null): void {
   }
 }
 
+/**
+ * The server's blocker messages (server/src/invest.ts), by code, so they can be
+ * shown translated. `{symbol}` and `{name}` are read back out of the server's
+ * own text; if the server's wording no longer matches, its text is shown as sent.
+ */
+const BLOCKER_TEXT: Record<string, string> = {
+  'not-configured': 'Buying is not configured on this server.',
+  graduated: 'This sprout has graduated, so it no longer buys anything.',
+  'venue-not-allowed': 'This sprout was planted without a trading venue, so it cannot buy stocks.',
+  'nothing-to-buy': 'Enter an amount large enough to buy something.',
+  'insufficient-funds': 'That is more than this sprout has available to invest. Add funds first, or choose a smaller amount.',
+  'pool-too-far':
+    'The trading pool is pricing these stocks too far from the market price right now, so the purchase would be refused. Try again shortly.',
+  'stale-price':
+    'The {symbol} price has not updated recently, so buying is paused to protect the price you get. This usually means US markets are closed; try again once they reopen.',
+  'price-paused': 'The {symbol} price feed is paused right now, so {symbol} cannot be bought. Try again later.',
+  'price-unavailable': 'The {symbol} price could not be read just now. Try again in a minute.',
+  unknown: 'The purchase could not be prepared. Try again in a minute.',
+};
+const UNKNOWN_NAMED = 'The purchase could not be prepared ({name}). Try again in a minute.';
+
+export function blockerText(blocker: { code: string; message: string }): string {
+  const symbol = /^The (\S+) price/.exec(blocker.message)?.[1];
+  const name = /^The purchase could not be prepared \((.+)\)\./.exec(blocker.message)?.[1];
+  const text = blocker.code === 'unknown' && name ? UNKNOWN_NAMED : BLOCKER_TEXT[blocker.code];
+  if (!text) return blocker.message;
+  const vars: Record<string, string> = {};
+  if (symbol) vars.symbol = symbol;
+  if (name) vars.name = name;
+  const english = text.replace(/\{(\w+)\}/g, (whole, key: string) => vars[key] ?? whole);
+  return english === blocker.message ? t(text, vars) : blocker.message;
+}
+
 export interface InvestNowFormProps {
   wallet: WalletState;
   vault: Address;
@@ -57,7 +91,7 @@ export interface InvestNowFormProps {
 
 export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn, automationEnabled, onDone, onClose }: InvestNowFormProps) {
   const decimals = chain.contracts.settlementDecimals;
-  const ticker = chain.contracts.settlementSymbol ?? 'settlement';
+  const ticker = chain.contracts.settlementSymbol ?? t('settlement');
   const [amount, setAmount] = useState(() => {
     const balance = settlementBalance ? BigInt(settlementBalance) : 0n;
     // Whole units keep the default readable; the preview reports what is spendable.
@@ -67,7 +101,8 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
   const [keepPlan, setKeepPlan] = useState(false);
   const [preview, setPreview] = useState<InvestQuote | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const [step, setStep] = useState<string | null>(null);
+  // English step text and its values; translated where it is shown.
+  const [step, setStep] = useState<{ text: string; vars?: Record<string, number> } | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const requestId = useRef(0);
@@ -120,16 +155,16 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
     if (parsed === null || !preview) return;
     const spend = parsed;
     setBusy(true);
-    await runTxn('Invest now', async () => {
+    await runTxn(t('Invest now'), async () => {
       const write = contractWriter(wallet);
       let quote = await api.investQuote(vault, spend);
-      if (quote.blocker) throw new Error(quote.blocker.message);
+      if (quote.blocker) throw new Error(blockerText(quote.blocker));
       const clearAfter = willClear;
       const total = (quote.due ? 1 : 2) + (clearAfter ? 1 : 0);
       let n = 0;
 
       if (!quote.due) {
-        setStep(`Step ${++n} of ${total}: set the amount. Confirm in your wallet.`);
+        setStep({ text: 'Step {n} of {total}: set the amount. Confirm in your wallet.', vars: { n: ++n, total } });
         const period = plan ? BigInt(plan.periodSeconds) : WEEK_SECONDS;
         const setHash = await write({ address: vault, abi: sproutVaultAbi, functionName: 'scheduleInvestment', args: [spend, period, 0n] });
         if (clearAfter) {
@@ -137,15 +172,15 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
           rememberOneOffSchedule(vault, setHash);
         }
         const block = await waitForSuccess(wallet.publicClient, setHash);
-        setStep('Checking prices before you buy…');
+        setStep({ text: 'Checking prices before you buy…' });
         quote = await api.investQuote(vault, spend, block);
-        if (quote.blocker) throw new Error(quote.blocker.message);
+        if (quote.blocker) throw new Error(blockerText(quote.blocker));
       }
       if (!quote.due || !quote.minOuts || !quote.venue) {
-        throw new Error('The purchase is not ready yet. Wait a moment and press Invest now again.');
+        throw new Error(t('The purchase is not ready yet. Wait a moment and press Invest now again.'));
       }
 
-      setStep(`Step ${++n} of ${total}: buy. Confirm in your wallet.`);
+      setStep({ text: 'Step {n} of {total}: buy. Confirm in your wallet.', vars: { n: ++n, total } });
       const buyHash = await write({
         address: vault,
         abi: sproutVaultAbi,
@@ -155,7 +190,7 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
       await waitForSuccess(wallet.publicClient, buyHash);
 
       if (clearAfter) {
-        setStep(`Step ${++n} of ${total}: clear the one-off amount. This moves no money.`);
+        setStep({ text: 'Step {n} of {total}: clear the one-off amount. This moves no money.', vars: { n: ++n, total } });
         const clearHash = await write({ address: vault, abi: sproutVaultAbi, functionName: 'cancelInvestment', args: [] });
         await waitForSuccess(wallet.publicClient, clearHash);
         writeOneOff(vault, null);
@@ -177,16 +212,21 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
 
   return (
     <div className="invest-now" data-testid="invest-now-form">
-      <RiskLine action="Buying stock tokens" />
+      <RiskLine action={t('Buying stock tokens')} />
       {plan ? (
         <p className="invest-now-lead">
-          Runs your plan’s <b>{fmt(plan.amount.toString(), decimals, 2)} {ticker}</b> purchase now instead of waiting for it.
-          The plan keeps its schedule from today.
+          {tj('Runs your plan’s {amount} purchase now instead of waiting for it. The plan keeps its schedule from today.', {
+            amount: (
+              <b>
+                {fmt(plan.amount.toString(), decimals, 2)} {ticker}
+              </b>
+            ),
+          })}
         </p>
       ) : (
         <>
           <label>
-            Amount to invest ({ticker})
+            {t('Amount to invest ({ticker})', { ticker })}
             <input
               data-testid="invest-now-amount"
               inputMode="decimal"
@@ -197,7 +237,7 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
           </label>
           {preview ? (
             <p className="muted invest-now-available">
-              Available to invest: {fmt(preview.available, decimals, 2)} {ticker}
+              {t('Available to invest: {amount} {ticker}', { amount: fmt(preview.available, decimals, 2), ticker })}
             </p>
           ) : null}
         </>
@@ -209,9 +249,7 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
             <li key={leg.asset}>
               <span>{fmt(leg.amountIn, decimals, 2)} {ticker}</span>
               <span aria-hidden>→</span>
-              <b>
-                about {fmt(leg.expectedOut, stockDecimals(leg.asset))} {leg.symbol}
-              </b>
+              <b>{t('about {amount} {symbol}', { amount: fmt(leg.expectedOut, stockDecimals(leg.asset)), symbol: leg.symbol })}</b>
             </li>
           ))}
         </ul>
@@ -219,10 +257,10 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
 
       {blocker ? (
         <p className="garden-notice invest-now-blocker" role="alert" data-testid="invest-now-blocker">
-          {blocker.message}
+          {blockerText(blocker)}
         </p>
       ) : null}
-      {previewError ? <p className="garden-notice" role="alert">Could not check prices: {previewError}</p> : null}
+      {previewError ? <p className="garden-notice" role="alert">{t('Could not check prices: {error}', { error: previewError })}</p> : null}
 
       {!plan ? (
         <label className="invest-now-keep">
@@ -233,35 +271,35 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
             disabled={busy || done}
             onChange={(e) => setKeepPlan(e.target.checked)}
           />
-          <span>Keep this amount as a weekly plan</span>
+          <span>{t('Keep this amount as a weekly plan')}</span>
         </label>
       ) : null}
 
       <p className="muted invest-now-note">
         {preview && !blocker
-          ? `${signatures === 1 ? 'One wallet confirmation' : `${signatures} wallet confirmations`}. `
+          ? `${signatures === 1 ? t('One wallet confirmation.') : t('{count} wallet confirmations.', { count: signatures })}${getLocale() === 'zh' ? '' : ' '}`
           : ''}
-        Prices come from the market feed; the purchase is refused if the pool pays much less than that price.
+        {t('Prices come from the market feed; the purchase is refused if the pool pays much less than that price.')}
         {!plan && keepPlan
           ? automationEnabled
-            ? ' After this, the plan buys automatically each week.'
-            : ' Automatic weekly buying is switched off for now, so you can run each week’s purchase from here.'
+            ? ` ${t('After this, the plan buys automatically each week.')}`
+            : ` ${t('Automatic weekly buying is switched off for now, so you can run each week’s purchase from here.')}`
           : ''}
       </p>
 
       {step ? (
         <p className="invest-now-step" role="status" data-testid="invest-now-step">
-          {step}
+          {t(step.text, step.vars)}
         </p>
       ) : null}
 
       {done ? (
         <button className="btn btn--primary" data-testid="invest-now-close" onClick={onClose}>
-          Done
+          {t('Done')}
         </button>
       ) : (
         <button className="btn btn--primary" data-testid="invest-now-submit" disabled={!canSubmit} onClick={() => void submit()}>
-          {busy ? 'Investing…' : 'Invest now'}
+          {busy ? t('Investing…') : t('Invest now')}
         </button>
       )}
     </div>

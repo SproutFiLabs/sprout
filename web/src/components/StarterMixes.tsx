@@ -7,6 +7,8 @@
  * the local demo (two mock tokens) only offers the even split.
  */
 
+import { t } from '../i18n';
+
 interface MixToken {
   symbol: string;
   address: string;
@@ -72,7 +74,7 @@ export function StarterMixPicker({
   const active = options.find((o) => samePercents(percents, o.values));
   return (
     <div className="starter-mixes">
-      <div className="starter-mix-row" role="group" aria-label="Starter mixes">
+      <div className="starter-mix-row" role="group" aria-label={t('Starter mixes')}>
         {options.map(({ mix, values }) => (
           <button
             key={mix.id}
@@ -80,18 +82,19 @@ export function StarterMixPicker({
             className={'starter-mix' + (active?.mix.id === mix.id ? ' starter-mix--active' : '')}
             aria-pressed={active?.mix.id === mix.id}
             data-testid={`starter-mix-${mix.id}`}
-            title={mix.note}
+            title={t(mix.note)}
             onClick={() => onPick(values)}
           >
-            {mix.label}
+            {t(mix.label)}
           </button>
         ))}
       </div>
       <p className="fine-print starter-mix-note" aria-live="polite">
-        {active ? `${active.mix.note} ` : ''}Starter mixes are examples to start from, not advice.
+        {active ? `${t(active.mix.note)} ` : ''}
+        {t('Starter mixes are examples to start from, not advice.')}
       </p>
       <p className={'starter-mix-total' + (total === 100 ? ' starter-mix-total--ok' : '')} data-testid="allocation-total">
-        Total {total}%{total === 100 ? '' : ' of 100%'}
+        {total === 100 ? t('Total {total}%', { total }) : t('Total {total}% of 100%', { total })}
       </p>
     </div>
   );

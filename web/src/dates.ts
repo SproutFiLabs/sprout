@@ -5,6 +5,8 @@
  * a viewer west of UTC sees the previous calendar day.
  */
 
+import { dateLocale, t } from './i18n';
+
 /** Parse a date-only `YYYY-MM-DD` value as 00:00 UTC seconds. */
 export function parseDateOnlyToUtcTs(dateOnly: string): number {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOnly);
@@ -24,7 +26,7 @@ export function formatUtcDate(tsSeconds: number): string {
 
 /** Date-time in UTC, used for explicit confirmations. */
 export function formatUtcDateTime(tsSeconds: number): string {
-  return new Date(tsSeconds * 1000).toLocaleString('en-US', {
+  return new Date(tsSeconds * 1000).toLocaleString(dateLocale(), {
     timeZone: 'UTC',
     year: 'numeric',
     month: 'short',
@@ -36,7 +38,7 @@ export function formatUtcDateTime(tsSeconds: number): string {
 }
 
 /** Same instant rendered in a given (or the viewer's) timezone, for context. */
-export function formatZonedDateTime(tsSeconds: number, timeZone?: string, locale = 'en-US'): string {
+export function formatZonedDateTime(tsSeconds: number, timeZone?: string, locale = dateLocale()): string {
   return new Date(tsSeconds * 1000).toLocaleString(locale, {
     timeZone,
     year: 'numeric',
@@ -62,5 +64,5 @@ export function viewerTimeZone(): string {
  * style; the time and zone are kept because when the vault executes matters.
  */
 export function formatRunDateTime(tsSeconds: number): string {
-  return `${formatZonedDateTime(tsSeconds)} (${viewerTimeZone()})`;
+  return t('{date} ({zone})', { date: formatZonedDateTime(tsSeconds), zone: viewerTimeZone() });
 }

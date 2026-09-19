@@ -1,47 +1,15 @@
 import { ArrowRight, BookOpen, ChevronRight, ExternalLink, Leaf, Printer, ShieldCheck, Sparkles } from 'lucide-react';
-import type { ReactNode } from 'react';
-import { useAutomationEnabled } from '../automationStatus';
-import { betaPoints } from '../components/BetaNotice';
-
-/** The beta risk list, with the automation line taken from the server. */
-function RiskList() {
-  const enabled = useAutomationEnabled();
-  return <ul>{betaPoints(enabled).map((point) => <li key={point}>{point}</li>)}</ul>;
-}
+import { getLocale, t } from '../i18n';
+import { LanguageToggle } from '../i18n/LanguageToggle';
+import { AutomationStatus, Callout, Code, ExitTokens, RiskList, SOURCIFY_VAULT, type Section } from './sections.zh';
+import * as zh from './sections.zh';
 
 export type KnowledgePageKind = 'docs' | 'whitepaper' | 'guide' | 'faq';
-
-type Section = { id: string; eyebrow?: string; title: string; body: ReactNode };
 
 const links = [
   ['/faq', 'FAQ'], ['/docs', 'Docs'], ['/whitepaper', 'Whitepaper'], ['/guide', 'Guide'], ['/settings', 'Settings'],
   ['/test/', 'Sample mode'], ['/dashboard', 'Dashboard'],
 ] as const;
-
-/** Reports the server's actual automation status instead of a fixed claim. */
-function AutomationStatus() {
-  const enabled = useAutomationEnabled();
-  if (enabled === null) return <p>A weekly plan buys automatically when the service is running automatic purchases; otherwise, run each week’s purchase with Invest now.</p>;
-  return enabled
-    ? <p>Weekly plans run automatically: once a week the service buys the mix for you, as long as prices are fresh and the sprout has the money. You can still use Invest now at any time.</p>
-    : <p>Automatic weekly investing is switched off right now. You can still keep a weekly plan and run each week’s purchase with Invest now.</p>;
-}
-
-function Code({ children }: { children: ReactNode }) { return <code className="knowledge-code">{children}</code>; }
-/** What a family needs to reach a sprout without this website (docs/EXIT-WITHOUT-SPROUT.md). */
-const EXIT_TOKENS: Array<{ symbol: string; address: string; decimals: number; example: string }> = [
-  { symbol: 'USDG', address: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', decimals: 6, example: '$5 is 5000000' },
-  { symbol: 'AAPL', address: '0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9', decimals: 18, example: '0.5 is 500000000000000000' },
-  { symbol: 'NVDA', address: '0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC', decimals: 18, example: '' },
-  { symbol: 'MSFT', address: '0xe93237C50D904957Cf27E7B1133b510C669c2e74', decimals: 18, example: '' },
-  { symbol: 'SPY', address: '0x117cc2133c37B721F49dE2A7a74833232B3B4C0C', decimals: 18, example: '' },
-];
-const SOURCIFY_VAULT = 'https://repo.sourcify.dev/4663/0x789ca950BAE92f4c18f5eBf776d54d85a0fF9A59';
-function ExitTokens() {
-  return <ul>{EXIT_TOKENS.map((t) => <li key={t.symbol}><b>{t.symbol}</b> <Code>{t.address}</Code>, {t.decimals} decimals{t.example ? ` (${t.example})` : ''}</li>)}</ul>;
-}
-
-function Callout({ children, tone = 'green' }: { children: ReactNode; tone?: 'green' | 'orange' }) { return <aside className={`knowledge-callout knowledge-callout--${tone}`}>{children}</aside>; }
 
 const docsSections: Section[] = [
   { id: 'overview', eyebrow: 'Developer docs', title: 'A family vault with a clear handover', body: <><p>Sprout is a web app for planting a vault for a child, funding it with admitted tokens, scheduling investments, sharing a gift link, and handing control to the beneficiary at a fixed on-chain timestamp.</p><p>The browser is React + Vite and uses <Code>viem</Code> for wallet and contract calls. The API is Bun + Hono with <Code>bun:sqlite</Code>; it indexes chain events and serves indexed API views for the dashboard.</p></> },
@@ -97,11 +65,17 @@ const pageData: Record<KnowledgePageKind, { label: string; title: string; intro:
   faq: { label: 'Questions', title: 'Good to know before you start', intro: 'Where the money lives, when it can come out, what it costs, and what beta means.', sections: faqSections },
 };
 
+/** The Simplified Chinese sections (same ids, order, links and code as the English). */
+const zhSections: Record<KnowledgePageKind, Section[]> = {
+  docs: zh.docsSections, whitepaper: zh.whitepaperSections, guide: zh.guideSections, faq: zh.faqSections,
+};
+
 export function KnowledgePage({ page }: { page: KnowledgePageKind }) {
   const data = pageData[page];
+  const sections = getLocale() === 'zh' ? zhSections[page] : data.sections;
   return <div className={`knowledge knowledge-root knowledge--${page}`}>
-    <header className="knowledge-topbar"><a className="knowledge-brand" href="/"><span className="knowledge-brand-mark"><img src="/brand/sprout-logo.png" alt="" /></span><span>SPROUT</span></a><nav aria-label="Knowledge navigation">{links.map(([href, label]) => <a className={href === `/${page}` ? 'is-current' : ''} href={href} key={href}>{label}</a>)}</nav><button className="knowledge-print" onClick={() => window.print()}><Printer size={16} /> Print</button></header>
-    <div className="knowledge-layout"><aside className="knowledge-sidebar"><div className="knowledge-side-kicker"><Leaf size={16} /> Knowledge garden</div><p>Find your way around the little system.</p><nav aria-label="On this page">{data.sections.map((section) => <a href={`#${section.id}`} key={section.id}><ChevronRight size={13} />{section.title}</a>)}</nav><div className="knowledge-side-links"><a href="/dashboard"><Sparkles size={14} /> Open dashboard</a><a href="/settings"><ShieldCheck size={14} /> Settings</a></div></aside>
-      <main className="knowledge-main"><div className="knowledge-hero"><span className="knowledge-eyebrow">{data.label}</span><h1>{data.title}</h1><p>{data.intro}</p><div className="knowledge-hero-links"><a href="/dashboard">Open Sprout <ArrowRight size={15} /></a><a href="/test/">See sample mode <ArrowRight size={15} /></a></div></div><div className="knowledge-content">{data.sections.map((section) => <section className="knowledge-section" id={section.id} key={section.id}><span className="knowledge-eyebrow">{section.eyebrow}</span><h2>{section.title}</h2>{section.body}</section>)}</div><footer className="knowledge-footer"><BookOpen size={17} /><span>Sprout docs · technical draft v0.1 · 2026-09-14</span><a href="/dashboard">Go to dashboard <ArrowRight size={14} /></a></footer></main></div>
+    <header className="knowledge-topbar"><a className="knowledge-brand" href="/"><span className="knowledge-brand-mark"><img src="/brand/sprout-logo.png" alt="" /></span><span>SPROUT</span></a><nav aria-label={t('Knowledge navigation')}>{links.map(([href, label]) => <a className={href === `/${page}` ? 'is-current' : ''} href={href} key={href}>{t(label)}</a>)}</nav><span className="knowledge-topbar-actions"><LanguageToggle /><button className="knowledge-print" onClick={() => window.print()}><Printer size={16} /> {t('Print')}</button></span></header>
+    <div className="knowledge-layout"><aside className="knowledge-sidebar"><div className="knowledge-side-kicker"><Leaf size={16} /> {t('Knowledge garden')}</div><p>{t('Find your way around the little system.')}</p><nav aria-label={t('On this page')}>{sections.map((section) => <a href={`#${section.id}`} key={section.id}><ChevronRight size={13} />{section.title}</a>)}</nav><div className="knowledge-side-links"><a href="/dashboard"><Sparkles size={14} /> {t('Open dashboard')}</a><a href="/settings"><ShieldCheck size={14} /> {t('Settings')}</a></div></aside>
+      <main className="knowledge-main"><div className="knowledge-hero"><span className="knowledge-eyebrow">{t(data.label)}</span><h1>{t(data.title)}</h1><p>{t(data.intro)}</p><div className="knowledge-hero-links"><a href="/dashboard">{t('Open Sprout')} <ArrowRight size={15} /></a><a href="/test/">{t('See sample mode')} <ArrowRight size={15} /></a></div></div><div className="knowledge-content">{sections.map((section) => <section className="knowledge-section" id={section.id} key={section.id}><span className="knowledge-eyebrow">{section.eyebrow}</span><h2>{section.title}</h2>{section.body}</section>)}</div><footer className="knowledge-footer"><BookOpen size={17} /><span>{t('Sprout docs · technical draft v0.1 · 2026-09-14')}</span><a href="/dashboard">{t('Go to dashboard')} <ArrowRight size={14} /></a></footer></main></div>
   </div>;
 }

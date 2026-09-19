@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { OnboardingGarden } from './OnboardingGarden';
 import { ArrowRight, Check, Copy, Gift, Leaf, Repeat2, ShieldCheck, Sprout, Unplug, X } from 'lucide-react';
 import { copyToClipboard, shortCa } from './PublicCa';
+import { t } from '../i18n';
 
 export interface OnboardingIntroProps {
   open: boolean;
@@ -82,29 +83,29 @@ export function OnboardingIntro({ open, connected, canConnect, onClose, onConnec
   return (
     <div className="onboarding-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className="onboarding-dialog" data-testid="onboarding-dialog" ref={ref} role="dialog" aria-modal="true" aria-labelledby="onboarding-title" aria-describedby="onboarding-description">
-        <button className="onboarding-close" type="button" onClick={onClose} aria-label="Close welcome tour"><X size={18} /></button>
+        <button className="onboarding-close" type="button" onClick={onClose} aria-label={t('Close welcome tour')}><X size={18} /></button>
         <OnboardingGarden chapter={stage} />
         <div className="onboarding-content onboarding-chapter-enter" key={stage}>
-          <span className="garden-eyebrow">{PANELS[stage].eyebrow}</span>
-          <h2 id="onboarding-title" ref={heading} tabIndex={-1}>{PANELS[stage].title}</h2>
-          <p id="onboarding-description">{PANELS[stage].text}</p>
+          <span className="garden-eyebrow">{t(PANELS[stage].eyebrow)}</span>
+          <h2 id="onboarding-title" ref={heading} tabIndex={-1}>{t(PANELS[stage].title)}</h2>
+          <p id="onboarding-description">{t(PANELS[stage].text)}</p>
           {stage === 2 ? (
             <div className="onboarding-reasons onboarding-promises" data-testid="onboarding-promises">
-              {promises.map(({ icon: Icon, title, text }) => <div className="onboarding-reason" key={title}><span><Icon size={20} /></span><div><b>{title}</b><p>{text}</p></div></div>)}
-              <a className="onboarding-guide-link" href="/guide#without-sprout">How to take money out without Sprout <ArrowRight size={14} /></a>
+              {promises.map(({ icon: Icon, title, text }) => <div className="onboarding-reason" key={title}><span><Icon size={20} /></span><div><b>{t(title)}</b><p>{t(text)}</p></div></div>)}
+              <a className="onboarding-guide-link" href="/guide#without-sprout">{t('How to take money out without Sprout')} <ArrowRight size={14} /></a>
             </div>
           ) : stage === 1 ? (
             <div className="onboarding-reasons">
-              {reasons.map(({ icon: Icon, title, text }) => <div className="onboarding-reason" key={title}><span><Icon size={18} /></span><div><b>{title}</b><p>{text}</p></div></div>)}
+              {reasons.map(({ icon: Icon, title, text }) => <div className="onboarding-reason" key={title}><span><Icon size={18} /></span><div><b>{t(title)}</b><p>{t(text)}</p></div></div>)}
             </div>
-          ) : <div className="onboarding-quote">A small beginning can become something they can carry into their own future.</div>}
+          ) : <div className="onboarding-quote">{t('A small beginning can become something they can carry into their own future.')}</div>}
           <div className="onboarding-actions">
             <button type="button" data-onboarding-primary className="garden-pill garden-pill--dark" onClick={primary} disabled={stage === 2 && !connected && !canConnect}>
-              {stage === 0 ? <>See how it grows <ArrowRight size={15} /></> : stage === 1 ? <>Where the money lives <ArrowRight size={15} /></> : connected ? <>Plant their first sprout <Sprout size={15} /></> : <>Connect &amp; plant <ArrowRight size={15} /></>}
+              {stage === 0 ? <>{t('See how it grows')} <ArrowRight size={15} /></> : stage === 1 ? <>{t('Where the money lives')} <ArrowRight size={15} /></> : connected ? <>{t('Plant their first sprout')} <Sprout size={15} /></> : <>{t('Connect & plant')} <ArrowRight size={15} /></>}
             </button>
-            <button type="button" className="onboarding-skip" onClick={onClose}>{stage === 0 ? 'Skip for now' : 'I’ll explore myself'}</button>
+            <button type="button" className="onboarding-skip" onClick={onClose}>{stage === 0 ? t('Skip for now') : t('I’ll explore myself')}</button>
           </div>
-          <div className="onboarding-dots" aria-label={`Introduction panel ${stage + 1} of ${PANELS.length}`}>{PANELS.map((panel, i) => <i key={panel.title} className={stage === i ? 'active' : ''} />)}</div>
+          <div className="onboarding-dots" aria-label={t('Introduction panel {n} of {total}', { n: stage + 1, total: PANELS.length })}>{PANELS.map((panel, i) => <i key={panel.title} className={stage === i ? 'active' : ''} />)}</div>
         </div>
       </div>
     </div>
@@ -129,7 +130,7 @@ export function WelcomeSprout({ open, onClose, onFund, address }: { open: boolea
     <div className={'welcome-sprout-backdrop' + (fading ? ' is-fading' : '')} data-testid="welcome-sprout">
       <div className="welcome-sprout" ref={ref} role="dialog" aria-modal="true" aria-labelledby="welcome-title">
         <OnboardingGarden />
-        <div className="welcome-sprout-copy"><span className="garden-eyebrow">The first little beginning</span><h2 id="welcome-title">Welcome.</h2><p>Their sprout is ready to grow. It has no money in it yet — adding the first funds is the next step.</p>{address ? <SaveSproutAddress address={address} /> : null}<div className="welcome-sprout-actions">{onFund ? <button type="button" data-testid="welcome-fund" className="garden-pill garden-pill--light" onClick={() => { onFund(); dismiss(); }}>Add the first funds <ArrowRight size={15} /></button> : null}<button type="button" data-testid="welcome-continue" className="welcome-sprout-later" onClick={dismiss}>I{'\u2019'}ll do this later</button></div></div>
+        <div className="welcome-sprout-copy"><span className="garden-eyebrow">{t('The first little beginning')}</span><h2 id="welcome-title">{t('Welcome.')}</h2><p>{t('Their sprout is ready to grow. It has no money in it yet — adding the first funds is the next step.')}</p>{address ? <SaveSproutAddress address={address} /> : null}<div className="welcome-sprout-actions">{onFund ? <button type="button" data-testid="welcome-fund" className="garden-pill garden-pill--light" onClick={() => { onFund(); dismiss(); }}>{t('Add the first funds')} <ArrowRight size={15} /></button> : null}<button type="button" data-testid="welcome-continue" className="welcome-sprout-later" onClick={dismiss}>{t('I’ll do this later')}</button></div></div>
       </div>
     </div>
   );
@@ -145,10 +146,10 @@ function SaveSproutAddress({ address }: { address: string }) {
   }, [copied]);
   return (
     <div className="welcome-sprout-address" data-testid="welcome-address">
-      <span>Save this sprout’s address. With it, the money can be reached even if Sprout ever shuts down.</span>
-      <button type="button" title={address} aria-label={`Copy this sprout’s address ${address}`} onClick={() => void copyToClipboard(address).then(setCopied)}>
+      <span>{t('Save this sprout’s address. With it, the money can be reached even if Sprout ever shuts down.')}</span>
+      <button type="button" title={address} aria-label={t('Copy this sprout’s address {address}', { address })} onClick={() => void copyToClipboard(address).then(setCopied)}>
         <code>{shortCa(address)}</code>
-        {copied ? <><Check size={15} aria-hidden /> Copied</> : <><Copy size={15} aria-hidden /> Copy</>}
+        {copied ? <><Check size={15} aria-hidden /> {t('Copied')}</> : <><Copy size={15} aria-hidden /> {t('Copy')}</>}
       </button>
     </div>
   );
