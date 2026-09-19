@@ -95,9 +95,6 @@ export interface GiftSummary {
 }
 
 export interface Holdings {
-  performance?:
-    | { available: false; reason: string }
-    | { available: true; contributedUsd: string; withdrawnUsd: string; gainUsd: string; feedDecimals: number };
   available: boolean;
   reason?: string;
   blockNumber: number | null;

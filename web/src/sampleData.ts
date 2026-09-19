@@ -47,7 +47,6 @@ export const HOLDINGS: Holdings = {
   blockNumber: null,
   feedDecimals: 8,
   totalValueUsd: '248065000000',
-  performance: { available: true, contributedUsd: '220000000000', withdrawnUsd: '0', gainUsd: '28065000000', feedDecimals: 8 },
   settlementAssumption: 'Sample values for preview only. Nothing here is on-chain.',
   holdings: [
     { symbol: 'AAPL', address: '0x00000000000000000000000000000000000000a1', kind: 'stock', rawBalance: '4120000000000000000', decimals: 18, multiplier: '1', price: null, feedDecimals: 8, valueUsd: '67648000000', shareEquivalent: '4120000000000000000', status: 'ok' },

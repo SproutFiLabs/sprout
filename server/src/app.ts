@@ -22,7 +22,6 @@ import { AuthError, authenticate, issueNonce } from './auth';
 import { reconcile, snapshotAll } from './indexer';
 import { automationCapability, runDueJobs } from './jobs';
 import { localFixtures } from './fixtures';
-import { portfolioPerformance } from './performance';
 import {
   LocalWalletError,
   advanceLocalTime,
@@ -34,7 +33,6 @@ import {
 import { createMutex } from './lock';
 import {
   activityTotals,
-  getCursor,
   getGift,
   getJob,
   getMilestone,
@@ -553,12 +551,7 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     const afterRaw = c.req.query('after');
     const afterBlock = afterRaw && /^\d{1,12}$/.test(afterRaw) ? Number(afterRaw) : undefined;
     const holdings = await cachedHoldings(deps.chain, sprout.id as Address, { afterBlock });
-    const performance = portfolioPerformance(
-      holdings,
-      listChainEvents(deps.db, sprout.id),
-      getCursor(deps.db, deps.chain.config.chain.chainId),
-    );
-    return c.json({ ...holdings, performance });
+    return c.json(holdings);
   });
 
   app.get('/api/sprouts/:id/jobs', (c) => c.json({ jobs: listJobsByVault(deps.db, c.req.param('id')) }));
