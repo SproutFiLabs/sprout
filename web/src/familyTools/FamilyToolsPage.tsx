@@ -20,7 +20,6 @@ import {
   injectedProvider,
   type WalletState,
 } from "../wallet";
-import { BloomGarden } from "../garden/BloomGarden";
 import { ToolsView, type ToolPage } from "./ToolsView";
 const empty: ToolsData = {
   entries: [],
@@ -200,11 +199,6 @@ export function FamilyToolsPage({ page }: { page: ToolPage }) {
   return (
     <>
       <ToolsView
-        garden={
-          page === "home" ? (
-            <BloomGarden variant="landing" scrollMarker={false} fullyBloomed />
-          ) : undefined
-        }
         page={page}
         wallet={wallet?.address ?? null}
         busy={busy}
@@ -224,8 +218,14 @@ export function FamilyToolsPage({ page }: { page: ToolPage }) {
         onAsset={setAsset}
         onYear={setYear}
         onFilter={setFilter}
-        onAdd={() => setEdit("new")}
-        onEdit={setEdit}
+        onAdd={() => {
+          setError("");
+          setEdit("new");
+        }}
+        onEdit={(entry) => {
+          setError("");
+          setEdit(entry);
+        }}
         onDelete={() => {}}
         onImport={() => file.current?.click()}
         onTemplate={() =>
@@ -362,6 +362,7 @@ export function FamilyToolsPage({ page }: { page: ToolPage }) {
           entry={edit}
           wallet={wallet?.address ?? ""}
           busy={busy}
+          serverError={error}
           onClose={() => setEdit(null)}
           onSave={saveEntry}
           onDelete={(id) =>
@@ -386,6 +387,7 @@ function LedgerDialog({
   entry,
   wallet,
   busy,
+  serverError,
   onClose,
   onSave,
   onDelete,
@@ -393,6 +395,7 @@ function LedgerDialog({
   entry: LedgerEntry | "new";
   wallet: string;
   busy: boolean;
+  serverError: string;
   onClose: () => void;
   onSave: (e: LedgerEntry) => void;
   onDelete: (id: string) => void;
@@ -461,9 +464,9 @@ function LedgerDialog({
     }
   };
   return (
-    <div className="ft-root ft-modal-backdrop">
+    <div className="ft-root ft-modal-backdrop fw-drawer-backdrop">
       <div
-        className="ft-modal"
+        className="ft-modal fw-record-drawer"
         role="dialog"
         aria-modal="true"
         aria-labelledby="ledger-dialog-title"
@@ -471,7 +474,7 @@ function LedgerDialog({
       >
         <header>
           <h2 id="ledger-dialog-title">
-            {e ? "Review your record." : "One little detail."}
+            {e ? "Review record" : "Add a record"}
           </h2>
           <button aria-label="Close record" onClick={onClose}>
             <X size={18} />
@@ -481,7 +484,27 @@ function LedgerDialog({
           Leave unknown values blank. Enter the cost basis for this disposal,
           not the balance of your entire wallet.
         </p>
-        <form className="ft-form" onSubmit={submit}>
+        {e && (
+          <>
+            <div className="fw-record-summary">
+              <b>{e.asset}</b>
+              <span>
+                {e.quantity} {e.asset} · {e.kind}
+                <small>{e.source} record</small>
+              </span>
+            </div>
+            <a
+              className="fw-drawer-explain"
+              href={`/intelligence?context=ledger&id=${encodeURIComponent(e.id)}&q=Explain%20this%20record%20and%20its%20missing%20information`}
+            >
+              Ask Intelligence about this record ↗
+            </a>
+          </>
+        )}
+        <form className="ft-form fw-record-form" onSubmit={submit}>
+          <div className="fw-form-section-label">
+            <span>01</span> Transaction details
+          </div>
           {!e && (
             <>
               <div className="ft-form-row">
@@ -544,6 +567,9 @@ function LedgerDialog({
               />
             </label>
           )}
+          <div className="fw-form-section-label">
+            <span>02</span> Values at the time
+          </div>
           <div className="ft-form-row">
             <label>
               Value at transaction · USD
@@ -576,6 +602,9 @@ function LedgerDialog({
               defaultValue={e ? String(e.feeCents / 100) : "0"}
             />
           </label>
+          <div className="fw-form-section-label">
+            <span>03</span> Keep a note
+          </div>
           <label>
             A note for later
             <textarea
@@ -585,12 +614,12 @@ function LedgerDialog({
               placeholder="No child names or private account details."
             />
           </label>
-          {error && (
+          {(error || serverError) && (
             <p role="alert" className="ft-error">
-              {error}
+              {error || serverError}
             </p>
           )}
-          <div className="ft-actions">
+          <div className="ft-actions fw-drawer-actions">
             <button className="ft-primary" disabled={busy}>
               Save record <CheckMark />
             </button>
