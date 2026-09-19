@@ -42,6 +42,8 @@ import { MAX_STOCKS, StockMixEditor, initialPicks, pickedTokens } from './compon
 import { OnboardingIntro, WelcomeSprout } from './components/OnboardingIntro';
 import { RiskLine } from './components/BetaNotice';
 import { InvestNowForm } from './components/InvestNow';
+import { BurnOffer } from './perks/BurnFlow';
+import { burnOfferWanted, loadBurnConfig, type BurnConfigInfo } from './perks/burn';
 import { useAutoInvestLock } from './perks/autoInvest';
 import { useHolder } from './perks/holder';
 import { holderBouquets, stockLockFor } from './perks/locks';
@@ -141,6 +143,8 @@ export function App() {
   const [showFund, setShowFund] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [showInvestNow, setShowInvestNow] = useState(false);
+  // "Add a $1 burn to my buys" (opt-in, per device): the offer after the parent's own deposit or Invest now.
+  const [burnOffer, setBurnOffer] = useState<{ config: BurnConfigInfo; after: 'fund' | 'invest' } | null>(null);
   const [showGift, setShowGift] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
   const [showAllocation, setShowAllocation] = useState(false);
@@ -544,6 +548,7 @@ export function App() {
     showFund ||
     showSchedule ||
     showInvestNow ||
+    burnOffer?.after === 'fund' ||
     showGift ||
     showPayGift !== null ||
     giftQr !== null ||
@@ -650,6 +655,13 @@ export function App() {
     });
   };
 
+  /** Only asks: the offer sends nothing until the parent presses its button and confirms in the wallet. */
+  const offerBurnAfterBuy = async (after: 'fund' | 'invest') => {
+    if (!wallet || !(await burnOfferWanted(wallet.expectedChainId))) return;
+    const config = await loadBurnConfig();
+    if (config) setBurnOffer({ config, after });
+  };
+
   const submitFund = async () => {
     if (!wallet || !selected) return;
     await withTxn(t('Fund sprout'), async () => {
@@ -663,6 +675,7 @@ export function App() {
       await waitForSuccess(wallet.publicClient, hash);
       await loadDetailSynced(selected.id);
       setShowFund(false);
+      void offerBurnAfterBuy('fund');
       return hash;
     });
   };
@@ -1152,7 +1165,7 @@ export function App() {
       ) : null}
 
       {showInvestNow && selected && wallet && chain ? (
-        <Modal title={t('Invest now')} onClose={() => setShowInvestNow(false)} txn={txn} explorerUrl={chain.explorerUrl}>
+        <Modal title={t('Invest now')} onClose={() => { setShowInvestNow(false); setBurnOffer(null); }} txn={txn} explorerUrl={chain.explorerUrl}>
           <InvestNowForm
             wallet={wallet}
             vault={selected.id}
@@ -1160,9 +1173,19 @@ export function App() {
             settlementBalance={holdings?.holdings.find((h) => h.kind === 'settlement')?.rawBalance ?? null}
             runTxn={withTxn}
             automationEnabled={autoInvestLocked ? false : health?.automation.enabled ?? null}
-            onDone={() => loadDetailSynced(selected.id)}
-            onClose={() => setShowInvestNow(false)}
+            onDone={async () => {
+              await loadDetailSynced(selected.id);
+              void offerBurnAfterBuy('invest');
+            }}
+            onClose={() => { setShowInvestNow(false); setBurnOffer(null); }}
+            afterDone={burnOffer?.after === 'invest' ? <BurnOffer wallet={wallet} config={burnOffer.config} onClose={() => setBurnOffer(null)} inline /> : null}
           />
+        </Modal>
+      ) : null}
+
+      {burnOffer?.after === 'fund' && wallet ? (
+        <Modal title={t('Buy & burn 🔥')} onClose={() => setBurnOffer(null)}>
+          <BurnOffer wallet={wallet} config={burnOffer.config} onClose={() => setBurnOffer(null)} />
         </Modal>
       ) : null}
 

@@ -11,6 +11,7 @@ import { bouquetCount, bouquetsByTier } from './locks';
 import { HolderVotes } from './Votes';
 import { RootPanel } from './RootPanel';
 import { RootedBadge } from './RootBits';
+import { BurnPanel } from './BurnPanel';
 import './perks.css';
 
 /** Vote weight per tier; the server uses the same table. */
@@ -125,7 +126,7 @@ export function PerksPage() {
           <span className="knowledge-eyebrow">{t('SPROUT holders')}</span>
           <h1>{t('Hold SPROUT, and your sprout gets more.')}</h1>
           <p>
-            {t('Perks unlock inside Sprout for wallets that have held SPROUT for {days} days (24 hours during SPROUT’s first week). Nothing here moves money: what’s in a sprout still only ever goes to your child.', { days: perks?.holdDays ?? 7 })}
+            {t('Perks unlock inside Sprout for wallets that have held SPROUT for {days} days (24 hours during SPROUT’s first week). Perks never move money: what’s in a sprout still only ever goes to your child.', { days: perks?.holdDays ?? 7 })}
           </p>
           <PublicCa variant="dashboard" />
         </section>
@@ -138,6 +139,8 @@ export function PerksPage() {
         {perks?.enabled && perks.root ? (
           <RootPanel perks={perks} status={status} address={address} wallet={wallet} onConnect={() => void connect()} after={rootAfter} onChanged={setRootAfter} />
         ) : null}
+
+        <BurnPanel address={address} wallet={wallet} onConnect={() => void connect()} />
 
         <section className="perks-card" aria-labelledby="perks-tiers">
           <h2 id="perks-tiers">{t('The tiers')}</h2>

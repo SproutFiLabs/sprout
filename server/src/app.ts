@@ -44,6 +44,7 @@ import {
 import { createMutex } from './lock';
 import { publicPerks, type HolderChecker } from './holders';
 import { createRootedHolderChecker, publicRoot, type RootedHolderChecker } from './roots';
+import { createBurnService, loadBurnConfig, registerBurnRoutes, type BurnService } from './burns';
 import { DEFAULT_PUBLIC_ORIGIN, giftPreviewHtml } from './sharePreview';
 import {
   CAMPAIGN_MAX_DAYS,
@@ -92,6 +93,8 @@ export interface AppDeps {
   now?: () => number;
   /** SPROUT holder tiers; built from the environment when not given. */
   holders?: HolderChecker;
+  /** Buy & burn (burns.ts); built from the environment when not given, off unless configured. */
+  burns?: BurnService;
   runExclusive?: <T>(fn: () => Promise<T>) => Promise<T>;
   serveWeb?: boolean;
   webDistPath?: string;
@@ -375,6 +378,14 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
   });
   // Stock guide price history, from the stocks' own price feeds (see stockPrices.ts).
   registerStockPriceRoutes(app, deps, logger);
+  // Buy & burn: the route, quotes, verified burns and the public counter (see burns.ts).
+  registerBurnRoutes(app, {
+    service:
+      deps.burns ??
+      createBurnService({ db: deps.db, client: deps.chain.publicClient, config: loadBurnConfig(process.env, deps.chain.config.chain.chainId), now: deps.now }),
+    explorerUrl: deps.chain.config.chain.explorerUrl,
+    now: deps.now,
+  });
   app.get('/api/holders/:address', async (c) => {
     const address = c.req.param('address');
     if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new HttpError(400, 'invalid address');

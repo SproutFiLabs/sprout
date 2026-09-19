@@ -24,6 +24,7 @@ import { CampaignProgress, GiftNotesList, giftAmountLabel } from './components/C
 import { ResourcesMenu } from './components/ResourcesMenu';
 import { BloomGarden } from './garden/BloomGarden';
 import { HolderMenuRow, PerksSideLink } from './perks/DashboardBits';
+import { BurnMenuToggle } from './perks/BurnBits';
 import { DiscreetMark, PrivacyMenuRows } from './privacyPack/DiscreetControls';
 import { t, tj, dateLocale } from './i18n';
 import { autoInvestPerkText, useAutoInvestLock } from './perks/autoInvest';
@@ -679,6 +680,7 @@ export function DashboardShell(props: DashboardShellProps) {
               <div className="garden-menu-row"><span>{t('Network')}</span><b>{chain?.name ?? t('Not configured')}</b></div>
               {selected ? <SproutAddressRow address={selected.id} /> : null}
               <HolderMenuRow address={wallet?.address} />
+              <BurnMenuToggle />
               {chain && !chain.configured ? <div className="garden-menu-row"><span>{t('Status')}</span><b>{t('Unconfigured')}</b></div> : null}
               {/* A first-time visitor reaches for this menu to connect, so it must offer to. */}
               {wallet ? null : (

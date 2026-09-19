@@ -14,8 +14,8 @@ export const zh: Record<string, string> = {
   'SPROUT holder perks': 'SPROUT 持有者权益',
   'SPROUT holders': 'SPROUT 持有者',
   'Hold SPROUT, and your sprout gets more.': '持有 SPROUT，你的小芽能做的更多。',
-  'Perks unlock inside Sprout for wallets that have held SPROUT for {days} days (24 hours during SPROUT’s first week). Nothing here moves money: what’s in a sprout still only ever goes to your child.':
-    '钱包持有 SPROUT 满 {days} 天（SPROUT 上线第一周只需 24 小时）后，即可在 Sprout 内解锁权益。这里的一切都不会动用资金：小芽里的钱依然只会属于你的孩子。',
+  'Perks unlock inside Sprout for wallets that have held SPROUT for {days} days (24 hours during SPROUT’s first week). Perks never move money: what’s in a sprout still only ever goes to your child.':
+    '钱包持有 SPROUT 满 {days} 天（SPROUT 上线第一周只需 24 小时）后，即可在 Sprout 内解锁权益。权益从不动用资金：小芽里的钱依然只会属于你的孩子。',
   'Your tier': '你的等级',
   'Loading the perks…': '正在加载权益…',
   'Holder perks aren’t switched on here yet.': '这里还没有开启持有者权益。',

@@ -6,3 +6,4 @@ export * from './abis';
 export * from './intelligence';
 export * from './roots';
 export * from './harvest';
+export * from './burn';

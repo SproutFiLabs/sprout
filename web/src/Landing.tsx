@@ -8,6 +8,7 @@ import { useAutomationEnabled } from './automationStatus';
 import { BloomGarden } from './garden/BloomGarden';
 import { PublicCa } from './components/PublicCa';
 import { LandingRootedCounter } from './perks/RootBits';
+import { LandingBurnCounter } from './perks/BurnBits';
 import {
   ArrowUp, ArrowRight, ArrowLeft, ChevronDown, Menu, X, Play, Pause, Plus, Repeat2, Gift, Check,
   ShieldCheck, Leaf, LayoutGrid, GraduationCap,
@@ -321,6 +322,7 @@ export function Landing() {
           </div>
           <PublicCa variant="landing" />
           <LandingRootedCounter />
+          <LandingBurnCounter />
         </div>
         <div className={'reference-hero-wave ' + (paused ? 'is-paused' : '')}>
           <BloomGarden variant="landing" paused={paused} />

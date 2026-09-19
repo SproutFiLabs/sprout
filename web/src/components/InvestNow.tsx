@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { parseUnits, type Address } from 'viem';
 import { formatUnits, sproutVaultAbi } from '@sprout/shared';
 import { api, type ChainPublic, type InvestQuote } from '../api';
@@ -88,9 +88,11 @@ export interface InvestNowFormProps {
   automationEnabled: boolean | null;
   onDone: () => Promise<void>;
   onClose: () => void;
+  /** Shown once the purchase is done (the opt-in $1 buy & burn offer). */
+  afterDone?: ReactNode;
 }
 
-export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn, automationEnabled, onDone, onClose }: InvestNowFormProps) {
+export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn, automationEnabled, onDone, onClose, afterDone }: InvestNowFormProps) {
   const decimals = chain.contracts.settlementDecimals;
   const ticker = chain.contracts.settlementSymbol ?? t('settlement');
   const [amount, setAmount] = useState(() => {
@@ -295,6 +297,7 @@ export function InvestNowForm({ wallet, vault, chain, settlementBalance, runTxn,
         </p>
       ) : null}
 
+      {done && afterDone ? afterDone : null}
       {done ? (
         <button className="btn btn--primary" data-testid="invest-now-close" onClick={onClose}>
           {t('Done')}
