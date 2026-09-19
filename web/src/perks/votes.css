@@ -1,0 +1,42 @@
+/* Holder stock votes (perks/Votes.tsx). Uses the garden palette when mounted
+   inside .garden, and the same light values as fallbacks anywhere else. */
+
+.holder-votes { display: grid; gap: 14px; color: var(--garden-ink, #1d1d1b); min-width: 0; }
+.holder-votes-head h2 { margin: 0; font-family: var(--garden-serif, Georgia, serif); font-weight: 400; font-size: 22px; letter-spacing: -0.4px; }
+.holder-votes-head p { margin: 6px 0 0; color: var(--garden-soft, #5f5c54); font-size: 14px; line-height: 1.45; }
+.holder-votes-head .holder-votes-weights { font-size: 13px; }
+
+.holder-votes-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--garden-side, #faf8f2); border: 1px solid var(--garden-line, #ece7dc); font-size: 14px; }
+.holder-votes-locked a { color: var(--garden-green, #3f7a3a); }
+.holder-votes-empty { margin: 0; color: var(--garden-soft, #5f5c54); font-size: 14px; }
+.holder-votes-subhead { margin: 8px 0 0; font-size: 13px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: var(--garden-soft, #5f5c54); }
+
+.holder-poll { padding: 18px 20px; border: 1px solid var(--garden-line, #ece7dc); border-radius: 16px; background: var(--garden-surface, #fffdfa); min-width: 0; }
+.holder-poll h3 { margin: 0; font-family: var(--garden-serif, Georgia, serif); font-weight: 400; font-size: 19px; line-height: 1.25; overflow-wrap: anywhere; }
+.holder-poll-meta { margin: 4px 0 12px; color: var(--garden-soft, #5f5c54); font-size: 12.5px; }
+.holder-poll-options { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.holder-poll-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.holder-poll-label { flex: 1 1 auto; min-width: 0; font-size: 15px; overflow-wrap: anywhere; }
+.holder-poll-label em { margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-style: normal; font-size: 11.5px; background: #eef1e9; color: var(--garden-green, #3f7a3a); white-space: nowrap; }
+.holder-poll-share { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--garden-soft, #5f5c54); }
+.holder-poll-bar { margin-top: 6px; height: 8px; border-radius: 999px; background: #ece7dc; overflow: hidden; }
+.holder-poll-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--garden-green, #3f7a3a); opacity: 0.55; transition: width .4s ease; }
+.holder-poll-option.is-mine .holder-poll-bar > span,
+.holder-poll-option.is-leader .holder-poll-bar > span { opacity: 1; }
+.holder-poll--closed .holder-poll-option:not(.is-leader) .holder-poll-label { color: var(--garden-soft, #5f5c54); }
+.holder-poll-note { margin: 12px 0 0; font-size: 13px; color: var(--garden-soft, #5f5c54); }
+.holder-poll-problem { margin: 12px 0 0; font-size: 13px; color: #b3261e; }
+
+/* Dark: the garden's dark palette (as in theme.css), so the block reads the
+   same whether or not it sits inside .garden. */
+html[data-appearance="dark"] .holder-votes {
+  --garden-ink: #f5efe3; --garden-soft: #b5c4b4; --garden-line: #355342;
+  --garden-surface: #183025; --garden-side: #0d1d16; --garden-green: #a9cf91;
+}
+html[data-appearance="dark"] .holder-poll-bar { background: #294536; }
+html[data-appearance="dark"] .holder-poll-label em { background: #294a35; color: #b9dc9e; }
+html[data-appearance="dark"] .holder-poll-problem { color: #f2b8b5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .holder-poll-bar > span { transition: none; }
+}

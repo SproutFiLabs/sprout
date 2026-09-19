@@ -6,6 +6,8 @@ import { zh as kid } from './kid';
 import { zh as knowledge } from './knowledge';
 import { zh as components } from './components';
 import { zh as perks } from './perks';
+import { zh as votes } from './votes';
+import { zh as autoinvest } from './autoinvest';
 
 /** Every Simplified Chinese string, keyed by its English source text. */
-export const ZH: Record<string, string> = { ...core, ...app, ...dashboard, ...landing, ...kid, ...knowledge, ...components, ...perks };
+export const ZH: Record<string, string> = { ...core, ...app, ...dashboard, ...landing, ...kid, ...knowledge, ...components, ...perks, ...votes, ...autoinvest };

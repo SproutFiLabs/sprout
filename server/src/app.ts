@@ -251,6 +251,71 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
     }
   });
 
+  // Holder stock votes (see votes.ts). The module is imported where it is used,
+  // like ./repo in POST /api/sprouts, so the feature stays in this one block.
+  app.get('/api/polls', async (c) => {
+    const votes = await import('./votes');
+    const now = nowSeconds();
+    return c.json({
+      polls: votes.listCurrentPolls(deps.db, now).map((p) => votes.pollView(deps.db, p, now)),
+      weights: votes.VOTE_WEIGHTS,
+    });
+  });
+
+  app.get('/api/polls/:id/mine', async (c) => {
+    const votes = await import('./votes');
+    const parsed = addressSchema.safeParse(c.req.query('address'));
+    if (!parsed.success) throw new HttpError(400, 'invalid address');
+    const poll = votes.getPoll(deps.db, c.req.param('id'));
+    if (!poll) throw new HttpError(404, 'poll not found');
+    return c.json({ vote: votes.getVote(deps.db, poll.id, parsed.data) });
+  });
+
+  app.post('/api/polls/:id/vote', async (c) => {
+    const signer = await requireAuth(c, deps, 'vote');
+    const votes = await import('./votes');
+    const body = await readJson(c, votes.voteInputSchema);
+    const poll = votes.getPoll(deps.db, c.req.param('id'));
+    if (!poll) throw new HttpError(404, 'poll not found');
+    const assertOpen = () => {
+      const status = votes.pollStatus(poll, nowSeconds());
+      if (status === 'upcoming') throw new HttpError(409, 'This poll has not opened yet');
+      if (status === 'closed') throw new HttpError(409, 'This poll has closed');
+    };
+    assertOpen();
+    if (!poll.options.some((o) => o.id === body.optionId)) throw new HttpError(400, 'unknown option');
+    // Re-read on every vote, so a changed vote carries the wallet's tier now.
+    const tier = await holders.tier(signer);
+    if (!tier) throw new HttpError(403, 'Voting is for SPROUT holders');
+    // The holder check reads the chain and can take a moment; the poll may have closed meanwhile.
+    assertOpen();
+    const vote = votes.recordVote(deps.db, { pollId: poll.id, address: signer, optionId: body.optionId, tier, votedAt: nowSeconds() });
+    return c.json({ poll: votes.pollView(deps.db, poll, nowSeconds()), vote });
+  });
+
+  app.post('/api/polls', async (c) => {
+    requireAdmin(c, deps);
+    const votes = await import('./votes');
+    const body = await readJson(c, votes.pollInputSchema);
+    const question = textRule(() => cleanText(body.question, votes.QUESTION_MAX, 'Question'));
+    if (!question) throw new HttpError(400, 'Question is required');
+    const options = body.options.map((o) => {
+      const label = textRule(() => cleanText(o.label, votes.OPTION_LABEL_MAX, 'Option label'));
+      if (!label) throw new HttpError(400, 'Every option needs a label');
+      return { id: o.id, label };
+    });
+    if (new Set(options.map((o) => o.id.toLowerCase())).size !== options.length) throw new HttpError(400, 'Option ids must be different');
+    const now = nowSeconds();
+    const opensAt = body.opensAt ?? now;
+    if (body.closesAt <= now) throw new HttpError(400, 'A poll must close in the future');
+    if (body.closesAt <= opensAt) throw new HttpError(400, 'A poll must close after it opens');
+    if (body.closesAt - opensAt > votes.POLL_MAX_DAYS * 86_400) {
+      throw new HttpError(400, `A poll can run for at most ${votes.POLL_MAX_DAYS} days`);
+    }
+    const poll = votes.createPoll(deps.db, { question, options, opensAt, closesAt: body.closesAt, createdAt: now });
+    return c.json({ poll: votes.pollView(deps.db, poll, now) }, 201);
+  });
+
   if (deps.localDemo) {
     app.get('/api/fixtures', (c) => c.json(localFixtures(deps.chain.config.chain.chainId)));
   }
