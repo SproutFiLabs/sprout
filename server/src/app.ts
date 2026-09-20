@@ -1,3 +1,4 @@
+import { registerExpansion } from './v3/routes';
 import { createRewards, registerFamilyTools, rewardsRail, loadInvestmentProvider, type RewardsRail } from './familyTools';
 import { registerSpendRoutes } from './spend';
 import { bitrefillProvider, type SpendProvider } from './spendProvider';
@@ -250,6 +251,8 @@ export function createApp(inputDeps: AppDeps, logger: Logger = console): Hono {
       c.res.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
   });
+
+  registerExpansion(app, deps);
 
   const rail = deps.rewards ?? rewardsRail(process.env);
   const rewards = createRewards(deps.db, holders, rail, now);

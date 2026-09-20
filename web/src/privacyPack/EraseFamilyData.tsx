@@ -13,6 +13,7 @@ function erasedRows(c: EraseCounts): Row[] {
   const rows: Row[] = [
     {key:"familyLedger",label:"Tax Garden records",count:c.familyLedger??0},
     {key:"familyPlans",label:"Saved family investing plans",count:c.familyPlans??0},
+    {key:"expansionRecords",label:"Grow workspace records",count:c.expansionRecords??0,note:"Celebrations, round-up journals, practice seasons and league memberships."},
     { key: 'giftLinks', label: t('Gift links'), count: c.giftLinks, note: t('They stop working.') },
     { key: 'campaigns', label: t('Campaign titles, goals and end dates'), count: c.campaigns },
     { key: 'giftNotes', label: t('Gift messages, encrypted or not'), count: c.giftNotes },

@@ -10,3 +10,4 @@ export * from './harvest';
 export * from './spend';
 export * from './familyTools';
 export * from './burn';
+export * from './expansion';

@@ -102,13 +102,13 @@ contract SproutVault is Initializable, ReentrancyGuard {
     }
 
     modifier notGraduated() {
-        if (block.timestamp >= graduationTimestamp) revert Graduated();
+        if (graduated()) revert Graduated();
         _;
     }
 
-    modifier onlyParent() {
+    modifier onlyParent() virtual {
         if (msg.sender != parent) revert NotParent();
-        if (block.timestamp >= graduationTimestamp) revert Graduated();
+        if (graduated()) revert Graduated();
         _;
     }
 
@@ -171,7 +171,11 @@ contract SproutVault is Initializable, ReentrancyGuard {
     // Views
     // ---------------------------------------------------------------------
 
-    function graduated() public view returns (bool) {
+    function _tokenAvailableForCommit(address token) internal view virtual returns(uint256) { return IERC20(token).balanceOf(address(this)); }
+    function _afterContribution(address, address, uint256) internal virtual {}
+    function _beforeInvestment(uint256) internal virtual {}
+
+    function graduated() public view virtual returns (bool) {
         return block.timestamp >= graduationTimestamp;
     }
 
@@ -195,7 +199,7 @@ contract SproutVault is Initializable, ReentrancyGuard {
         return (scheduleActive, investAmount, investPeriod, nextExecution, maxSlippageBps);
     }
 
-    function availableSettlement() public view returns (uint256) {
+    function availableSettlement() public view virtual returns (uint256) {
         uint256 balance = IERC20(settlementToken).balanceOf(address(this));
         uint256 committed = allowanceBucket[settlementToken] + totalEarmarked[settlementToken];
         return balance > committed ? balance - committed : 0;
@@ -211,6 +215,7 @@ contract SproutVault is Initializable, ReentrancyGuard {
         if (token != settlementToken && !isAllowedAsset[token]) revert UnsupportedToken();
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         emit Funded(msg.sender, token, amount);
+        _afterContribution(msg.sender, token, amount);
     }
 
     /// @notice Replace the allocation. Only factory-admitted assets are allowed.
@@ -292,6 +297,7 @@ contract SproutVault is Initializable, ReentrancyGuard {
         if (block.timestamp < nextExecution) revert NotDue();
         if (!venueAllowed[venue] || !ISproutAdmission(factory).isAdmittedVenue(venue)) revert VenueNotAllowed();
         uint256 spend = investAmount;
+        _beforeInvestment(spend);
         if (spend > availableSettlement()) revert Overcommitted();
         if (minOuts.length != _assets.length) revert BadArguments();
 
@@ -337,6 +343,7 @@ contract SproutVault is Initializable, ReentrancyGuard {
         if (token != settlementToken && !isAllowedAsset[token]) revert UnsupportedToken();
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         emit GiftReceived(msg.sender, token, amount, giftRef);
+        _afterContribution(msg.sender, token, amount);
     }
 
     // ---------------------------------------------------------------------
@@ -348,7 +355,7 @@ contract SproutVault is Initializable, ReentrancyGuard {
         if (token != settlementToken && !isAllowedAsset[token]) revert UnsupportedToken();
         if (milestones[id].token != address(0)) revert AlreadyDone();
 
-        uint256 balance = IERC20(token).balanceOf(address(this));
+        uint256 balance = _tokenAvailableForCommit(token);
         uint256 committed = allowanceBucket[token] + totalEarmarked[token];
         if (committed + amount > balance) revert Overcommitted();
 
@@ -397,7 +404,7 @@ contract SproutVault is Initializable, ReentrancyGuard {
     /// @notice After graduation the beneficiary has full control. Parent powers
     ///         have already stopped because they are timestamp-gated.
     function withdraw(address token, uint256 amount, address to) external nonReentrant {
-        if (block.timestamp < graduationTimestamp) revert NotGraduated();
+        if (!graduated()) revert NotGraduated();
         if (msg.sender != beneficiary) revert NotBeneficiary();
         if (to == address(0) || amount == 0) revert BadArguments();
         IERC20(token).safeTransfer(to, amount);

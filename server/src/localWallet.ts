@@ -113,7 +113,7 @@ function allowedRecipients(ctx: ChainContext, db: SproutDb): Set<string> {
   }
   for (const token of contracts.stockTokens) set.add(token.address.toLowerCase());
   // Holder perks on the local chain: approve the (mock) SPROUT, then lock or withdraw at the root lock.
-  for (const address of [process.env.SPROUT_HOLDER_TOKEN, process.env.SPROUT_ROOT_LOCK_ADDRESS]) {
+  for (const address of [process.env.SPROUT_HOLDER_TOKEN, process.env.SPROUT_ROOT_LOCK_ADDRESS, process.env.SPROUT_V3_FACTORY, process.env.SPROUT_V3_MATCHING, process.env.SPROUT_V3_ROUNDUP_MODULE, process.env.SPROUT_V3_EVENT_BOOK]) {
     if (address && /^0x[0-9a-fA-F]{40}$/.test(address.trim())) set.add(address.trim().toLowerCase());
   }
   for (const vault of listAllVaults(db, ctx.config.chain.chainId)) set.add(vault.toLowerCase());

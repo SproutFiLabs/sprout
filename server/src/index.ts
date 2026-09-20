@@ -1,3 +1,4 @@
+import {createExpansionWorker} from './v3/worker';
 import { DEFAULT_SNAPSHOT_INTERVAL_SECONDS, loadServerConfig, type ServerConfig } from './config';
 import { openDb, type SproutDb } from './db';
 import { createChainContext, verifyRpcChain, type ChainContext } from './chain';
@@ -28,6 +29,7 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
   const holders = createRootedHolderChecker(chain.publicClient, process.env);
   const burns = createBurnService({db,client:chain.publicClient,config:loadBurnConfig(process.env,config.chain.chainId)});
   const recurringBurn = createRecurringBurnRuntime(chain,burns,process.env);
+  const expansionWorker=createExpansionWorker(chain,db);
   const app = createApp({
     burns,
     recurringBurn,
@@ -87,6 +89,7 @@ export function createServer(config: ServerConfig = loadServerConfig()): SproutS
       } catch (error) {
         console.warn('job run failed', error instanceof Error ? error.message : error);
       }
+      await expansionWorker.tick();
     });
   };
 

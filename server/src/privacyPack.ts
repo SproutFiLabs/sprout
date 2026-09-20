@@ -1,3 +1,4 @@
+import {expansionFootprint,eraseExpansion} from './v3/privacy';
 /**
  * The privacy pack: a family's privacy report, one-signature fixes, and
  * "Delete my family's data".
@@ -68,6 +69,7 @@ export interface SproutFootprint {
 export interface EraseCounts {
   familyLedger?: number;
   familyPlans?: number;
+  expansionRecords?: number;
   giftLinks: number;
   campaigns: number;
   giftNotes: number;
@@ -215,6 +217,7 @@ export function familyFootprint(db: Db, address: string, now: number): FamilyFoo
     activeSessions: count(db, 'SELECT count(*) AS n FROM family_sessions WHERE address = ? AND expires_at > ?', a, now),
     legacyText,
     erase: {
+      ...(expansionFootprint(db,address)>0?{expansionRecords:expansionFootprint(db,address)}:{}),
       familyLedger: db.query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_ledger'").get() ? count(db, 'SELECT count(*) AS n FROM family_ledger WHERE owner=?', a) : 0,
       familyPlans: db.query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_plans'").get() ? count(db, 'SELECT count(*) AS n FROM family_plans WHERE owner=?', a) : 0,
       giftLinks: sum((s) => s.gifts.links),
@@ -288,6 +291,7 @@ function eraseInTransaction(db: Db, address: string, expectedVaults: string[], n
       db.run('UPDATE milestones SET description_hash = NULL WHERE lower(vault_id) = ? AND description_hash IS NOT NULL', [v]);
     }
     const a = lower(address);
+    eraseExpansion(db,address);
     for (const table of ['family_ledger','family_plans']) {
       if(db.query("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table)) db.run(`DELETE FROM ${table} WHERE owner = ?`, [a]);
     }

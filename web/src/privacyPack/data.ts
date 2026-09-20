@@ -27,6 +27,7 @@ export interface SproutFootprint {
 export interface EraseCounts {
   familyLedger?: number;
   familyPlans?: number;
+  expansionRecords?: number;
   giftLinks: number;
   campaigns: number;
   giftNotes: number;
