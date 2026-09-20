@@ -340,7 +340,7 @@ export function ExpansionPage({ page = "events" }: { page?: Page }) {
         <aside className="gx-sidebar">
           <span className="gx-eyebrow">YOUR GROWING WORLD</span>
           <nav aria-label="Growth features">
-            {pages.filter((x) => ["events", "roundups", "cash"].includes(x.id)).map((x) => (
+            {pages.filter((x) => ["events", "roundups", "cash", "arena"].includes(x.id)).map((x) => (
               <a
                 key={x.id}
                 href={`/grow/${x.id}${r.state?.chain ? `?vault=${r.state.chain.vault}` : ""}`}
@@ -499,7 +499,7 @@ export function ExpansionPage({ page = "events" }: { page?: Page }) {
             </Empty>
           ) : (
             <fieldset className="gx-workspace" disabled={!!r.busy}>
-              {page === "events" ? <Events r={r} /> : page === "roundups" ? <Roundups r={r} /> : <Cash r={r} />}
+              {page === "events" ? <Events r={r} /> : page === "roundups" ? <Roundups r={r} /> : page === "cash" ? <Cash r={r} /> : <Arena r={r} />}
             </fieldset>
           )}
           <footer className="gx-footer">
@@ -1400,6 +1400,578 @@ function Cash({ r }: { r: ExpansionRuntime }) {
           </Panel>
         </div>
       </div>
+    </>
+  );
+}
+function Arena({ r }: { r: ExpansionRuntime }) {
+  const s = r.state!.chain!,
+    a = r.state!.arena;
+  const [symbol, setSymbol] = useState(s.market[0]?.symbol ?? ""),
+    [side, setSide] = useState<"buy" | "sell">("buy"),
+    [quantity, setQuantity] = useState("1"),
+    [lesson, setLesson] = useState<{
+      id: string;
+      title: string;
+      question: string;
+      choices: string[];
+    } | null>(null),
+    [lessonResult, setLessonResult] = useState(""),
+    [replay, setReplay] = useState<{
+      cashCents: number;
+      holdings: Record<string, number>;
+      fills: unknown[];
+    } | null>(null),
+    [steps, setSteps] = useState("0"),
+    [leagueTitle, setLeagueTitle] = useState("The Sunday Club"),
+    [alias, setAlias] = useState("Garden explorer"),
+    [invite, setInvite] = useState(""),
+    [days, setDays] = useState(String(a?.unlockDays ?? 30));
+  const readiness = a ? arenaReadiness(a) : 0,
+    parent = r.wallet!.address.toLowerCase() === s.parent.toLowerCase();
+  async function openLesson() {
+    const ls = await request<
+      Array<{
+        id: string;
+        title: string;
+        question: string;
+        choices: string[];
+      }>
+    >("/arena/lessons");
+    setLesson(ls.find((x) => !a?.lessons.includes(x.id)) ?? ls[0] ?? null);
+    setLessonResult("");
+  }
+  return (
+    <>
+      <div className="gx-metrics">
+        <Metric
+          label="Practice portfolio"
+          value={money(
+            a
+              ? arenaValue(a, s.market)
+              : s.balanceCents +
+                  s.market.reduce(
+                    (n, m) =>
+                      n + Math.floor((m.priceCents * m.quantityMicros) / 1e6),
+                    0,
+                  ),
+          )}
+          note={
+            a
+              ? `Mirrored at block ${a.snapshotBlock}`
+              : "Ready to mirror your family garden"
+          }
+        />
+        <Metric
+          label="Practice cash"
+          value={money(a?.cashCents ?? s.balanceCents)}
+          note="Pretend money · no real trades"
+        />
+        <Metric
+          label="Learning readiness"
+          value={`${readiness}%`}
+          note={`${a?.practiceDays.length ?? 0} practice days · ${a?.lessons.length ?? 0}/4 lessons`}
+        />
+      </div>
+      {!a ? (
+        <Panel
+          title="A familiar portfolio. A fresh place to learn."
+          eyebrow="YOUR FIRST PRACTICE SEASON"
+        >
+          <div className="gx-welcome">
+            <p>
+              Start with a snapshot of your family’s holdings and cash. Explore
+              buy and sell decisions without changing the real vault.
+            </p>
+            <Button
+              onClick={() =>
+                void r.run(
+                  "Mirroring the family portfolio",
+                  () => request("/arena/start", { vault: s.vault }),
+                  "Your practice season is open. Your real savings are unchanged.",
+                )
+              }
+            >
+              <Play size={16} /> Start practice season
+            </Button>
+          </div>
+        </Panel>
+      ) : (
+        <div className="gx-columns">
+          <div className="gx-stack">
+            <Panel
+              title="Your practice garden"
+              eyebrow="EXPLORE, TRY, LEARN"
+              action={<span className="gx-tag lavender">Practice mode</span>}
+            >
+              <div className="gx-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>In your garden</th>
+                      <th>Reference price</th>
+                      <th>Practice shares</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {s.market.map((m, i) => (
+                      <tr key={m.address}>
+                        <td>
+                          <span className={`gx-asset-icon a${i}`}>
+                            {m.symbol.slice(0, 1)}
+                          </span>
+                          <b>{m.symbol}</b>
+                          <small>{m.name}</small>
+                        </td>
+                        <td>
+                          {money(m.priceCents)}
+                          <small>
+                            {m.status === "open"
+                              ? "Practice trading open"
+                              : m.status === "closed"
+                                ? "Market closed"
+                                : "Price unavailable"}
+                          </small>
+                        </td>
+                        <td>
+                          {((a.holdings[m.symbol] ?? 0) / 1e6).toLocaleString(
+                            undefined,
+                            { maximumFractionDigits: 4 },
+                          )}
+                        </td>
+                        <td>
+                          {money(
+                            Math.floor(
+                              ((a.holdings[m.symbol] ?? 0) * m.priceCents) /
+                                1e6,
+                            ),
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="gx-practice-note">
+                <Leaf size={19} />
+                <span>
+                  The best return here is understanding what you’re doing.
+                </span>
+              </div>
+            </Panel>
+            <Panel
+              title="Look back. Learn forward."
+              eyebrow="YOUR DECISION JOURNAL"
+              action={
+                <button
+                  className="gx-text-link"
+                  onClick={() =>
+                    void r.run(
+                      "Exporting practice history",
+                      async () => {
+                        const ledger = await request(
+                          `/arena/export?vault=${s.vault}`,
+                        );
+                        const url = URL.createObjectURL(
+                          new Blob([JSON.stringify(ledger, null, 2)], {
+                            type: "application/json",
+                          }),
+                        );
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = "sprout-practice-ledger.json";
+                        link.click();
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                      },
+                      "Practice ledger downloaded.",
+                    )
+                  }
+                >
+                  <Download size={14} /> Export
+                </button>
+              }
+            >
+              {a.fills.length ? (
+                <>
+                  <div className="gx-fills">
+                    {a.fills
+                      .slice(-4)
+                      .reverse()
+                      .map((f) => (
+                        <div key={f.id}>
+                          <span className="gx-table-icon">
+                            {f.side === "buy" ? (
+                              <Plus size={15} />
+                            ) : (
+                              <ArrowUpRight size={15} />
+                            )}
+                          </span>
+                          <span>
+                            <b>
+                              {f.side === "buy" ? "Bought" : "Sold"}{" "}
+                              {f.quantityMicros / 1e6} {f.symbol}
+                            </b>
+                            <small>
+                              {date(f.at)} · {money(f.priceCents)} per share
+                            </small>
+                          </span>
+                          <strong>
+                            {f.side === "buy" ? "−" : "+"}
+                            {money(f.costCents)}
+                          </strong>
+                        </div>
+                      ))}
+                  </div>
+                  <form
+                    className="gx-replay"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void r.run(
+                        "Replaying your decisions",
+                        async () =>
+                          setReplay(
+                            await request(
+                              `/arena/replay?vault=${s.vault}&steps=${steps}`,
+                            ),
+                          ),
+                        "Replay rebuilt from the original snapshot and recorded fills.",
+                      );
+                    }}
+                  >
+                    <Field
+                      label={`Replay the first ${steps} of ${a.fills.length} decisions`}
+                    >
+                      <input
+                        type="range"
+                        min="0"
+                        max={a.fills.length}
+                        value={steps}
+                        onChange={(e) => setSteps(e.target.value)}
+                      />
+                    </Field>
+                    <Button secondary type="submit">
+                      <Play size={14} /> Replay
+                    </Button>
+                  </form>
+                  {replay && (
+                    <div className="gx-rule-summary">
+                      <span>
+                        At decision {replay.fills.length}:{" "}
+                        <b>{money(replay.cashCents)} cash</b>
+                        {Object.entries(replay.holdings).map(
+                          ([sym, q]) => ` · ${q / 1e6} ${sym}`,
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Empty title="Your decisions belong here">
+                  Try your first practice trade, then replay it to see exactly
+                  what changed.
+                </Empty>
+              )}
+            </Panel>
+            <Panel
+              title="A small circle. A shared habit."
+              eyebrow="PRIVATE LEAGUES"
+            >
+              <div className="gx-leagues">
+                {r.state!.leagues.map((l) => (
+                  <div key={l.id}>
+                    <h3>
+                      <Users size={18} /> {l.title}
+                    </h3>
+                    {l.members.map((m, i) => (
+                      <div className="gx-detail-row" key={i}>
+                        <span>{m.alias}</span>
+                        <b>{m.score}% readiness</b>
+                      </div>
+                    ))}
+                    {l.invite && (
+                      <button
+                        className="gx-text-link"
+                        onClick={() =>
+                          void r.run(
+                            "Copying league invitation",
+                            () => navigator.clipboard.writeText(l.invite!),
+                            "Private invite code copied.",
+                          )
+                        }
+                      >
+                        <Copy size={13} /> Copy invite code
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <form
+                className="gx-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void r.run(
+                    "Starting a private league",
+                    () =>
+                      request("/leagues", {
+                        title: leagueTitle,
+                        alias,
+                        vault: s.vault,
+                      }),
+                    "Your private league is ready. Invite a small circle to learn together.",
+                  );
+                }}
+              >
+                <div className="gx-form-row">
+                  <Field label="League name">
+                    <input
+                      required
+                      maxLength={50}
+                      value={leagueTitle}
+                      onChange={(e) => setLeagueTitle(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Your display name">
+                    <input
+                      required
+                      maxLength={24}
+                      value={alias}
+                      onChange={(e) => setAlias(e.target.value)}
+                    />
+                  </Field>
+                </div>
+                <Button secondary type="submit">
+                  <Plus size={15} /> Create private league
+                </Button>
+              </form>
+              <form
+                className="gx-join"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void r.run(
+                    "Joining the league",
+                    () =>
+                      request("/leagues/join", {
+                        invite,
+                        alias,
+                        vault: s.vault,
+                      }),
+                    "You joined the private league.",
+                  );
+                }}
+              >
+                <Field label="Have an invite code?">
+                  <input
+                    required
+                    value={invite}
+                    onChange={(e) => setInvite(e.target.value)}
+                    placeholder="Paste your private code"
+                  />
+                </Field>
+                <Button secondary type="submit">
+                  Join <ArrowRight size={15} />
+                </Button>
+              </form>
+            </Panel>
+          </div>
+          <div className="gx-stack">
+            <Panel
+              title="Make a practice move"
+              eyebrow="YOUR NEXT DECISION"
+              className="gx-lavender"
+            >
+              <form
+                className="gx-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void r.run(
+                    "Recording your practice trade",
+                    () =>
+                      request("/arena/order", {
+                        vault: s.vault,
+                        id: crypto.randomUUID(),
+                        symbol,
+                        side,
+                        quantityMicros: Math.round(Number(quantity) * 1e6),
+                      }),
+                    "Practice trade recorded. Replay it in your decision journal.",
+                  );
+                }}
+              >
+                <div className="gx-segments">
+                  {(["buy", "sell"] as const).map((x) => (
+                    <button
+                      key={x}
+                      type="button"
+                      aria-pressed={side === x}
+                      onClick={() => setSide(x)}
+                    >
+                      {x === "buy" ? "Buy" : "Sell"}
+                    </button>
+                  ))}
+                </div>
+                <Field label="Choose an asset">
+                  <select
+                    value={symbol}
+                    onChange={(e) => setSymbol(e.target.value)}
+                  >
+                    {s.market.map((m) => (
+                      <option key={m.address} value={m.symbol}>
+                        {m.symbol} · {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Practice shares">
+                  <input
+                    required
+                    type="number"
+                    min="0.000001"
+                    max="1000000"
+                    step="0.000001"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                  />
+                </Field>
+                <div className="gx-detail-row">
+                  <span>Reference value</span>
+                  <b>
+                    {money(
+                      Math.round(
+                        (s.market.find((m) => m.symbol === symbol)
+                          ?.priceCents ?? 0) * Number(quantity),
+                      ),
+                    )}
+                  </b>
+                </div>
+                <Button type="submit">
+                  Place practice {side} <ArrowUpRight size={16} />
+                </Button>
+                <small>
+                  Fills use the latest available reference price with a modeled
+                  0.10% spread. Rounding can add a cent.
+                </small>
+              </form>
+            </Panel>
+            <Panel
+              title="A little wiser, every time"
+              eyebrow="YOUR LEARNING PATH"
+            >
+              <div className="gx-readiness">
+                <strong>
+                  {readiness}
+                  <span>%</span>
+                </strong>
+                <div>
+                  <b>Building confidence</b>
+                  <small>{a.lessons.length} of 4 lessons complete</small>
+                </div>
+              </div>
+              <Progress value={readiness} label="Learning readiness" />
+              <div className="gx-timeline">
+                <div>
+                  <Check size={16} />
+                  <span>
+                    <b>Understand the essentials</b>
+                    <small>Needs, variety, patience and risk.</small>
+                  </span>
+                </div>
+                <div>
+                  <CalendarDays size={16} />
+                  <span>
+                    <b>Build a repeatable habit</b>
+                    <small>
+                      {a.practiceDays.length} of {a.unlockDays} practice days.
+                    </small>
+                  </span>
+                </div>
+              </div>
+              <Button
+                secondary
+                onClick={() =>
+                  void r.run(
+                    "Opening a field note",
+                    openLesson,
+                    "Your next lesson is ready.",
+                  )
+                }
+              >
+                <GraduationCap size={16} />{" "}
+                {a.lessons.length === 4
+                  ? "Review a lesson"
+                  : "Open next lesson"}
+              </Button>
+              {lesson && (
+                <div className="gx-lesson">
+                  <span className="gx-eyebrow">{lesson.title}</span>
+                  <h3>{lesson.question}</h3>
+                  {lesson.choices.map((c, i) => (
+                    <button
+                      key={c}
+                      onClick={() =>
+                        void r.run(
+                          "Checking your answer",
+                          async () => {
+                            const result = await request<{
+                              correct: boolean;
+                              explanation: string;
+                            }>("/arena/lesson", {
+                              vault: s.vault,
+                              lesson: lesson.id,
+                              answer: i,
+                            });
+                            setLessonResult(
+                              `${result.correct ? "That’s right." : "Let’s think again."} ${result.explanation}`,
+                            );
+                          },
+                          "Lesson reviewed.",
+                        )
+                      }
+                    >
+                      {c}
+                    </button>
+                  ))}
+                  {lessonResult && <p role="status">{lessonResult}</p>}
+                </div>
+              )}
+              {parent && (
+                <form
+                  className="gx-permission"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void r.run(
+                      "Saving the learning goal",
+                      () =>
+                        request("/arena/permissions", {
+                          vault: s.vault,
+                          days: Number(days),
+                        }),
+                      "Learning goal saved. Real-money permissions remain with the parent.",
+                    );
+                  }}
+                >
+                  <Field label="Parent’s practice-day goal">
+                    <input
+                      type="number"
+                      required
+                      min="7"
+                      max="180"
+                      value={days}
+                      onChange={(e) => setDays(e.target.value)}
+                    />
+                  </Field>
+                  <button className="gx-text-link" type="submit">
+                    Save goal <ArrowRight size={14} />
+                  </button>
+                </form>
+              )}
+              <small>
+                Readiness celebrates learning. It does not grant access to real
+                savings.
+              </small>
+            </Panel>
+          </div>
+        </div>
+      )}
     </>
   );
 }
