@@ -340,7 +340,7 @@ export function ExpansionPage({ page = "events" }: { page?: Page }) {
         <aside className="gx-sidebar">
           <span className="gx-eyebrow">YOUR GROWING WORLD</span>
           <nav aria-label="Growth features">
-            {pages.filter((x) => ["events"].includes(x.id)).map((x) => (
+            {pages.filter((x) => ["events", "roundups"].includes(x.id)).map((x) => (
               <a
                 key={x.id}
                 href={`/grow/${x.id}${r.state?.chain ? `?vault=${r.state.chain.vault}` : ""}`}
@@ -499,7 +499,7 @@ export function ExpansionPage({ page = "events" }: { page?: Page }) {
             </Empty>
           ) : (
             <fieldset className="gx-workspace" disabled={!!r.busy}>
-              {<Events r={r} />}
+              {page === "events" ? <Events r={r} /> : <Roundups r={r} />}
             </fieldset>
           )}
           <footer className="gx-footer">
@@ -885,6 +885,304 @@ function Events({ r }: { r: ExpansionRuntime }) {
             ) : (
               <p>Your first sponsor can start a new family tradition.</p>
             )}
+          </Panel>
+        </div>
+      </div>
+    </>
+  );
+}
+function Roundups({ r }: { r: ExpansionRuntime }) {
+  const s = r.state!.chain!,
+    rules = r.state!.roundup;
+  const [step, setStep] = useState<1 | 5 | 10>(rules?.step ?? 1),
+    [mult, setMult] = useState<1 | 2 | 3>(rules?.multiplier ?? 1),
+    [cap, setCap] = useState(String((rules?.capCents ?? 2500) / 100)),
+    [allowance, setAllowance] = useState("100"),
+    [sample, setSample] = useState("4.35");
+  const pending = r
+      .state!.ledger.filter((x) => !x.sweepHash)
+      .reduce((n, x) => n + x.roundupCents - (x.sweptCents ?? 0), 0),
+    parent = r.wallet!.address.toLowerCase() === s.parent.toLowerCase();
+  const settings = {
+    vault: s.vault,
+    step,
+    multiplier: mult,
+    capCents: Math.round(Number(cap) * 100),
+    enabled: true,
+  };
+  return (
+    <>
+      <div className="gx-metrics">
+        <Metric
+          label="Saved in spare change"
+          value={money(s.roundup.totalCents)}
+          note="Confirmed weekly contributions"
+        />
+        <Metric
+          label="Waiting to grow"
+          value={money(
+            Math.min(pending, s.roundup.capCents || settings.capCents),
+          )}
+          note="Queued for the next weekly sweep"
+        />
+        <Metric
+          label="Your weekly limit"
+          value={money(s.roundup.capCents || settings.capCents)}
+          note={
+            s.roundup.active
+              ? `Next sweep ${date(s.roundup.nextSweep)}`
+              : "Choose a cap that feels comfortable"
+          }
+        />
+      </div>
+      <div className="gx-columns">
+        <div className="gx-stack">
+          <Panel
+            title="A saving habit in the background"
+            eyebrow="YOUR ROUND-UP RECIPE"
+            action={
+              <span className={`gx-tag ${s.roundup.active ? "green" : ""}`}>
+                {s.roundup.active ? "Linked" : "Not linked"}
+              </span>
+            }
+          >
+            <form
+              className="gx-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void r.run(
+                  "Saving your round-up rule",
+                  async () => {
+                    await r.send(s.vault, "roundup-link", {
+                      capCents: settings.capCents,
+                      allowanceCents: Math.round(Number(allowance) * 100),
+                      expiresAt: Date.now() + 180 * 86400000,
+                    });
+                    await request("/roundups/settings", settings);
+                  },
+                  "Round-ups are linked with your chosen weekly cap.",
+                );
+              }}
+            >
+              <div className="gx-recipe">
+                <div className="gx-step">
+                  <span>01</span>
+                  <h3>Round to the next</h3>
+                  <div className="gx-segments">
+                    {([1, 5, 10] as const).map((n) => (
+                      <button
+                        type="button"
+                        key={n}
+                        aria-pressed={step === n}
+                        onClick={() => setStep(n)}
+                      >
+                        ${n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="gx-step">
+                  <span>02</span>
+                  <h3>Give it a little boost</h3>
+                  <div className="gx-segments">
+                    {([1, 2, 3] as const).map((n) => (
+                      <button
+                        type="button"
+                        key={n}
+                        aria-pressed={mult === n}
+                        onClick={() => setMult(n)}
+                      >
+                        {n}×
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="gx-form-row">
+                <Amount label="Maximum per week" value={cap} set={setCap} />
+                <Amount
+                  label="Total wallet allowance"
+                  value={allowance}
+                  set={setAllowance}
+                />
+              </div>
+              <div className="gx-rule-summary">
+                <ShieldCheck size={21} />
+                <p>
+                  At most <b>{money(settings.capCents)} every 7 days</b>. This
+                  link expires in 180 days. The total allowance also bounds what
+                  the executor can pull.
+                </p>
+              </div>
+              <div className="gx-actions">
+                <Button type="submit" disabled={!parent}>
+                  {s.roundup.active ? "Update round-ups" : "Link round-ups"}{" "}
+                  <ArrowRight size={16} />
+                </Button>
+                {s.roundup.active && (
+                  <Button
+                    secondary
+                    disabled={!parent}
+                    onClick={() =>
+                      void r.run(
+                        "Stopping future round-ups",
+                        async () => {
+                          await r.send(s.vault, "roundup-unlink");
+                          await request("/roundups/settings", {
+                            ...settings,
+                            enabled: false,
+                          });
+                        },
+                        "Round-ups stopped. Future pulls are blocked onchain.",
+                      )
+                    }
+                  >
+                    <Pause size={14} /> Stop round-ups
+                  </Button>
+                )}
+              </div>
+              <small>
+                Tracks outgoing settlement-token transfers from this wallet.
+                Bank cards and exchange accounts are not connected.
+              </small>
+            </form>
+          </Panel>
+          <Panel
+            title="The little things add up"
+            eyebrow="TRANSFER JOURNAL"
+            action={
+              <Button
+                secondary
+                disabled={!s.roundup.active || !parent}
+                onClick={() =>
+                  void r.run(
+                    "Checking confirmed wallet transfers",
+                    () => request("/roundups/sync", { vault: s.vault }),
+                    "Transfer journal updated.",
+                  )
+                }
+              >
+                <RefreshCw size={14} /> Sync transfers
+              </Button>
+            }
+          >
+            <div className="gx-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Wallet transfer</th>
+                    <th>Amount</th>
+                    <th>Round-up</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {r.state!.ledger.slice(0, 8).map((x) => (
+                    <tr key={x.id}>
+                      <td>
+                        <span className="gx-table-icon">
+                          <ArrowUpRight size={15} />
+                        </span>
+                        <b>{short(x.txHash)}</b>
+                        <small>{date(x.at)}</small>
+                      </td>
+                      <td>{money(x.amountCents)}</td>
+                      <td className="gx-positive">+{money(x.roundupCents)}</td>
+                      <td>
+                        <span className="gx-tag">
+                          {x.sweepHash ? "Contributed" : "Queued"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {!r.state!.ledger.length && (
+              <Empty title="Your first little contribution is ahead">
+                Once linked, confirmed wallet transfers will appear here. Exact
+                multiples have no round-up.
+              </Empty>
+            )}
+          </Panel>
+        </div>
+        <div className="gx-stack">
+          <Panel
+            title="Try a little change"
+            eyebrow="THE EVERYDAY MATH"
+            className="gx-lavender"
+          >
+            <div className="gx-coin-art" aria-hidden="true">
+              <Coins size={82} strokeWidth={1} />
+              <span>+</span>
+            </div>
+            <Amount
+              label="Example wallet transfer"
+              value={sample}
+              set={setSample}
+              min={0}
+            />
+            <div className="gx-calculation">
+              <div>
+                <span>Transfer</span>
+                <b>
+                  {money(Math.max(0, Math.round(Number(sample) * 100)) || 0)}
+                </b>
+              </div>
+              <div>
+                <span>Round-up × {mult}</span>
+                <b>
+                  {money(
+                    roundupDelta(
+                      Math.max(0, Math.round(Number(sample) * 100)) || 0,
+                      step,
+                      mult,
+                    ),
+                  )}
+                </b>
+              </div>
+              <div>
+                <span>Added to the weekly queue</span>
+                <strong>
+                  {money(
+                    roundupDelta(
+                      Math.max(0, Math.round(Number(sample) * 100)) || 0,
+                      step,
+                      mult,
+                    ),
+                  )}
+                </strong>
+              </div>
+            </div>
+            <small>
+              Interactive example. Only confirmed transfers contribute to your
+              actual journal.
+            </small>
+          </Panel>
+          <Panel title="You set the pace" eyebrow="ALWAYS YOUR CALL">
+            <div className="gx-timeline">
+              <div>
+                <Check size={16} />
+                <span>
+                  <b>A clear weekly limit</b>
+                  <small>Set directly in the round-up contract.</small>
+                </span>
+              </div>
+              <div>
+                <Check size={16} />
+                <span>
+                  <b>Stop with one transaction</b>
+                  <small>Unlinking blocks any future pull.</small>
+                </span>
+              </div>
+              <div>
+                <Check size={16} />
+                <span>
+                  <b>No rounding twice</b>
+                  <small>Each transfer is recorded once.</small>
+                </span>
+              </div>
+            </div>
           </Panel>
         </div>
       </div>
