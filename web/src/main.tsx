@@ -1,5 +1,7 @@
 import { ProofVerifier } from './privacy/ProofVerifier';
 import { StrictMode, lazy, Suspense } from 'react';
+const ExpansionPage=lazy(()=>import('./expansion/ExpansionPage').then(m=>({default:m.ExpansionPage})));
+const CelebrationPage=lazy(()=>import('./expansion/ExpansionPage').then(m=>({default:m.CelebrationPage})));
 const FamilyToolsPage=lazy(()=>import('./familyTools/FamilyToolsPage').then(m=>({default:m.FamilyToolsPage})));
 const ToolsOperator=lazy(()=>import('./familyTools/ToolsOperator').then(m=>({default:m.ToolsOperator})));
 const SpendPage=lazy(()=>import('./spend/SpendPage').then(m=>({default:m.SpendPage})));
@@ -47,6 +49,8 @@ function currentPath(): string {
 function Root() {
   useLocale(); // the whole tree re-renders in the new language
   const path = currentPath();
+  if (/^\/grow\/(events)$/.test(path)) return <Suspense fallback={<main style={{padding:64}}>Opening your growing world…</main>}><ExpansionPage page={path.split('/')[2] as 'events'|'roundups'|'arena'|'cash'|'continuity'}/></Suspense>;
+  if (/^\/celebrate\/[a-zA-Z0-9-]{8,80}$/.test(path)) return <Suspense fallback={null}><CelebrationPage id={path.split('/')[2]!}/></Suspense>;
   if (path === '/' || path === '/index.html') return <Landing />;
   const toolsRoutes = {'/family-tools':'home','/rewards':'rewards','/tax-garden':'tax','/asset-passports':'passports','/family-investing':'investing'} as const;
   if (path === '/family-tools/operator') return <Suspense fallback={null}><ToolsOperator/></Suspense>;
