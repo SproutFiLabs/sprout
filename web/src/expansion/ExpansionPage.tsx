@@ -340,7 +340,7 @@ export function ExpansionPage({ page = "events" }: { page?: Page }) {
         <aside className="gx-sidebar">
           <span className="gx-eyebrow">YOUR GROWING WORLD</span>
           <nav aria-label="Growth features">
-            {pages.filter((x) => ["events", "roundups", "cash", "arena"].includes(x.id)).map((x) => (
+            {pages.map((x) => (
               <a
                 key={x.id}
                 href={`/grow/${x.id}${r.state?.chain ? `?vault=${r.state.chain.vault}` : ""}`}
@@ -499,7 +499,17 @@ export function ExpansionPage({ page = "events" }: { page?: Page }) {
             </Empty>
           ) : (
             <fieldset className="gx-workspace" disabled={!!r.busy}>
-              {page === "events" ? <Events r={r} /> : page === "roundups" ? <Roundups r={r} /> : page === "cash" ? <Cash r={r} /> : <Arena r={r} />}
+              {page === "events" ? (
+                <Events r={r} />
+              ) : page === "roundups" ? (
+                <Roundups r={r} />
+              ) : page === "cash" ? (
+                <Cash r={r} />
+              ) : page === "arena" ? (
+                <Arena r={r} />
+              ) : (
+                <Continuity r={r} />
+              )}
             </fieldset>
           )}
           <footer className="gx-footer">
@@ -1972,6 +1982,461 @@ function Arena({ r }: { r: ExpansionRuntime }) {
           </div>
         </div>
       )}
+    </>
+  );
+}
+function Continuity({ r }: { r: ExpansionRuntime }) {
+  const s = r.state!.chain!,
+    c = s.continuity,
+    parent = r.wallet!.address.toLowerCase() === s.parent.toLowerCase(),
+    isSuccessor = r.wallet!.address.toLowerCase() === c.successor.toLowerCase(),
+    coGuardian = r.wallet!.address.toLowerCase() === c.coGuardian.toLowerCase(),
+    hasPlan = c.hash !== "0x" + "0".repeat(64);
+  const [edit, setEdit] = useState(!hasPlan),
+    [successor, setSuccessor] = useState(
+      c.successor === ZERO_ADDRESS ? "" : c.successor,
+    ),
+    [guardian, setGuardian] = useState(
+      c.coGuardian === ZERO_ADDRESS ? "" : c.coGuardian,
+    ),
+    [cadence, setCadence] = useState(String(c.cadence / 86400 || 90)),
+    [grace, setGrace] = useState(String(c.grace / 86400 || 14)),
+    [installment, setInstallment] = useState(
+      String(c.installmentCents / 100 || 50),
+    ),
+    [period, setPeriod] = useState("30"),
+    [reserve, setReserve] = useState("600"),
+    [refund, setRefund] = useState("50"),
+    [early, setEarly] = useState(
+      c.earlyGraduation
+        ? new Date(c.earlyGraduation).toISOString().slice(0, 10)
+        : "",
+    );
+  const due = c.heartbeatAt + c.cadence * 1000,
+    activeReview = !!c.claimAt;
+  return (
+    <>
+      <div className="gx-metrics">
+        <Metric
+          label="Your plan"
+          value={
+            <span className="gx-status-value">
+              {c.active
+                ? "Continuity active"
+                : activeReview
+                  ? "In review"
+                  : hasPlan
+                    ? "Rooted in care"
+                    : "Ready to write"}
+            </span>
+          }
+          note={
+            hasPlan
+              ? `Plan version ${c.epoch}`
+              : "An optional layer of family care"
+          }
+        />
+        <Metric
+          label="Next check-in"
+          value={
+            <span className="gx-status-value">
+              {hasPlan ? date(due) : "Your choice"}
+            </span>
+          }
+          note={
+            hasPlan
+              ? `Every ${c.cadence / 86400} days`
+              : "Choose a cadence that suits your family"
+          }
+        />
+        <Metric
+          label="Care set aside"
+          value={money(c.reserveCents)}
+          note={
+            c.installmentCents
+              ? `${money(c.installmentCents)} per reserve period`
+              : "A separate continuity contribution reserve"
+          }
+        />
+      </div>
+      <div className="gx-columns">
+        <div className="gx-stack">
+          <Panel
+            title="People you trust. A plan they can follow."
+            eyebrow="YOUR CIRCLE OF CARE"
+            action={
+              parent &&
+              hasPlan && (
+                <Button secondary onClick={() => setEdit(!edit)}>
+                  {edit ? "Close editor" : "Edit plan"}{" "}
+                  <ArrowUpRight size={15} />
+                </Button>
+              )
+            }
+          >
+            {edit && parent ? (
+              <form
+                className="gx-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const input = {
+                    successor,
+                    coGuardian: guardian || ZERO_ADDRESS,
+                    cadenceDays: Number(cadence),
+                    graceDays: Number(grace),
+                    earlyGraduation: early
+                      ? new Date(`${early}T12:00:00Z`).getTime()
+                      : 0,
+                    installmentCents: Math.round(Number(installment) * 100),
+                    periodDays: Number(period),
+                  };
+                  void r.run(
+                    "Writing your continuity plan",
+                    async () => {
+                      await r.send(s.vault, "plan", {
+                        ...input,
+                        hash: keccak256(toBytes(JSON.stringify(input))),
+                      });
+                      setEdit(false);
+                    },
+                    "Your continuity plan is recorded. Your chosen successor has no access until the check-in and review periods pass.",
+                  );
+                }}
+              >
+                <Field
+                  label="Successor wallet"
+                  hint="Can manage the plan after activation. Cannot withdraw the child’s savings to themselves."
+                >
+                  <input
+                    required
+                    pattern="0x[0-9a-fA-F]{40}"
+                    placeholder="0x…"
+                    value={successor}
+                    onChange={(e) => setSuccessor(e.target.value)}
+                  />
+                </Field>
+                <Field
+                  label="Co-guardian wallet (optional)"
+                  hint="Can cancel an incorrect successor claim."
+                >
+                  <input
+                    pattern="0x[0-9a-fA-F]{40}"
+                    placeholder="0x…"
+                    value={guardian}
+                    onChange={(e) => setGuardian(e.target.value)}
+                  />
+                </Field>
+                <div className="gx-form-row">
+                  <Field label="Check in every (days)">
+                    <input
+                      required
+                      type="number"
+                      min="7"
+                      max="366"
+                      value={cadence}
+                      onChange={(e) => setCadence(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Review window (days)">
+                    <input
+                      required
+                      type="number"
+                      min="2"
+                      max="90"
+                      value={grace}
+                      onChange={(e) => setGrace(e.target.value)}
+                    />
+                  </Field>
+                </div>
+                <div className="gx-form-row">
+                  <Amount
+                    label="Reserve installment"
+                    value={installment}
+                    set={setInstallment}
+                  />
+                  <Field label="Reserve period (days)">
+                    <input
+                      required
+                      type="number"
+                      min="7"
+                      max="366"
+                      value={period}
+                      onChange={(e) => setPeriod(e.target.value)}
+                    />
+                  </Field>
+                </div>
+                <Field
+                  label="Optional earlier graduation"
+                  hint="Only applies after continuity activates. Must be after the check-in and review windows, and before normal graduation."
+                >
+                  <input
+                    type="date"
+                    value={early}
+                    onChange={(e) => setEarly(e.target.value)}
+                  />
+                </Field>
+                <Button type="submit">
+                  Save my continuity plan <ShieldCheck size={17} />
+                </Button>
+              </form>
+            ) : hasPlan ? (
+              <>
+                <div className="gx-care-people">
+                  <div>
+                    <span className="gx-person">
+                      <Wallet size={24} />
+                    </span>
+                    <span className="gx-eyebrow">PARENT</span>
+                    <h3>You set the direction</h3>
+                    <p>{short(s.parent)}</p>
+                  </div>
+                  <span className="gx-care-line" />
+                  <div>
+                    <span className="gx-person purple">
+                      <Users size={24} />
+                    </span>
+                    <span className="gx-eyebrow">SUCCESSOR</span>
+                    <h3>Care carries forward</h3>
+                    <p>{short(c.successor)}</p>
+                  </div>
+                  <span className="gx-care-line" />
+                  <div>
+                    <span className="gx-person orange">
+                      <Leaf size={24} />
+                    </span>
+                    <span className="gx-eyebrow">BENEFICIARY</span>
+                    <h3>The future stays theirs</h3>
+                    <p>{short(s.beneficiary)}</p>
+                  </div>
+                </div>
+                <div className="gx-detail-row">
+                  <span>Co-guardian</span>
+                  <b>{short(c.coGuardian)}</b>
+                </div>
+                <div className="gx-detail-row">
+                  <span>Normal graduation</span>
+                  <b>{date(c.graduation)}</b>
+                </div>
+                <div className="gx-detail-row">
+                  <span>Earlier graduation after activation</span>
+                  <b>
+                    {c.earlyGraduation
+                      ? date(c.earlyGraduation)
+                      : "Not enabled"}
+                  </b>
+                </div>
+                <div className="gx-rule-summary">
+                  <Lock size={22} />
+                  <p>
+                    The beneficiary stays the same. A successor can maintain the
+                    investment plan; withdrawals remain governed by the vault’s
+                    beneficiary rules.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <Empty title="A parent can set the plan">
+                The original parent chooses the successor and the check-in
+                schedule.
+              </Empty>
+            )}
+          </Panel>
+          <Panel
+            title="Nothing changes without a window to act"
+            eyebrow="A CLEAR PATH FORWARD"
+          >
+            <div className="gx-continuity-path">
+              <div>
+                <span>01</span>
+                <h3>Keep in touch</h3>
+                <p>
+                  Check in or take a parent management action before{" "}
+                  {hasPlan ? date(due) : "your chosen date"}.
+                </p>
+              </div>
+              <div>
+                <span>02</span>
+                <h3>Time to review</h3>
+                <p>
+                  After a missed check-in, the successor can open a{" "}
+                  {c.grace / 86400 || 14}-day review window.
+                </p>
+              </div>
+              <div>
+                <span>03</span>
+                <h3>Care continues</h3>
+                <p>
+                  After review, the named successor can activate the plan and
+                  keep scheduled care moving.
+                </p>
+              </div>
+            </div>
+            <p className="gx-footnote">
+              This version observes explicit vault check-ins and parent actions.
+              Unrelated wallet activity does not reset the clock.
+            </p>
+            {activeReview && (
+              <div className="gx-notice">
+                <CalendarDays size={18} />
+                Review closes {date(c.claimAt)}. The parent or co-guardian can
+                cancel before activation.
+              </div>
+            )}
+            <div className="gx-actions">
+              {parent && hasPlan && (
+                <Button
+                  onClick={() =>
+                    void r.run(
+                      "Recording your check-in",
+                      () => r.send(s.vault, "check-in"),
+                      "You’re checked in. The activity clock has been reset.",
+                    )
+                  }
+                >
+                  <Check size={17} /> I’m here · check in
+                </Button>
+              )}
+              {(parent || coGuardian) && (activeReview || c.active) && (
+                <Button
+                  secondary
+                  onClick={() =>
+                    void r.run(
+                      "Cancelling the successor claim",
+                      () => r.send(s.vault, "cancel-claim"),
+                      "The claim was cancelled and the activity clock reset.",
+                    )
+                  }
+                >
+                  Cancel claim
+                </Button>
+              )}
+              {isSuccessor && !c.active && !activeReview && (
+                <Button
+                  disabled={s.now < due}
+                  onClick={() =>
+                    void r.run(
+                      "Opening the review window",
+                      () => r.send(s.vault, "arm"),
+                      "The review window is now open.",
+                    )
+                  }
+                >
+                  Start review window
+                </Button>
+              )}
+              {isSuccessor && activeReview && (
+                <Button
+                  disabled={s.now < c.claimAt}
+                  onClick={() =>
+                    void r.run(
+                      "Activating the continuity plan",
+                      () => r.send(s.vault, "activate"),
+                      "Continuity is active for the named successor.",
+                    )
+                  }
+                >
+                  Activate continuity
+                </Button>
+              )}
+              {parent && hasPlan && (
+                <button
+                  className="gx-text-link"
+                  onClick={() =>
+                    void r.run(
+                      "Revoking the plan",
+                      () => r.send(s.vault, "revoke"),
+                      "Plan revoked. The former successor can no longer claim.",
+                    )
+                  }
+                >
+                  Revoke plan
+                </button>
+              )}
+            </div>
+          </Panel>
+        </div>
+        <div className="gx-stack">
+          <Panel
+            title="A little care, already set aside"
+            eyebrow="CONTINUITY RESERVE"
+            className="gx-peach"
+          >
+            <div className="gx-reserve-art">
+              <img src="/art/card-lavender.png" alt="" />
+            </div>
+            <p>
+              Fund a separate reserve for future scheduled contributions. It
+              stays apart from spendable cash until continuity is active.
+            </p>
+            <form
+              className="gx-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void r.run(
+                  "Funding the continuity reserve",
+                  () =>
+                    r.send(s.vault, "reserve", {
+                      amountCents: Math.round(Number(reserve) * 100),
+                    }),
+                  "Your continuity reserve is funded.",
+                );
+              }}
+            >
+              <Amount
+                label="Add to the reserve"
+                value={reserve}
+                set={setReserve}
+              />
+              <Button type="submit" disabled={!hasPlan || !parent}>
+                Set care aside <Plus size={16} />
+              </Button>
+            </form>
+            <div className="gx-detail-row">
+              <span>Reserved today</span>
+              <b>{money(c.reserveCents)}</b>
+            </div>
+            <div className="gx-detail-row">
+              <span>Per release period</span>
+              <b>{money(c.installmentCents)}</b>
+            </div>
+          </Panel>
+          <Panel title="Room to change your mind" eyebrow="FLEXIBLE BY DESIGN">
+            <p>
+              You can reclaim unused reserve before a claim starts or continuity
+              activates. Regular savings remain locked for the beneficiary.
+            </p>
+            <form
+              className="gx-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void r.run(
+                  "Returning unused reserve",
+                  () =>
+                    r.send(s.vault, "refund-reserve", {
+                      amountCents: Math.round(Number(refund) * 100),
+                    }),
+                  "Unused reserve returned to the parent wallet.",
+                );
+              }}
+            >
+              <Amount
+                label="Reserve to return"
+                value={refund}
+                set={setRefund}
+              />
+              <Button
+                secondary
+                type="submit"
+                disabled={
+                  !parent || !c.reserveCents || activeReview || c.active
+                }
+              >
+                Return reserve <ArrowDownLeft size={16} />
+              </Button>
+            </form>
+          </Panel>
+        </div>
+      </div>
     </>
   );
 }
