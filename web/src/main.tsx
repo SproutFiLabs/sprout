@@ -49,7 +49,7 @@ function currentPath(): string {
 function Root() {
   useLocale(); // the whole tree re-renders in the new language
   const path = currentPath();
-  if (/^\/grow\/(events|roundups)$/.test(path)) return <Suspense fallback={<main style={{padding:64}}>Opening your growing world…</main>}><ExpansionPage page={path.split('/')[2] as 'events'|'roundups'|'arena'|'cash'|'continuity'}/></Suspense>;
+  if (/^\/grow\/(events|roundups|cash)$/.test(path)) return <Suspense fallback={<main style={{padding:64}}>Opening your growing world…</main>}><ExpansionPage page={path.split('/')[2] as 'events'|'roundups'|'arena'|'cash'|'continuity'}/></Suspense>;
   if (/^\/celebrate\/[a-zA-Z0-9-]{8,80}$/.test(path)) return <Suspense fallback={null}><CelebrationPage id={path.split('/')[2]!}/></Suspense>;
   if (path === '/' || path === '/index.html') return <Landing />;
   const toolsRoutes = {'/family-tools':'home','/rewards':'rewards','/tax-garden':'tax','/asset-passports':'passports','/family-investing':'investing'} as const;

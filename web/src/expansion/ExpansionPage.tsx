@@ -340,7 +340,7 @@ export function ExpansionPage({ page = "events" }: { page?: Page }) {
         <aside className="gx-sidebar">
           <span className="gx-eyebrow">YOUR GROWING WORLD</span>
           <nav aria-label="Growth features">
-            {pages.filter((x) => ["events", "roundups"].includes(x.id)).map((x) => (
+            {pages.filter((x) => ["events", "roundups", "cash"].includes(x.id)).map((x) => (
               <a
                 key={x.id}
                 href={`/grow/${x.id}${r.state?.chain ? `?vault=${r.state.chain.vault}` : ""}`}
@@ -499,7 +499,7 @@ export function ExpansionPage({ page = "events" }: { page?: Page }) {
             </Empty>
           ) : (
             <fieldset className="gx-workspace" disabled={!!r.busy}>
-              {page === "events" ? <Events r={r} /> : <Roundups r={r} />}
+              {page === "events" ? <Events r={r} /> : page === "roundups" ? <Roundups r={r} /> : <Cash r={r} />}
             </fieldset>
           )}
           <footer className="gx-footer">
@@ -1183,6 +1183,220 @@ function Roundups({ r }: { r: ExpansionRuntime }) {
                 </span>
               </div>
             </div>
+          </Panel>
+        </div>
+      </div>
+    </>
+  );
+}
+function Cash({ r }: { r: ExpansionRuntime }) {
+  const s = r.state!.chain!,
+    [amount, setAmount] = useState("100"),
+    [redeem, setRedeem] = useState("25");
+  const eligible = s.cash.available && s.cash.permitted && s.cash.policyFresh;
+  const parent =
+    r.wallet!.address.toLowerCase() === s.parent.toLowerCase() ||
+    (s.continuity.active &&
+      r.wallet!.address.toLowerCase() === s.continuity.successor.toLowerCase());
+  return (
+    <>
+      <div className="gx-metrics">
+        <Metric
+          label="Ready for the next step"
+          value={money(s.availableCents)}
+          note="Available settlement cash"
+        />
+        <Metric
+          label="Cash in the garden"
+          value={money(s.cash.valueCents)}
+          note={
+            r.config!.local
+              ? "Test treasury · current asset value"
+              : "Current redeemable share value"
+          }
+        />
+        <Metric
+          label="Treasury connection"
+          value={
+            <span className="gx-status-value">
+              {eligible ? "Ready" : "Cash fallback"}
+            </span>
+          }
+          note={
+            s.cash.navAt
+              ? `NAV checked ${date(s.cash.navAt)}`
+              : "Cash remains in the settlement token"
+          }
+        />
+      </div>
+      <div className="gx-columns">
+        <div className="gx-stack">
+          <Panel
+            title="A thoughtful place between purchases"
+            eyebrow="HOW YOUR CASH MOVES"
+          >
+            <div className="gx-cash-journey">
+              <div>
+                <Wallet size={30} />
+                <h3>Cash arrives</h3>
+                <p>
+                  Gifts and contributions
+                  <br />
+                  land in the vault.
+                </p>
+              </div>
+              <ArrowRight />
+              <div className="active">
+                <Leaf size={34} />
+                <h3>Park what’s idle</h3>
+                <p>
+                  Eligible cash receives
+                  <br />
+                  treasury shares.
+                </p>
+              </div>
+              <ArrowRight />
+              <div>
+                <ArrowUpRight size={32} />
+                <h3>Ready to invest</h3>
+                <p>
+                  Redeem back to cash
+                  <br />
+                  when the plan needs it.
+                </p>
+              </div>
+            </div>
+            <div className="gx-rule-summary">
+              <ShieldCheck size={23} />
+              <p>
+                New parking requires an eligible vault and a current treasury
+                check. If those checks fail, new cash stays in the settlement
+                token.
+              </p>
+            </div>
+          </Panel>
+          <Panel
+            title="Your cash, with a clear view"
+            eyebrow="TREASURY DETAILS"
+          >
+            <div className="gx-detail-row">
+              <span>Integration</span>
+              <b>
+                {s.cash.available
+                  ? r.config!.local
+                    ? "Local practice treasury"
+                    : "Approved treasury"
+                  : "No approved treasury connected"}
+              </b>
+            </div>
+            <div className="gx-detail-row">
+              <span>Vault eligibility</span>
+              <b>{s.cash.permitted ? "Permitted" : "Not confirmed"}</b>
+            </div>
+            <div className="gx-detail-row">
+              <span>Price freshness</span>
+              <b>
+                {s.cash.policyFresh ? "Within policy window" : "Parking paused"}
+              </b>
+            </div>
+            <div className="gx-detail-row">
+              <span>Cash parking permission</span>
+              <b>{s.cash.enabled ? "Enabled" : "Off"}</b>
+            </div>
+            <div className="gx-detail-row">
+              <span>Investment reserve</span>
+              <b>Scheduled purchases are funded before parking</b>
+            </div>
+            <p className="gx-footnote">
+              {r.config!.local
+                ? "This local treasury uses test tokens. Its value changes only when test assets are added or removed."
+                : "Treasury values and redemption availability depend on the provider. Returns are variable and losses are possible."}{" "}
+              No projected APY is shown.
+            </p>
+          </Panel>
+        </div>
+        <div className="gx-stack">
+          <Panel
+            title="Give idle cash a place"
+            eyebrow="CASH PARKING"
+            className="gx-mint"
+          >
+            <div className="gx-leaf-art">
+              <img src="/art/dashboard/sidebar-branch.png" alt="" />
+            </div>
+            <p>
+              Choose how much available cash to park. Milestone commitments and
+              your continuity reserve stay protected.
+            </p>
+            <form
+              className="gx-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void r.run(
+                  "Parking eligible cash",
+                  async () => {
+                    if (!s.cash.enabled)
+                      await r.send(s.vault, "cash-toggle", { enabled: true });
+                    await r.send(s.vault, "park", {
+                      amountCents: Math.round(Number(amount) * 100),
+                    });
+                  },
+                  "Cash parked. Treasury shares are held in your family vault.",
+                );
+              }}
+            >
+              <Amount label="Amount to park" value={amount} set={setAmount} />
+              <Button disabled={!eligible || !parent} type="submit">
+                Park cash <Leaf size={17} />
+              </Button>
+            </form>
+            {!eligible && (
+              <p className="gx-footnote">
+                Your cash is available in the settlement token until an eligible
+                treasury is connected.
+              </p>
+            )}
+            {s.cash.enabled && (
+              <button
+                className="gx-text-link"
+                disabled={!parent}
+                onClick={() =>
+                  void r.run(
+                    "Pausing new cash parking",
+                    () => r.send(s.vault, "cash-toggle", { enabled: false }),
+                    "New parking is off. Existing shares can still be redeemed.",
+                  )
+                }
+              >
+                Pause new parking
+              </button>
+            )}
+          </Panel>
+          <Panel title="Bring it back to cash" eyebrow="REDEEM TO YOUR VAULT">
+            <form
+              className="gx-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void r.run(
+                  "Redeeming treasury shares",
+                  () =>
+                    r.send(s.vault, "unpark", {
+                      amountCents: Math.round(Number(redeem) * 100),
+                    }),
+                  "Treasury assets returned to your vault as settlement cash.",
+                );
+              }}
+            >
+              <Amount label="Amount to redeem" value={redeem} set={setRedeem} />
+              <Button
+                secondary
+                type="submit"
+                disabled={!parent || s.cash.valueCents === 0}
+              >
+                Return to cash <ArrowDownLeft size={16} />
+              </Button>
+            </form>
+            <small>Assets return directly to this vault.</small>
           </Panel>
         </div>
       </div>
