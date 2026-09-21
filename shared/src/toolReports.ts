@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const money = z.number().finite().min(0).max(100_000_000);
 const horizon = z.number().int().min(1).max(600);
@@ -11,7 +11,7 @@ export const planningInput = z
     annualReturn,
   })
   .strict();
-export const goalInput = planningInput.extend({ target: money.positive() });
+export const goalInput = planningInput.extend({ target: money.positive(), inflationRate: z.number().finite().min(0).max(20).optional() });
 export const comparisonInput = planningInput.extend({ alternativeMonthly: money });
 export type PlanningInput = z.infer<typeof planningInput>;
 
@@ -31,7 +31,7 @@ export function projectSavings(raw: PlanningInput): ProjectionRow[] {
   const rows: ProjectionRow[] = [{ month: 0, contributed: cents(input.initial), projected: cents(balance) }];
   for (let month = 1; month <= input.months; month++) {
     balance = balance * (1 + monthlyRate) + input.monthly;
-    if (!Number.isFinite(balance) || balance > 1e15) throw new Error('These assumptions produce a result outside the supported range.');
+    if (!Number.isFinite(balance) || balance > 1e15) throw new Error("These assumptions produce a result outside the supported range.");
     rows.push({ month, contributed: cents(input.initial + month * input.monthly), projected: cents(balance) });
   }
   return rows;
@@ -39,18 +39,23 @@ export function projectSavings(raw: PlanningInput): ProjectionRow[] {
 
 export function goalReport(raw: z.infer<typeof goalInput>) {
   const input = goalInput.parse(raw);
-  const { target, ...planning } = input;
+  const { target, inflationRate = 0, ...planning } = input;
+  const targetAtMonth = (month: number) => target * Math.pow(1 + inflationRate / 100, month / 12);
+  const targetAtEnd = targetAtMonth(input.months);
   const rows = projectSavings(planning);
   const growth = Math.pow(1 + input.annualReturn / 100, input.months / 12);
   const rate = Math.expm1(Math.log1p(input.annualReturn / 100) / 12);
   const factor = rate === 0 ? input.months : Math.expm1(input.months * Math.log1p(rate)) / rate;
-  const needed = Math.max(0, (target - input.initial * growth) / factor);
+  const needed = Math.max(0, (targetAtEnd - input.initial * growth) / factor);
   return {
     rows,
-    firstGoalMonth: rows.find((row) => row.projected >= target)?.month ?? null,
+    firstGoalMonth: rows.find((row) => row.projected >= cents(targetAtMonth(row.month)))?.month ?? null,
+    targetToday: target,
+    targetAtEnd: cents(targetAtEnd),
+    inflationRate,
     // Round up so the displayed contribution is sufficient under the stated model.
     requiredMonthly: Math.ceil(needed * 100) / 100,
-    shortfall: cents(Math.max(0, target - rows[rows.length - 1]!.projected)),
+    shortfall: cents(Math.max(0, targetAtEnd - rows[rows.length - 1]!.projected)),
   };
 }
 
@@ -83,7 +88,7 @@ export function allocationReport(raw: z.infer<typeof allocationInput>) {
   const combined = new Map<string, number>();
   for (const row of input) combined.set(row.symbol, (combined.get(row.symbol) ?? 0) + row.valueUsd);
   const totalUsd = [...combined.values()].reduce((sum, value) => sum + value, 0);
-  if (totalUsd <= 0) throw new Error('A report needs at least one holding with a positive value.');
+  if (totalUsd <= 0) throw new Error("A report needs at least one holding with a positive value.");
   const holdings = [...combined]
     .map(([symbol, valueUsd]) => ({ symbol, valueUsd: cents(valueUsd), percent: cents((valueUsd / totalUsd) * 100) }))
     .sort((a, b) => b.valueUsd - a.valueUsd || a.symbol.localeCompare(b.symbol));
@@ -96,4 +101,4 @@ export function allocationReport(raw: z.infer<typeof allocationInput>) {
 }
 
 export const PROJECTION_ASSUMPTIONS =
-  'Illustration using your chosen constant effective annual return, monthly compounding and contributions at month end. Excludes fees, taxes and inflation. Actual returns vary and may be negative; this is not a forecast.';
+  "Illustration using your chosen constant effective annual return, monthly compounding and contributions at month end. Excludes fees, taxes and inflation. Actual returns vary and may be negative; this is not a forecast.";

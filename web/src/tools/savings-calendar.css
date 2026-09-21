@@ -1,0 +1,51 @@
+.savings-calendar {
+  background: #fffdfa;
+  border: 1px solid #ece7dc;
+  border-radius: 22px;
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+  color: #1d1d1b;
+}
+.savings-calendar h2 {
+  margin: 0;
+  color: #14532d;
+  line-height: 1.12;
+}
+.savings-calendar-copy {
+  margin: 8px 0 0;
+  color: #5f5c54;
+  line-height: 1.5;
+}
+.savings-calendar-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #514e47;
+  font-size: 14px;
+}
+.savings-calendar-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #14532d;
+}
+.savings-calendar-preview {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  background: #faf8f2;
+  border-radius: 12px;
+  color: #514e47;
+}
+.savings-calendar-preview span {
+  font-variant-numeric: tabular-nums;
+}
+.savings-calendar-error {
+  margin: 0;
+  color: #a33b2b;
+}
+@media (max-width: 560px) {
+  .savings-calendar {
+    padding: 18px;
+  }
+}

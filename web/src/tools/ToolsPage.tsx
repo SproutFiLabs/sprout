@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { erc20Abi, formatUnits, type Address, type Hex } from 'viem';
-import { api, authorizeFamily, clearFamilySession, familyHeaders } from '../api';
-import { connectWallet, contractWriter, ensureChain, type WalletState } from '../wallet';
-import { ToolComposer, ToolReportView, type ToolKind } from './ToolComposer';
-import reportCss from './tools.css?inline';
-import './tools-page.css';
+import { useEffect, useRef, useState } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { erc20Abi, formatUnits, type Address, type Hex } from "viem";
+import { api, authorizeFamily, clearFamilySession, familyHeaders } from "../api";
+import { connectWallet, contractWriter, ensureChain, type WalletState } from "../wallet";
+import { ToolComposer, ToolReportView, type ToolKind } from "./ToolComposer";
+import reportCss from "./tools.css?inline";
+import "./tools-page.css";
+import { SavingsCalendar } from "./SavingsCalendar";
 
 interface ToolConfig {
   enabled: boolean;
@@ -24,22 +25,22 @@ interface Purchase {
   paidAt: number | null;
   result: { input: unknown; report: unknown; preparedAt: number } | null;
 }
-export type PaymentAttemptState = 'idle' | 'signing' | 'submitted' | 'ambiguous';
+export type PaymentAttemptState = "idle" | "signing" | "submitted" | "ambiguous";
 type PersistedPaymentState = {
   state: PaymentAttemptState;
   hash?: string;
   updatedAt: number;
 };
 const paymentKey = (id: string) => `sprout-tool-payment:${id}`;
-export function paymentAttemptError(error: unknown, phase: 'simulation' | 'signing' | 'receipt'): 'retry' | 'ambiguous' {
-  if (phase === 'simulation') return 'retry';
-  if (phase === 'signing' && typeof error === 'object' && error !== null) {
+export function paymentAttemptError(error: unknown, phase: "simulation" | "signing" | "receipt"): "retry" | "ambiguous" {
+  if (phase === "simulation") return "retry";
+  if (phase === "signing" && typeof error === "object" && error !== null) {
     const candidate = error as { code?: unknown; cause?: { code?: unknown } };
-    if (candidate.code === 4001 || candidate.cause?.code === 4001) return 'retry';
+    if (candidate.code === 4001 || candidate.cause?.code === 4001) return "retry";
   }
-  return 'ambiguous';
+  return "ambiguous";
 }
-type PaymentStorage = Pick<Storage, 'getItem' | 'setItem'>;
+type PaymentStorage = Pick<Storage, "getItem" | "setItem">;
 type PaymentLocks = {
   request: <T>(name: string, options: { ifAvailable: true }, callback: (lock: object | null) => Promise<T>) => Promise<T>;
 };
@@ -49,35 +50,35 @@ export async function claimPaymentAttempt(
   storage: PaymentStorage,
   write: () => Promise<string>,
 ): Promise<Hex> {
-  if (!locks) throw new Error('This browser cannot safely coordinate payment tabs. Use a modern browser to pay.');
+  if (!locks) throw new Error("This browser cannot safely coordinate payment tabs. Use a modern browser to pay.");
   return locks.request(`sprout-tool-payment:${id}`, { ifAvailable: true }, async (lock) => {
-    if (!lock) throw new Error('Another tab is paying this order. Check its payment status before retrying.');
+    if (!lock) throw new Error("Another tab is paying this order. Check its payment status before retrying.");
     let existing: PersistedPaymentState;
     try {
       const raw = storage.getItem(paymentKey(id));
-      existing = raw ? (JSON.parse(raw) as PersistedPaymentState) : { state: 'idle', updatedAt: Date.now() };
-      if (!['idle', 'signing', 'submitted', 'ambiguous'].includes(existing.state)) throw new Error('Invalid payment state.');
+      existing = raw ? (JSON.parse(raw) as PersistedPaymentState) : { state: "idle", updatedAt: Date.now() };
+      if (!["idle", "signing", "submitted", "ambiguous"].includes(existing.state)) throw new Error("Invalid payment state.");
     } catch {
-      throw new Error('Payment recovery storage is unavailable. Please enable site storage before paying.');
+      throw new Error("Payment recovery storage is unavailable. Please enable site storage before paying.");
     }
-    if (existing.state !== 'idle')
-      throw new Error('This order already has a payment attempt. Verify its transaction hash before retrying.');
-    const signing = { state: 'signing' as const, updatedAt: Date.now() };
+    if (existing.state !== "idle")
+      throw new Error("This order already has a payment attempt. Verify its transaction hash before retrying.");
+    const signing = { state: "signing" as const, updatedAt: Date.now() };
     try {
       storage.setItem(paymentKey(id), JSON.stringify(signing));
       const hash = await write();
-      storage.setItem(paymentKey(id), JSON.stringify({ state: 'submitted', hash, updatedAt: Date.now() }));
+      storage.setItem(paymentKey(id), JSON.stringify({ state: "submitted", hash, updatedAt: Date.now() }));
       return hash as Hex;
     } catch (error) {
-      if (paymentAttemptError(error, 'signing') === 'retry') {
+      if (paymentAttemptError(error, "signing") === "retry") {
         try {
-          storage.setItem(paymentKey(id), JSON.stringify({ state: 'idle', updatedAt: Date.now() }));
+          storage.setItem(paymentKey(id), JSON.stringify({ state: "idle", updatedAt: Date.now() }));
         } catch {
           /* preserve fail closed */
         }
       } else {
         try {
-          storage.setItem(paymentKey(id), JSON.stringify({ state: 'ambiguous', updatedAt: Date.now() }));
+          storage.setItem(paymentKey(id), JSON.stringify({ state: "ambiguous", updatedAt: Date.now() }));
         } catch {
           /* preserve fail closed */
         }
@@ -88,34 +89,38 @@ export async function claimPaymentAttempt(
 }
 export function readPaymentState(id: string): PersistedPaymentState {
   const raw = localStorage.getItem(paymentKey(id));
-  if (!raw) return { state: 'idle', updatedAt: Date.now() };
+  if (!raw) return { state: "idle", updatedAt: Date.now() };
   const parsed = JSON.parse(raw) as PersistedPaymentState;
-  if (!['idle', 'signing', 'submitted', 'ambiguous'].includes(parsed.state)) throw new Error('Invalid payment state.');
+  if (!["idle", "signing", "submitted", "ambiguous"].includes(parsed.state)) throw new Error("Invalid payment state.");
   return parsed;
 }
 const title = (kind: ToolKind) =>
   ({
-    goal: 'Savings goal planner',
-    comparison: 'Contribution comparison',
-    portfolio: 'Portfolio allocation report',
+    goal: "Savings goal planner",
+    comparison: "Contribution comparison",
+    portfolio: "Portfolio allocation report",
   })[kind];
 async function request<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(path, {
-    method: body === undefined ? 'GET' : 'POST',
-    cache: 'no-store',
-    headers: { ...familyHeaders(), 'content-type': 'application/json' },
+    method: body === undefined ? "GET" : "POST",
+    cache: "no-store",
+    headers: { ...familyHeaders(), "content-type": "application/json" },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || 'This request could not be completed.');
+  if (!response.ok) throw new Error(result.error || "This request could not be completed.");
   return result;
 }
 
-function Report({ purchase }: { purchase: Purchase }) {
+function Report({ purchase, interactive = false }: { purchase: Purchase; interactive?: boolean }) {
   if (!purchase.result) return null;
+  const input = purchase.result.input as { monthly?: unknown; months?: unknown };
   return (
     <article>
       <ToolReportView kind={purchase.kind} result={purchase.result.report} />
+      {interactive && purchase.kind !== "portfolio" && input && typeof input.monthly === "number" && typeof input.months === "number" && (
+        <SavingsCalendar monthly={input.monthly} months={input.months} />
+      )}
       <section className="tools-input-record">
         <h3>Your inputs</h3>
         <pre>{JSON.stringify(purchase.result.input, null, 2)}</pre>
@@ -130,8 +135,8 @@ function Report({ purchase }: { purchase: Purchase }) {
 function download(purchase: Purchase) {
   const content = renderToStaticMarkup(<Report purchase={purchase} />);
   const document = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sprout report</title><style>body{font-family:system-ui;margin:24px auto;max-width:1000px;background:#f5f2e9;padding:16px}pre{white-space:pre-wrap}${reportCss}</style></head><body>${content}</body></html>`;
-  const url = URL.createObjectURL(new Blob([document], { type: 'text/html;charset=utf-8' }));
-  const link = window.document.createElement('a');
+  const url = URL.createObjectURL(new Blob([document], { type: "text/html;charset=utf-8" }));
+  const link = window.document.createElement("a");
   link.href = url;
   link.download = `sprout-${purchase.kind}-${purchase.id.slice(0, 8)}.html`;
   link.click();
@@ -144,19 +149,19 @@ export function ToolsPage() {
   const [orders, setOrders] = useState<Purchase[]>([]);
   const [current, setCurrent] = useState<Purchase | null>(null);
   const [busy, setBusy] = useState(false),
-    [message, setMessage] = useState(''),
-    [error, setError] = useState('');
-  const [hash, setHash] = useState('');
+    [message, setMessage] = useState(""),
+    [error, setError] = useState("");
+  const [hash, setHash] = useState("");
   const epoch = useRef(0);
   const signedOrder = useRef<string | null>(null);
-  const paymentState = useRef<PaymentAttemptState>('idle');
+  const paymentState = useRef<PaymentAttemptState>("idle");
   const connectionEpoch = useRef(0);
   useEffect(() => {
-    document.title = 'Planning tools · Sprout';
+    document.title = "Planning tools · Sprout";
     let active = true;
-    request<ToolConfig>('/api/tools')
+    request<ToolConfig>("/api/tools")
       .then((c) => active && setConfig(c))
-      .catch(() => active && setError('Could not load tool availability.'));
+      .catch(() => active && setError("Could not load tool availability."));
     return () => {
       active = false;
       epoch.current++;
@@ -171,25 +176,25 @@ export function ToolsPage() {
       setWallet(null);
       setCurrent(null);
       setOrders([]);
-      setHash('');
+      setHash("");
       setBusy(false);
       signedOrder.current = null;
-      setMessage('Reconnect to access this wallet’s saved reports.');
+      setMessage("Reconnect to access this wallet’s saved reports.");
     };
-    wallet.provider.on?.('accountsChanged', reset);
-    wallet.provider.on?.('chainChanged', reset);
-    window.addEventListener('sprout-family-session-ended', reset);
+    wallet.provider.on?.("accountsChanged", reset);
+    wallet.provider.on?.("chainChanged", reset);
+    window.addEventListener("sprout-family-session-ended", reset);
     return () => {
-      wallet.provider.removeListener?.('accountsChanged', reset);
-      wallet.provider.removeListener?.('chainChanged', reset);
-      window.removeEventListener('sprout-family-session-ended', reset);
+      wallet.provider.removeListener?.("accountsChanged", reset);
+      wallet.provider.removeListener?.("chainChanged", reset);
+      window.removeEventListener("sprout-family-session-ended", reset);
     };
   }, [wallet]);
 
   async function connect() {
     const version = ++connectionEpoch.current;
     setBusy(true);
-    setError('');
+    setError("");
     let cleanup = () => {};
     try {
       const { chain } = await api.config();
@@ -206,25 +211,25 @@ export function ToolsPage() {
         setOrders([]);
         setCurrent(null);
         setBusy(false);
-        setError('Wallet changed during sign in. Reconnect to continue.');
+        setError("Wallet changed during sign in. Reconnect to continue.");
       };
-      connected.provider.on?.('accountsChanged', invalidate);
-      connected.provider.on?.('chainChanged', invalidate);
+      connected.provider.on?.("accountsChanged", invalidate);
+      connected.provider.on?.("chainChanged", invalidate);
       cleanup = () => {
-        connected.provider.removeListener?.('accountsChanged', invalidate);
-        connected.provider.removeListener?.('chainChanged', invalidate);
+        connected.provider.removeListener?.("accountsChanged", invalidate);
+        connected.provider.removeListener?.("chainChanged", invalidate);
       };
-      if (version !== connectionEpoch.current) throw new Error('Wallet changed during sign in.');
+      if (version !== connectionEpoch.current) throw new Error("Wallet changed during sign in.");
       await authorizeFamily(connected);
-      if (version !== connectionEpoch.current) throw new Error('Wallet changed during sign in.');
-      const saved = await request<{ purchases: Purchase[] }>('/api/family/tools/purchases');
+      if (version !== connectionEpoch.current) throw new Error("Wallet changed during sign in.");
+      const saved = await request<{ purchases: Purchase[] }>("/api/family/tools/purchases");
       if (version !== connectionEpoch.current) return;
       setWallet(connected);
       setOrders(saved.purchases);
-      setMessage('Signed in. Preparing a report does not spend tokens.');
+      setMessage("Signed in. Preparing a report does not spend tokens.");
     } catch {
       if (version === connectionEpoch.current)
-        setError('Connect your wallet and sign the login message to continue. No tokens were requested.');
+        setError("Connect your wallet and sign the login message to continue. No tokens were requested.");
     } finally {
       cleanup();
       if (version === connectionEpoch.current) setBusy(false);
@@ -233,27 +238,27 @@ export function ToolsPage() {
 
   async function prepare(kind: ToolKind, input: unknown) {
     if (!wallet) {
-      setError('Connect your wallet first.');
+      setError("Connect your wallet first.");
       return;
     }
     const version = epoch.current;
     setBusy(true);
-    setError('');
-    setMessage('Preparing your report and a SPROUT quote…');
+    setError("");
+    setMessage("Preparing your report and a SPROUT quote…");
     try {
-      const order = await request<Purchase>('/api/family/tools/prepare', {
+      const order = await request<Purchase>("/api/family/tools/prepare", {
         kind,
         input,
       });
       if (version !== epoch.current) return;
       setCurrent(order);
       setOrders((items) => [order, ...items]);
-      setHash('');
+      setHash("");
       signedOrder.current = null;
-      paymentState.current = 'idle';
-      setMessage('Report prepared. Review the token amount before paying.');
+      paymentState.current = "idle";
+      setMessage("Report prepared. Review the token amount before paying.");
     } catch (e) {
-      if (version === epoch.current) setError(e instanceof Error ? e.message : 'Could not prepare the report.');
+      if (version === epoch.current) setError(e instanceof Error ? e.message : "Could not prepare the report.");
     } finally {
       if (version === epoch.current) setBusy(false);
     }
@@ -266,7 +271,7 @@ export function ToolsPage() {
   function accept(purchase: Purchase) {
     setCurrent(purchase);
     setOrders((items) => items.map((o) => (o.id === purchase.id ? purchase : o)));
-    setMessage('Burn verified. Your report is ready, and you can download it again without another payment.');
+    setMessage("Burn verified. Your report is ready, and you can download it again without another payment.");
   }
 
   async function pay() {
@@ -277,15 +282,15 @@ export function ToolsPage() {
       current.paidAt !== null ||
       hash ||
       signedOrder.current === current.id ||
-      paymentState.current === 'ambiguous'
+      paymentState.current === "ambiguous"
     )
       return;
     const order = current,
       version = epoch.current;
     signedOrder.current = order.id;
     setBusy(true);
-    setError('');
-    setMessage('Review the SPROUT transfer in your wallet.');
+    setError("");
+    setMessage("Review the SPROUT transfer in your wallet.");
     let broadcast = false;
     let simulated = false;
     try {
@@ -297,7 +302,7 @@ export function ToolsPage() {
       const args = {
         address: config.token,
         abi: erc20Abi,
-        functionName: 'transfer',
+        functionName: "transfer",
         args: [config.deadAddress, BigInt(order.amount)],
       } as const;
       await wallet.publicClient.simulateContract({
@@ -308,7 +313,7 @@ export function ToolsPage() {
       if (version !== epoch.current) return;
       const tx = await claimPaymentAttempt(order.id, navigator.locks, localStorage, () => contractWriter(wallet)(args) as Promise<Hex>);
       broadcast = true;
-      paymentState.current = 'submitted';
+      paymentState.current = "submitted";
       // Public receipt reference only; no report inputs or access token are persisted here.
       try {
         localStorage.setItem(`sprout-tool-tx:${order.id}`, tx);
@@ -317,7 +322,7 @@ export function ToolsPage() {
       }
       if (version !== epoch.current) return;
       setHash(tx);
-      setMessage('Transfer submitted. Waiting for three confirmations; do not pay again.');
+      setMessage("Transfer submitted. Waiting for three confirmations; do not pay again.");
       await wallet.publicClient.waitForTransactionReceipt({
         hash: tx,
         confirmations: 3,
@@ -326,18 +331,18 @@ export function ToolsPage() {
       const paid = await verify(order, tx);
       if (version === epoch.current) accept(paid);
     } catch (e) {
-      const disposition = paymentAttemptError(e, !simulated ? 'simulation' : broadcast ? 'receipt' : 'signing');
-      if (disposition === 'retry') {
+      const disposition = paymentAttemptError(e, !simulated ? "simulation" : broadcast ? "receipt" : "signing");
+      if (disposition === "retry") {
         signedOrder.current = null;
-        paymentState.current = 'idle';
+        paymentState.current = "idle";
       } else {
-        paymentState.current = 'ambiguous';
+        paymentState.current = "ambiguous";
       }
       if (version === epoch.current)
         setError(
           broadcast
-            ? 'Your transfer was submitted. Use Verify payment to recover the report; do not send another payment.'
-            : 'The wallet did not return a confirmed transaction hash. Check wallet activity before retrying; if a transfer was sent, paste its hash below.',
+            ? "Your transfer was submitted. Use Verify payment to recover the report; do not send another payment."
+            : "The wallet did not return a confirmed transaction hash. Check wallet activity before retrying; if a transfer was sent, paste its hash below.",
         );
     } finally {
       if (version === epoch.current) setBusy(false);
@@ -348,12 +353,12 @@ export function ToolsPage() {
     if (!current) return;
     const version = epoch.current;
     setBusy(true);
-    setError('');
+    setError("");
     try {
       const paid = await verify(current, hash);
       if (version === epoch.current) accept(paid);
     } catch (e) {
-      if (version === epoch.current) setError(e instanceof Error ? e.message : 'Payment is not verified yet.');
+      if (version === epoch.current) setError(e instanceof Error ? e.message : "Payment is not verified yet.");
     } finally {
       if (version === epoch.current) setBusy(false);
     }
@@ -361,17 +366,17 @@ export function ToolsPage() {
 
   function select(order: Purchase) {
     setCurrent(order);
-    setError('');
-    setMessage('');
+    setError("");
+    setMessage("");
     try {
       const saved = readPaymentState(order.id);
       paymentState.current = saved.state;
-      signedOrder.current = saved.state === 'idle' ? null : order.id;
-      setHash(saved.hash ?? localStorage.getItem(`sprout-tool-tx:${order.id}`) ?? order.txHash ?? '');
+      signedOrder.current = saved.state === "idle" ? null : order.id;
+      setHash(saved.hash ?? localStorage.getItem(`sprout-tool-tx:${order.id}`) ?? order.txHash ?? "");
     } catch {
-      paymentState.current = 'ambiguous';
-      setHash(order.txHash ?? '');
-      setError('Payment recovery storage is unavailable. You can verify an existing transaction below.');
+      paymentState.current = "ambiguous";
+      setHash(order.txHash ?? "");
+      setError("Payment recovery storage is unavailable. You can verify an existing transaction below.");
     }
   }
 
@@ -398,17 +403,17 @@ export function ToolsPage() {
             <br />A little SPROUT burned.
           </h1>
           <p>
-            Prepare a report, review the price, then send SPROUT directly to the dead address to unlock it. No USDG payment or token
-            approval is required.
+            Explore free planning previews, spending estimates and portfolio comparisons. To save a full report, review the price, then send
+            SPROUT directly to the dead address to unlock it. No USDG payment or token approval is required.
           </p>
-          <p>{config?.pricing ?? 'Checking tool availability…'}</p>
+          <p>{config?.pricing ?? "Checking tool availability…"}</p>
           <p>
             Paid reports and their inputs are saved privately to your wallet login until you delete your family data. Download a copy to
             keep it yourself.
           </p>
           {config && !config.enabled && <p className="tools-status">Preview only. Paid tools are not enabled yet.</p>}
           <button className="tools-prepare" disabled={busy} onClick={() => void connect()}>
-            {wallet ? 'Refresh saved reports' : 'Connect wallet & sign in'}
+            {wallet ? "Refresh saved reports" : "Connect wallet & sign in"}
           </button>
         </section>
         <ToolComposer busy={busy} disabled={!config?.enabled || !wallet} onPrepare={(kind, input) => void prepare(kind, input)} />
@@ -432,7 +437,7 @@ export function ToolsPage() {
                   Download report
                 </button>
                 <p>Open the downloaded HTML file to view it offline or print it to PDF.</p>
-                <Report purchase={current} />
+                <Report purchase={current} interactive />
               </>
             ) : (
               <>
@@ -448,7 +453,7 @@ export function ToolsPage() {
                 <button
                   className="tools-prepare"
                   disabled={
-                    busy || !config?.enabled || !!hash || signedOrder.current === current.id || paymentState.current === 'ambiguous'
+                    busy || !config?.enabled || !!hash || signedOrder.current === current.id || paymentState.current === "ambiguous"
                   }
                   onClick={() => void pay()}
                 >
@@ -475,7 +480,7 @@ export function ToolsPage() {
             <p>Saved results are available without paying again. Recover a submitted payment here if the page was closed.</p>
             {orders.map((order) => (
               <button key={order.id} disabled={busy} onClick={() => select(order)}>
-                {title(order.kind)} · {order.paidAt === null ? 'Awaiting verified payment' : 'Ready'} · {order.id.slice(0, 8)}
+                {title(order.kind)} · {order.paidAt === null ? "Awaiting verified payment" : "Ready"} · {order.id.slice(0, 8)}
               </button>
             ))}
           </section>
